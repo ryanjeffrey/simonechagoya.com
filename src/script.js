@@ -23,10 +23,15 @@ const scene = new THREE.Scene()
  * Lights
  */
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
-ambientLight.castShadow = true
 scene.add(ambientLight)
 
 gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
+
+const directionalLight = new THREE.DirectionalLight("#ffffff", 20)
+directionalLight.castShadow = true
+directionalLight.position.set(0, 1, 0)
+directionalLight.shadow.mapSize.set(1024, 1024)
+scene.add(directionalLight)
 
 /**
  * Loaders
@@ -135,6 +140,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.setClearColor('#ffffff')
 
 /**
  * Animate
