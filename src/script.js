@@ -56,22 +56,22 @@ const portalLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
  * Model
  */
 gltfLoader.load(
-    'portal.glb',
+    'simone-gallery.glb',
     (gltf) =>
     {
         scene.add(gltf.scene)
 
-        // Get each object
-        const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
-        const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
-        const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
-        const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
+    //     // Get each object
+    //     const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
+    //     const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
+    //     const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
+    //     const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
 
-        // Apply materials
-        bakedMesh.material = bakedMaterial
-        portalLightMesh.material = portalLightMaterial
-        poleLightAMesh.material = poleLightMaterial
-        poleLightBMesh.material = poleLightMaterial
+    //     // Apply materials
+    //     bakedMesh.material = bakedMaterial
+    //     portalLightMesh.material = portalLightMaterial
+    //     poleLightAMesh.material = poleLightMaterial
+    //     poleLightBMesh.material = poleLightMaterial
     }
 )
 
