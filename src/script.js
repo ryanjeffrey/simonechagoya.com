@@ -23,6 +23,7 @@ const scene = new THREE.Scene()
  * Lights
  */
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
+ambientLight.castShadow = true
 scene.add(ambientLight)
 
 gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
@@ -66,7 +67,7 @@ const portalLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
 gltfLoader.load(
     'simone-gallery.glb',
     (gltf) =>
-    {
+    {   
         scene.add(gltf.scene)
 
     //     // Get each object
@@ -82,6 +83,7 @@ gltfLoader.load(
     //     poleLightBMesh.material = poleLightMaterial
     }
 )
+
 
 /**
  * Sizes
@@ -130,6 +132,9 @@ const renderer = new THREE.WebGLRenderer({
 renderer.outputEncoding = THREE.sRGBEncoding
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
 /**
  * Animate
