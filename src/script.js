@@ -58,11 +58,11 @@ bakedTexture.encoding = THREE.sRGBEncoding
  */
 const environmentMap = cubeTextureLoader.load([
     '/textures/environmentMaps/0/px.bmp',
+    '/textures/environmentMaps/0/nx.bmp',
+    '/textures/environmentMaps/0/py.bmp',
     '/textures/environmentMaps/0/ny.bmp',
     '/textures/environmentMaps/0/pz.bmp',
-    '/textures/environmentMaps/0/nz.bmp',
-    '/textures/environmentMaps/0/py.bmp',
-    '/textures/environmentMaps/0/nx.bmp'
+    '/textures/environmentMaps/0/nz.bmp'
 ])
 environmentMap.encoding = THREE.sRGBEncoding
 scene.background = environmentMap
