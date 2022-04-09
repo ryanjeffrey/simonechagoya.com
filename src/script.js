@@ -1,5 +1,5 @@
 import './style.css'
-import * as dat from 'lil-gui'
+// import * as dat from 'lil-gui'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -9,9 +9,9 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
  * Base
  */
 // Debug
-const gui = new dat.GUI({
-    width: 400
-})
+// const gui = new dat.GUI({
+//     width: 400
+// })
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -25,8 +25,6 @@ const scene = new THREE.Scene()
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
 scene.add(ambientLight)
 
-gui.add(ambientLight, 'intensity').min(0).max(1).step(0.001)
-
 const directionalLight = new THREE.DirectionalLight("#ffffff", 20)
 directionalLight.castShadow = true
 directionalLight.position.set(0, 1, 0)
@@ -38,6 +36,7 @@ scene.add(directionalLight)
  */
 // Texture loader
 const textureLoader = new THREE.TextureLoader()
+const cubeTextureLoader = new THREE.CubeTextureLoader()
 
 // Draco loader
 const dracoLoader = new DRACOLoader()
@@ -53,6 +52,21 @@ gltfLoader.setDRACOLoader(dracoLoader)
 const bakedTexture = textureLoader.load('baked.jpg')
 bakedTexture.flipY = false
 bakedTexture.encoding = THREE.sRGBEncoding
+
+/**
+ * Environment map
+ */
+const environmentMap = cubeTextureLoader.load([
+    '/textures/environmentMaps/0/px.bmp',
+    '/textures/environmentMaps/0/ny.bmp',
+    '/textures/environmentMaps/0/pz.bmp',
+    '/textures/environmentMaps/0/nz.bmp',
+    '/textures/environmentMaps/0/py.bmp',
+    '/textures/environmentMaps/0/nx.bmp'
+])
+environmentMap.encoding = THREE.sRGBEncoding
+scene.background = environmentMap
+scene.environment = environmentMap
 
 /**
  * Materials
