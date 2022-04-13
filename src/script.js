@@ -87,6 +87,8 @@ gltfLoader.load(
     'simone-gallery.glb',
     (gltf) =>
     {   
+        gltf.scene.receiveShadow = true
+        gltf.scene.castShadow = true
         scene.add(gltf.scene)
 
     //     // Get each object

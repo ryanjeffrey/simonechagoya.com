@@ -38,4 +38,10 @@ body
     top: 10px;
     text-align: center;
     z-index: 1000;
+    cursor: help;
+}
+
+.artist-info {
+    display: none;
+    z-index: 1000;
 }
