@@ -39,6 +39,8 @@ body
     text-align: center;
     z-index: 1000;
     cursor: help;
+    color: white;
+    mix-blend-mode: difference;
 }
 
 .artist-info {
