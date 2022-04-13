@@ -87,8 +87,13 @@ gltfLoader.load(
     'simone-gallery.glb',
     (gltf) =>
     {   
-        gltf.scene.receiveShadow = true
-        gltf.scene.castShadow = true
+        gltf.scene.traverse(function (child) {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        })
+
         scene.add(gltf.scene)
 
     //     // Get each object
