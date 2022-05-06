@@ -75,10 +75,10 @@ scene.environment = environmentMap
 const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedTexture })
 
 // Pole light material
-const poleLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffe5 })
+// const poleLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffe5 })
 
 // Portal light material
-const portalLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
+// const portalLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
 
 /**
  * Model
@@ -87,14 +87,14 @@ gltfLoader.load(
     'simone-gallery.glb',
     (gltf) =>
     {   
-        gltf.scene.traverse(function (child) {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        })
+        // gltf.scene.traverse(function (child) {
+        //   if (child.isMesh) {
+        //     child.castShadow = true;
+        //     child.receiveShadow = true;
+        // })
 
-        scene.add(gltf.scene)
+        scene.add(gltf.scene)  
+        
 
     //     // Get each object
     //     const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
