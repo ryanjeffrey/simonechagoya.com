@@ -1,4 +1,5 @@
 import './style.css'
+import Rellax from 'rellax'
 // import * as dat from 'lil-gui'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -8,6 +9,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 /**
  * Base
  */
+var rellax = new Rellax(".rellax");
+
 // Debug
 // const gui = new dat.GUI({
 //     width: 400
