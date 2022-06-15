@@ -3,25 +3,27 @@
   src: url(../static/fonts/Voyage-Regular.woff2);
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Akshar:wght@300&family=Odibee+Sans&family=Questrial&display=swap');
+
 *
 {
     margin: 0;
     padding: 0;
 }
 
-html,
+/* html,
 body
 {
     overflow: hidden;
-}
+} */
 
-.webgl
+/* .webgl
 {
     position: fixed;
     top: 0;
     left: 0;
     outline: none;
-}
+} */
 
 .artist-name
 {
@@ -32,7 +34,7 @@ body
 .artist-name h1
 {
     font-family: 'Voyage', Georgia, 'Times New Roman', Times, serif;
-    position: absolute;
+    position: fixed;
     left: 0;
     right: 0;
     top: 10px;
@@ -40,7 +42,7 @@ body
     text-align: center;
     z-index: 1000;
     cursor: help;
-    color: white;
+    /* color: white; */
     mix-blend-mode: difference;
     letter-spacing: 0.1em;
 }
@@ -48,6 +50,36 @@ body
 .artist-info {
     display: none;
     z-index: 1000;
+}
+
+.wrapper {
+    margin: 0 100px;
+  /* position: relative; */
+}
+
+p {
+  font-family: "Questrial", sans-serif;
+}
+
+.artwork {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  z-index: 1;
+}
+
+.artwork-title {
+    font-size: 20px;
+    padding-bottom: 24px;
+}
+
+.artwork-description {
+  max-width: 240px;
+}
+
+.artwork-image {
+  height: 60vh;
 }
 
 @media only screen and (max-width: 600px) {
