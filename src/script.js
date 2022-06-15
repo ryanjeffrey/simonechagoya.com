@@ -1,5 +1,6 @@
 import './style.css'
 import Rellax from 'rellax'
+import gsap from 'gsap'
 // import * as dat from 'lil-gui'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -9,9 +10,36 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 /**
  * Base
  */
-// var rellax = new Rellax(".rellax", {
-//     center: true
-// });
+gsap.registerPlugin(ScrollTrigger);
+
+
+gsap.from("#first-artwork", {
+    autoAlpha: 0,
+    duration: 3,
+    delay: 0.5
+});
+
+var listones = gsap.utils.toArray(".listone");
+
+listones.forEach((listone) => {
+  gsap.from(listone, {
+    autoAlpha: 0,
+    scrollTrigger: {
+      trigger: listone,
+      start: 'top center',
+      scrub: true,
+      end: '+=500',
+    //   toggleActions: 'play pause resume reverse'
+    //   markers: true,
+    },
+  });
+//   gsap.to(listone, {autoAlpha:0});
+});
+
+
+var rellax = new Rellax(".rellax", {
+    center: true
+});
 
 // // Debug
 // // const gui = new dat.GUI({
