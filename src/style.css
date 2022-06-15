@@ -41,9 +41,16 @@ body
     cursor: help;
     color: white;
     mix-blend-mode: difference;
+    letter-spacing: 0.1em;
 }
 
 .artist-info {
     display: none;
     z-index: 1000;
+}
+
+@media only screen and (max-width: 600px) {
+    .artist-name h1 {
+        font-size: 24px;
+    }
 }
