@@ -29,6 +29,8 @@ body
 {
     text-align: center;
     height: 60px;
+    position: absolute;
+    z-index: 4;
 }
 
 .artist-name h1
@@ -40,7 +42,6 @@ body
     top: 10px;
     font-size: 40px;
     text-align: center;
-    z-index: 1000;
     cursor: help;
     /* color: white; */
     mix-blend-mode: difference;
@@ -49,12 +50,12 @@ body
 
 .artist-info {
     display: none;
-    z-index: 1000;
 }
 
 .wrapper {
     margin: 0 100px;
-  /* position: relative; */
+    z-index: 1;
+    position: relative;
 }
 
 p {
@@ -63,6 +64,7 @@ p {
 
 .artwork {
   height: 100vh;
+  margin-bottom: 360px;
   display: flex;
   align-items: center;
   justify-content: space-evenly;
