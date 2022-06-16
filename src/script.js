@@ -36,7 +36,16 @@ listones.forEach((listone) => {
 //   gsap.to(listone, {autoAlpha:0});
 });
 
+// Cursor
+document.body.addEventListener("mousemove", function (e) {
+  var curX = e.clientX;
+  var curY = e.clientY;
 
+  document.getElementById("invertedcursor").style.left = curX - 10 + "px";
+  document.getElementById("invertedcursor").style.top = curY - 10 + "px";
+});
+
+// Parallax
 var rellax = new Rellax(".rellax", {
     center: true
 });
