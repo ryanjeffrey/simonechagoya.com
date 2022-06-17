@@ -42,8 +42,8 @@ const navButton = document.getElementById("menu-button")
 
 navButton.onclick = function toggleNav() {
   const x = document.getElementById("menu");
-  if (x.style.width !== "100%") {
-    x.style.width = "100%";
+  if (x.style.width !== "100vw") {
+    x.style.width = "100vw";
   } else {
     x.style.width = "0";
   }
