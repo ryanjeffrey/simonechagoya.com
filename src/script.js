@@ -49,6 +49,19 @@ navButton.onclick = function toggleNav() {
   }
 };
 
+// var navItems = gsap.utils.toArray(".navItem");
+
+// navItems.forEach((navItem, i) => {
+//   gsap.fromTo(navItem, {
+//     y: -20,
+//     delay: 0.5
+//   }, {
+//     duration: 1,
+//     y: 0,
+//     delay: 0.5 + (0.5 * i)
+//   });
+// });
+
 // Cursor
 // document.body.addEventListener("mousemove", function (e) {
 //   var curX = e.clientX;
