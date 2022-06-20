@@ -48,17 +48,22 @@ body
   font-weight: 800;
   color: white;
   position: fixed;
-  overflow-y: hidden;
+  overflow: hidden;
   top: 0;
   left: 0ch;
-  transition: width 0.7s;
+  transition: width ease-in 0.7s;
   /* visibility: hidden; */
   z-index: 5;
+  white-space: nowrap;
 }
 
 #menu ul {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   list-style: none;
-  padding: 240px 24px;
+  padding: 0 24px;
+  height: 100%;
 }
 
 #menu ul li {

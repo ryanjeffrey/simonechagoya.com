@@ -42,12 +42,25 @@ const navButton = document.getElementById("menu-button")
 
 navButton.onclick = function toggleNav() {
   const x = document.getElementById("menu");
-  if (x.style.width !== "100%") {
-    x.style.width = "100%";
+  if (x.style.width !== "100vw") {
+    x.style.width = "100vw";
   } else {
     x.style.width = "0";
   }
 };
+
+// var navItems = gsap.utils.toArray(".navItem");
+
+// navItems.forEach((navItem, i) => {
+//   gsap.fromTo(navItem, {
+//     y: -20,
+//     delay: 0.5
+//   }, {
+//     duration: 1,
+//     y: 0,
+//     delay: 0.5 + (0.5 * i)
+//   });
+// });
 
 // Cursor
 // document.body.addEventListener("mousemove", function (e) {
