@@ -15,6 +15,7 @@ body
 {
   height: 100%;
   min-height: 100%;
+  width: 100%;
   color: #000;
   background-color: #fff;
 }
@@ -50,7 +51,7 @@ body
   position: fixed;
   overflow: hidden;
   top: 0;
-  left: 0ch;
+  left: 0;
   transition: width ease-in 0.7s;
   /* visibility: hidden; */
   z-index: 5;
@@ -148,7 +149,57 @@ p {
 }
 
 @media only screen and (max-width: 600px) {
+    .wrapper {
+    margin: 0;
+    padding: 0 24px;
+    }
+
+    #menu {
+      font-size: 24px;
+    }
+
+    .email {
+      font-size: 12px;
+    }
+
+    #menu-button {
+      height: 16px;
+      width: 16px;
+      top: 18px;
+      left: 18px;
+    }
+
+    #menu-button:hover {
+      height: 16px;
+      width: 16px;
+    }   
+  
     .artist-name h1 {
-        font-size: 24px;
+      font-size: 24px;
+    }
+
+    .artwork {
+      flex-direction: column-reverse;
+      margin-bottom: 0;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .artwork-description {
+      margin-top: 24px;
+    }
+
+    .artwork-title {
+      font-size: 16px;
+      padding-bottom: 8px;
+    }
+
+    .descriptive-group {
+      font-size: 12px;
+    }
+
+    .artwork-image {
+      height: 100%;
+      width: 100%;
     }
 }

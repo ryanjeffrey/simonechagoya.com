@@ -21,20 +21,19 @@ gsap.from("#first-artwork", {
 });
 
 var listones = gsap.utils.toArray(".listone");
+var tl = gsap.timeline()
 
 listones.forEach((listone) => {
-  gsap.from(listone, {
+  tl.from(listone, {
     autoAlpha: 0,
     scrollTrigger: {
       trigger: listone,
       start: 'top center',
       scrub: true,
       end: '+=500',
-    //   toggleActions: 'play pause resume reverse'
     //   markers: true,
     },
   });
-//   gsap.to(listone, {autoAlpha:0});
 });
 
 // Nav Menu
@@ -72,10 +71,30 @@ navButton.onclick = function toggleNav() {
 // });
 
 // Parallax
-var rellax = new Rellax(".rellax", {
-    center: true
-});
+// Create a condition that targets viewports less than 600px wide
+const mediaQuery = window.matchMedia('(max-width: 600px)')
 
+function handleTabletChange(e) {
+  // Check if the media query is true
+  if (e.matches) {
+    // Then log the following message to the console
+    console.log('Less than 600')
+    const div = document.querySelector("div");
+    div.classList.remove("rellax");
+  }
+  else {
+    var rellax = new Rellax(".rellax", {
+    center: true
+    });
+    console.log(rellax, 'more than 600')
+  }
+}
+
+// Register event listener
+mediaQuery.addListener(handleTabletChange);
+
+// Initial check
+handleTabletChange(mediaQuery);
 // // Debug
 // // const gui = new dat.GUI({
 // //     width: 400
