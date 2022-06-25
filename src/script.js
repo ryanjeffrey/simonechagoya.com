@@ -13,25 +13,20 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 gsap.registerPlugin(ScrollTrigger);
 
-
-gsap.from("#first-artwork", {
-    autoAlpha: 0,
-    duration: 3,
-    delay: 0.5
-});
-
 var listones = gsap.utils.toArray(".listone");
 var tl = gsap.timeline()
 
 listones.forEach((listone) => {
-  tl.from(listone, {
+  tl.to(listone, {
     autoAlpha: 0,
     scrollTrigger: {
       trigger: listone,
-      start: 'top center',
+      start: "top top",
+      end: "50%",
       scrub: true,
-      end: '+=500',
-    //   markers: true,
+      // end: 'bottom center',
+      // toggleActions: "play reverse resume reset",
+      // markers: true,
     },
   });
 });
