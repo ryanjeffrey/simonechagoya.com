@@ -6,16 +6,17 @@
     <title>Simone Chagoya | Artist</title>
 </head>
 <body>
+  <div id="outer-wrapper">
     <div>
       <a id="menu-button"></a>
     </div>
 
     <div id="menu">
       <ul>
-        <li class="navItem">WORK</li>
-        <li class="navItem">ARTIST STATEMENT</li>
-        <li class="navItem">3D GALLERY</li>
-        <li class="navItem email">hello@simonechagoya.com</li>
+        <a href="#work_section" class="navItem" id="work"><li>WORK</li></a>
+        <a href="#artist_statement_section" class="navItem" id="artist"><li>ARTIST STATEMENT</li></a>
+        <a href="#gallery_section" class="navItem" id="gallery"><li>3D GALLERY</li></a>
+        <a href = "mailto: hello@simonechagoya.com" class="navItem"><li class="email">hello@simonechagoya.com</li></a>
       </ul>
     </div>
     
@@ -26,6 +27,7 @@
         <p>Simone Chagoya is a painter and artist living in Chicago.</p>
     </div>
 
+    <a id="work_section"></a>
     <div class="wrapper">
       <section class="artwork listone" id="first-artwork">
         <div class="artwork-description">
@@ -291,13 +293,26 @@
             src="https://rscbucket.s3.us-east-2.amazonaws.com/simone-chagoya/briefs.jpeg"
           />
         </div>
-      </section>      
-
-      
+      </section>
     </div>
+    
+    <a id="artist_statement_section"></a>
+    <section id="artist-statement">
+      <p class="statement">Memory is the main influence throughout my work.</p>
+      <p class="statement">I combine my memories of places, times or objects into the piece.</p>
+      <p class="statement">This distorts the real physical depiction into an altered image.</p>
+      <p class="statement">The altered image then includes, excludes or manipulates what the real place or objects actually were or are.</p>
+      <p class="statement">It is a greater representation of both the real and my memory.</p>
+      <p class="statement">Many of my paintings can be related back to childhood or to the places I have been.</p>
+      <p class="statement">Memory is not always accurate; it can even change over time.</p>
+      <p class="statement">As I have grown older I want more and more to remember these things and to still have some grasp on them.</p>
+      <a href = "mailto: hello@simonechagoya.com"><p class="statement">hello@simonechagoya.com</p></a>
+    </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/ScrollTrigger.min.js"></script>	
-    <!-- <canvas class="webgl"></canvas> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/ScrollTrigger.min.js"></script>
+    <canvas class="webgl"></canvas>
+    <a id="gallery_section"></a>
+  </div>
 </body>
 </html>

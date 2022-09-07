@@ -31,17 +31,50 @@ listones.forEach((listone) => {
   });
 });
 
+const textFade = gsap.utils.toArray(".statement");
+textFade.forEach((statement) => {
+  tl.to(statement, {
+    autoAlpha: 0,
+    scrollTrigger: {
+      trigger: statement,
+      start: "top 40%",
+      end: "50%",
+      scrub: true,
+      // end: 'bottom center',
+      // toggleActions: "play reverse resume reset",
+      // markers: true,
+    },
+  });
+});
+
 // Nav Menu
 const navButton = document.getElementById("menu-button")
+const workLink = document.getElementById("work")
+const artistStatementLink = document.getElementById("artist")
+const galleryLink = document.getElementById("gallery")
+const x = document.getElementById("menu");
 
 navButton.onclick = function toggleNav() {
-  const x = document.getElementById("menu");
   if (x.style.width !== "100vw") {
     x.style.width = "100vw";
   } else {
     x.style.width = "0";
   }
 };
+
+workLink.addEventListener('click', () => {
+  closeMenu()
+});
+artistStatementLink.addEventListener('click', () => {
+  closeMenu()
+});
+galleryLink.addEventListener('click', () => {
+  closeMenu()
+});
+
+function closeMenu() {
+  x.style.width = "0"
+}
 
 // var navItems = gsap.utils.toArray(".navItem");
 
@@ -95,175 +128,175 @@ handleTabletChange(mediaQuery);
 // //     width: 400
 // // })
 
-// // Canvas
-// const canvas = document.querySelector('canvas.webgl')
+// Canvas
+const canvas = document.querySelector('canvas.webgl')
 
-// // Scene
-// const scene = new THREE.Scene()
+// Scene
+const scene = new THREE.Scene()
 
-// /**
-//  * Lights
-//  */
-// const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
-// scene.add(ambientLight)
+/**
+ * Lights
+ */
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
+scene.add(ambientLight)
 
-// const directionalLight = new THREE.DirectionalLight("#ffffff", 20)
-// directionalLight.castShadow = true
-// directionalLight.position.set(0, 1, 0)
-// directionalLight.shadow.mapSize.set(1024, 1024)
-// scene.add(directionalLight)
+const directionalLight = new THREE.DirectionalLight("#ffffff", 20)
+directionalLight.castShadow = true
+directionalLight.position.set(0, 1, 0)
+directionalLight.shadow.mapSize.set(1024, 1024)
+scene.add(directionalLight)
 
-// /**
-//  * Loaders
-//  */
-// // Texture loader
-// const textureLoader = new THREE.TextureLoader()
-// const cubeTextureLoader = new THREE.CubeTextureLoader()
+/**
+ * Loaders
+ */
+// Texture loader
+const textureLoader = new THREE.TextureLoader()
+const cubeTextureLoader = new THREE.CubeTextureLoader()
 
-// // Draco loader
-// const dracoLoader = new DRACOLoader()
-// dracoLoader.setDecoderPath('draco/')
+// Draco loader
+const dracoLoader = new DRACOLoader()
+dracoLoader.setDecoderPath('draco/')
 
-// // GLTF loader
-// const gltfLoader = new GLTFLoader()
-// gltfLoader.setDRACOLoader(dracoLoader)
+// GLTF loader
+const gltfLoader = new GLTFLoader()
+gltfLoader.setDRACOLoader(dracoLoader)
 
-// /**
-//  * Textures
-//  */
-// const bakedTexture = textureLoader.load('baked.jpg')
-// bakedTexture.flipY = false
-// bakedTexture.encoding = THREE.sRGBEncoding
+/**
+ * Textures
+ */
+const bakedTexture = textureLoader.load('baked.jpg')
+bakedTexture.flipY = false
+bakedTexture.encoding = THREE.sRGBEncoding
 
-// /**
-//  * Environment map
-//  */
-// const environmentMap = cubeTextureLoader.load([
-//     '/textures/environmentMaps/0/px.bmp',
-//     '/textures/environmentMaps/0/nx.bmp',
-//     '/textures/environmentMaps/0/py.bmp',
-//     '/textures/environmentMaps/0/ny.bmp',
-//     '/textures/environmentMaps/0/pz.bmp',
-//     '/textures/environmentMaps/0/nz.bmp'
-// ])
-// environmentMap.encoding = THREE.sRGBEncoding
-// scene.background = environmentMap
-// scene.environment = environmentMap
+/**
+ * Environment map
+ */
+const environmentMap = cubeTextureLoader.load([
+    '/textures/environmentMaps/0/px.bmp',
+    '/textures/environmentMaps/0/nx.bmp',
+    '/textures/environmentMaps/0/py.bmp',
+    '/textures/environmentMaps/0/ny.bmp',
+    '/textures/environmentMaps/0/pz.bmp',
+    '/textures/environmentMaps/0/nz.bmp'
+])
+environmentMap.encoding = THREE.sRGBEncoding
+scene.background = environmentMap
+scene.environment = environmentMap
 
-// /**
-//  * Materials
-//  */
-// // Baked material
-// const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedTexture })
+/**
+ * Materials
+ */
+// Baked material
+const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedTexture })
 
-// // Pole light material
-// // const poleLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffe5 })
+// Pole light material
+// const poleLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffe5 })
 
-// // Portal light material
-// // const portalLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
+// Portal light material
+// const portalLightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
 
-// /**
-//  * Model
-//  */
-// gltfLoader.load(
-//     'simone-gallery.glb',
-//     (gltf) =>
-//     {   
-//         // gltf.scene.traverse(function (child) {
-//         //   if (child.isMesh) {
-//         //     child.castShadow = true;
-//         //     child.receiveShadow = true;
-//         // })
+/**
+ * Model
+ */
+gltfLoader.load(
+    'simone-gallery.glb',
+    (gltf) =>
+    {   
+        // gltf.scene.traverse(function (child) {
+        //   if (child.isMesh) {
+        //     child.castShadow = true;
+        //     child.receiveShadow = true;
+        // })
 
-//         scene.add(gltf.scene)  
+        scene.add(gltf.scene)  
         
 
-//     //     // Get each object
-//     //     const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
-//     //     const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
-//     //     const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
-//     //     const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
+    //     // Get each object
+    //     const bakedMesh = gltf.scene.children.find((child) => child.name === 'baked')
+    //     const portalLightMesh = gltf.scene.children.find((child) => child.name === 'portalLight')
+    //     const poleLightAMesh = gltf.scene.children.find((child) => child.name === 'poleLightA')
+    //     const poleLightBMesh = gltf.scene.children.find((child) => child.name === 'poleLightB')
 
-//     //     // Apply materials
-//     //     bakedMesh.material = bakedMaterial
-//     //     portalLightMesh.material = portalLightMaterial
-//     //     poleLightAMesh.material = poleLightMaterial
-//     //     poleLightBMesh.material = poleLightMaterial
-//     }
-// )
+    //     // Apply materials
+    //     bakedMesh.material = bakedMaterial
+    //     portalLightMesh.material = portalLightMaterial
+    //     poleLightAMesh.material = poleLightMaterial
+    //     poleLightBMesh.material = poleLightMaterial
+    }
+)
 
 
-// /**
-//  * Sizes
-//  */
-// const sizes = {
-//     width: window.innerWidth,
-//     height: window.innerHeight
-// }
+/**
+ * Sizes
+ */
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
 
-// window.addEventListener('resize', () =>
-// {
-//     // Update sizes
-//     sizes.width = window.innerWidth
-//     sizes.height = window.innerHeight
+window.addEventListener('resize', () =>
+{
+    // Update sizes
+    sizes.width = window.innerWidth
+    sizes.height = window.innerHeight
 
-//     // Update camera
-//     camera.aspect = sizes.width / sizes.height
-//     camera.updateProjectionMatrix()
+    // Update camera
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
 
-//     // Update renderer
-//     renderer.setSize(sizes.width, sizes.height)
-//     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-// })
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+})
 
-// /**
-//  * Camera
-//  */
-// // Base camera
-// const camera = new THREE.PerspectiveCamera(40, sizes.width / sizes.height, 0.1, 500)
-// camera.position.x = 0
-// camera.position.y = 40
-// camera.position.z = 100
-// scene.add(camera)
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(40, sizes.width / sizes.height, 0.1, 500)
+camera.position.x = 0
+camera.position.y = 40
+camera.position.z = 100
+scene.add(camera)
 
-// // Controls
-// const controls = new OrbitControls(camera, canvas)
-// controls.enableDamping = true
+// Controls
+const controls = new OrbitControls(camera, canvas)
+controls.enableDamping = true
 
-// controls.minPolarAngle = 1
+controls.minPolarAngle = 1
 
-// /**
-//  * Renderer
-//  */
-// const renderer = new THREE.WebGLRenderer({
-//     canvas: canvas,
-//     antialias: true
-// })
-// renderer.outputEncoding = THREE.sRGBEncoding
-// renderer.setSize(sizes.width, sizes.height)
-// renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-// renderer.toneMapping = THREE.ACESFilmicToneMapping
-// renderer.shadowMap.enabled = true
-// renderer.shadowMap.type = THREE.PCFSoftShadowMap
-// renderer.setClearColor('#ffffff')
+/**
+ * Renderer
+ */
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+})
+renderer.outputEncoding = THREE.sRGBEncoding
+renderer.setSize(sizes.width, sizes.height)
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.setClearColor('#ffffff')
 
-// /**
-//  * Animate
-//  */
-// const clock = new THREE.Clock()
+/**
+ * Animate
+ */
+const clock = new THREE.Clock()
 
-// const tick = () =>
-// {
-//     const elapsedTime = clock.getElapsedTime()
+const tick = () =>
+{
+    const elapsedTime = clock.getElapsedTime()
 
-//     // Update controls
-//     controls.update()
+    // Update controls
+    controls.update()
 
-//     // Render
-//     renderer.render(scene, camera)
+    // Render
+    renderer.render(scene, camera)
 
-//     // Call tick again on the next frame
-//     window.requestAnimationFrame(tick)
-// }
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
+}
 
-// tick()
+tick()
