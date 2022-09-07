@@ -160,6 +160,7 @@ p {
   align-items: center;
   margin-bottom: 200px;
   height: 100vh;
+  font-style: italic;
 }
 
 #artist-statement p {
@@ -233,6 +234,7 @@ p {
     }
 
     #artist-statement p {
+      margin: 10px 0;
       font-size: 12px;
     }
 }
