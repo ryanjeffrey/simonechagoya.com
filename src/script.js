@@ -49,15 +49,32 @@ textFade.forEach((statement) => {
 
 // Nav Menu
 const navButton = document.getElementById("menu-button")
+const workLink = document.getElementById("work")
+const artistStatementLink = document.getElementById("artist")
+const galleryLink = document.getElementById("gallery")
+const x = document.getElementById("menu");
 
 navButton.onclick = function toggleNav() {
-  const x = document.getElementById("menu");
   if (x.style.width !== "100vw") {
     x.style.width = "100vw";
   } else {
     x.style.width = "0";
   }
 };
+
+workLink.addEventListener('click', () => {
+  closeMenu()
+});
+artistStatementLink.addEventListener('click', () => {
+  closeMenu()
+});
+galleryLink.addEventListener('click', () => {
+  closeMenu()
+});
+
+function closeMenu() {
+  x.style.width = "0"
+}
 
 // var navItems = gsap.utils.toArray(".navItem");
 

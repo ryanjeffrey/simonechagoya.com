@@ -6,16 +6,17 @@
     <title>Simone Chagoya | Artist</title>
 </head>
 <body>
+  <div id="outer-wrapper">
     <div>
       <a id="menu-button"></a>
     </div>
 
     <div id="menu">
       <ul>
-        <li class="navItem">WORK</li>
-        <li class="navItem">ARTIST STATEMENT</li>
-        <li class="navItem">3D GALLERY</li>
-        <li class="navItem email">hello@simonechagoya.com</li>
+        <a href="#work_section" class="navItem" id="work"><li>WORK</li></a>
+        <a href="#artist_statement_section" class="navItem" id="artist"><li>ARTIST STATEMENT</li></a>
+        <a href="#gallery_section" class="navItem" id="gallery"><li>3D GALLERY</li></a>
+        <a href = "mailto: hello@simonechagoya.com" class="navItem"><li class="email">hello@simonechagoya.com</li></a>
       </ul>
     </div>
     
@@ -26,6 +27,7 @@
         <p>Simone Chagoya is a painter and artist living in Chicago.</p>
     </div>
 
+    <a id="work_section"></a>
     <div class="wrapper">
       <section class="artwork listone" id="first-artwork">
         <div class="artwork-description">
@@ -293,7 +295,8 @@
         </div>
       </section>
     </div>
-
+    
+    <a id="artist_statement_section"></a>
     <section id="artist-statement">
       <p class="statement">Memory is the main influence throughout my work.</p>
       <p class="statement">I combine my memories of places, times or objects into the piece.</p>
@@ -307,7 +310,9 @@
     </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/ScrollTrigger.min.js"></script>	
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/ScrollTrigger.min.js"></script>
     <canvas class="webgl"></canvas>
+    <a id="gallery_section"></a>
+  </div>
 </body>
 </html>
