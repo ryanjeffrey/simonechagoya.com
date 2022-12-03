@@ -74,6 +74,10 @@ a {
 
 #menu ul li {
   padding: 24px 0;
+  transition: color ease 0.4s;
+}
+#menu ul li:hover {
+  color: #629292;
 }
 
 .email {
