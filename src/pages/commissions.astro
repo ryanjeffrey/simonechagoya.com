@@ -1,0 +1,249 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../data/site';
+
+const steps = [
+  ['Tell Simone the idea', 'Your colors, a stone that means something, a place you want to keep. Share as much or as little as you like.'],
+  ['Sketch and quote', 'You will get a reply within a few days with a sketch or direction, a price and a timeline.'],
+  ['Made by hand', 'Once you approve, Simone makes the piece in her Chicago studio and sends progress photos.'],
+  ['Delivered', 'Your piece is packed and shipped to you, ready to give or to keep.'],
+];
+---
+
+<Base
+  title="Commissions and contact"
+  description="Commission custom jewelry or a painting from Simone Chagoya, ask about an original, or get in touch."
+>
+  <section class="container commissions">
+    <div class="intro">
+      <p class="eyebrow">Commissions and contact</p>
+      <h1 class="display">Made only <em>for you.</em></h1>
+      <p class="lede">
+        Custom necklaces, painting commissions, questions about an original, or a stockist inquiry. Every message goes
+        straight to Simone.
+      </p>
+
+      <ol class="steps">
+        {
+          steps.map(([title, text], i) => (
+            <li data-reveal style={`--reveal-delay: ${i * 70}`}>
+              <span class="step-n">{['i.', 'ii.', 'iii.', 'iv.'][i]}</span>
+              <div>
+                <h2>{title}</h2>
+                <p>{text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+
+      <p class="direct">
+        Prefer email? <a href={`mailto:${site.email}`}>{site.email}</a>
+      </p>
+    </div>
+
+    <div class="form-card">
+      <form
+        class="inquiry"
+        name="inquiry"
+        method="POST"
+        action="/thanks"
+        enctype="multipart/form-data"
+        data-netlify="true"
+        netlify-honeypot="company"
+        data-ajax-form
+        data-success="Thank you. Your message is with Simone and you will hear back within a few days."
+      >
+        <input type="hidden" name="form-name" value="inquiry" />
+        <p class="visually-hidden"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off" /></label></p>
+
+        <div class="row">
+          <div class="field">
+            <label for="f-name">Name</label>
+            <input class="input" id="f-name" name="name" required autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="f-email">Email</label>
+            <input class="input" id="f-email" name="email" type="email" required autocomplete="email" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="f-type">What is this about?</label>
+            <select class="select" id="f-type" name="type" required data-type>
+              <option value="Custom necklace">A custom necklace</option>
+              <option value="Painting commission">Painting commission</option>
+              <option value="Original painting">An original painting</option>
+              <option value="Order question">A question about an order</option>
+              <option value="Wholesale or stockist">Wholesale or stockist</option>
+              <option value="Something else">Something else</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-budget">Budget</label>
+            <select class="select" id="f-budget" name="budget">
+              <option value="">Not sure yet</option>
+              <option>Under $150</option>
+              <option>$150 to $400</option>
+              <option>$400 to $1,000</option>
+              <option>$1,000 to $3,000</option>
+              <option>$3,000+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" data-piece-field hidden>
+          <label for="f-piece">Piece</label>
+          <input class="input" id="f-piece" name="piece" data-piece />
+        </div>
+
+        <div class="field">
+          <label for="f-message">Tell Simone more</label>
+          <textarea
+            class="textarea"
+            id="f-message"
+            name="message"
+            required
+            placeholder="What would you like made, who is it for, and when do you need it?"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="f-file">Reference image (optional)</label>
+          <input class="input file" id="f-file" name="reference" type="file" accept="image/*" />
+        </div>
+
+        <button class="btn btn--accent btn--block" type="submit">
+          Send message <span class="arrow" aria-hidden="true">→</span>
+        </button>
+        <p class="form-status" data-form-status aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .commissions {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 34rem);
+    gap: clamp(2.5rem, 6vw, 7rem);
+    align-items: start;
+    padding-block: clamp(2.5rem, 6vw, 5.5rem) var(--section);
+  }
+
+  .intro .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .intro .lede {
+    margin-top: 1.75rem;
+  }
+
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .steps li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 1rem;
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .step-n {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .steps h2 {
+    font-size: var(--step-2);
+    font-weight: 400;
+    margin-bottom: 0.4rem;
+  }
+
+  .steps p {
+    color: var(--ink-2);
+  }
+
+  .direct {
+    margin-top: 2rem;
+    color: var(--ink-2);
+  }
+
+  .form-card {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    background: var(--paper-2);
+  }
+
+  .inquiry {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .file {
+    padding: 0.7rem;
+  }
+
+  .form-status {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .inquiry:global(.is-done) > :not(.form-status) {
+    display: none;
+  }
+
+  .inquiry:global(.is-done) .form-status {
+    font-family: var(--serif);
+    font-size: var(--step-2);
+    font-style: italic;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  @media (max-width: 960px) {
+    .commissions {
+      grid-template-columns: 1fr;
+    }
+
+    .form-card {
+      position: static;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  // Prefill when arriving from a painting's "Inquire" button.
+  const params = new URLSearchParams(location.search);
+  const piece = params.get('piece');
+  if (piece) {
+    const field = document.querySelector<HTMLElement>('[data-piece-field]');
+    const input = document.querySelector<HTMLInputElement>('[data-piece]');
+    const type = document.querySelector<HTMLSelectElement>('[data-type]');
+    if (field && input) {
+      field.hidden = false;
+      input.value = piece;
+    }
+    if (type) type.value = 'Original painting';
+  }
+</script>

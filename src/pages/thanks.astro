@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Thank you" noindex>
+  <section class="container thanks">
+    <p class="eyebrow">Received</p>
+    <h1 class="display">Thank <em>you.</em></h1>
+    <p class="lede">Your message is with Simone. If you joined the studio list, the next new piece will land in your inbox first.</p>
+    <a class="btn" href="/shop">Back to the shop <span class="arrow" aria-hidden="true">→</span></a>
+  </section>
+</Base>
+
+<style>
+  .thanks {
+    display: grid;
+    justify-items: start;
+    gap: 1.5rem;
+    max-width: 52rem;
+    padding-block: clamp(3rem, 8vw, 7rem) var(--section);
+  }
+</style>

@@ -1,0 +1,15 @@
+---
+import ShopView from '../../components/ShopView.astro';
+import { getProducts } from '../../lib/catalog';
+
+const products = await getProducts();
+---
+
+<ShopView
+  title="Shop the studio"
+  metaTitle="Shop"
+  eyebrow="Everything"
+  blurb="Jewelry, prints and original paintings, all made by Simone in Chicago. Most pieces are one of one."
+  products={products}
+  active="all"
+/>

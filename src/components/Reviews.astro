@@ -1,0 +1,84 @@
+---
+import { reviews as all } from '../data/reviews';
+
+interface Props {
+  product?: string;
+  limit?: number;
+}
+
+const { product, limit = 6 } = Astro.props;
+const list = (product ? all.filter((r) => r.product === product) : all).slice(0, limit);
+const average = list.length ? list.reduce((n, r) => n + r.rating, 0) / list.length : 0;
+---
+
+{
+  list.length > 0 && (
+    <section class="reviews section container" aria-labelledby="reviews-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Kind words</p>
+          <h2 id="reviews-title" class="h2">
+            {average.toFixed(1)} <em>out of 5</em>
+          </h2>
+        </div>
+        <p class="muted">From {list.length} recent reviews</p>
+      </div>
+      <ul class="review-list">
+        {list.map((r, i) => (
+          <li class="review" data-reveal style={`--reveal-delay: ${(i % 3) * 80}`}>
+            <p class="review-stars" aria-label={`${r.rating} out of 5 stars`}>
+              {'★'.repeat(r.rating)}
+              <span>{'★'.repeat(5 - r.rating)}</span>
+            </p>
+            <blockquote>{r.text}</blockquote>
+            <p class="review-by">
+              {r.name}
+              {r.source === 'Etsy' && <span> · via Etsy</span>}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .review-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 1.25rem;
+    list-style: none;
+    padding: 0;
+  }
+
+  .review {
+    padding: 1.75rem;
+    background: var(--paper-2);
+  }
+
+  .review-stars {
+    color: var(--gold);
+    letter-spacing: 0.15em;
+  }
+
+  .review-stars span {
+    color: var(--paper-3);
+  }
+
+  .review blockquote {
+    margin: 1rem 0 1.25rem;
+    font-family: var(--serif);
+    font-size: var(--step-1);
+    line-height: 1.3;
+  }
+
+  .review-by {
+    font-size: var(--step--1);
+    font-weight: 560;
+  }
+
+  .review-by span {
+    font-weight: 420;
+    color: var(--ink-2);
+  }
+</style>

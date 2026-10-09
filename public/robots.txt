@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /checkout/
+Disallow: /api/
+
+Sitemap: https://simonechagoya.com/sitemap-index.xml

@@ -1,0 +1,134 @@
+---
+interface Props {
+  id?: string;
+  tone?: 'light' | 'dark';
+  compact?: boolean;
+  source?: string;
+}
+
+const { id = 'newsletter', tone = 'light', compact = false, source = 'site' } = Astro.props;
+---
+
+<form
+  class:list={['newsletter', `newsletter--${tone}`, { 'newsletter--compact': compact }]}
+  name="newsletter"
+  method="POST"
+  action="/thanks"
+  data-netlify="true"
+  netlify-honeypot="company"
+  data-ajax-form
+>
+  <input type="hidden" name="form-name" value="newsletter" />
+  <input type="hidden" name="source" value={source} />
+  <p class="visually-hidden"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off" /></label></p>
+  <label class="visually-hidden" for={`${id}-email`}>Email address</label>
+  <div class="newsletter-row">
+    <input
+      class="newsletter-input"
+      id={`${id}-email`}
+      type="email"
+      name="email"
+      required
+      autocomplete="email"
+      placeholder="Your email"
+    />
+    <button class="newsletter-btn" type="submit">
+      Join the list <span aria-hidden="true">→</span>
+    </button>
+  </div>
+  <p class="newsletter-note" data-form-status aria-live="polite">New pieces go to the list first. No spam, unsubscribe anytime.</p>
+</form>
+
+<style>
+  .newsletter {
+    width: 100%;
+    max-width: 30rem;
+  }
+
+  .newsletter-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line-strong);
+    transition: border-color 0.3s;
+  }
+
+  .newsletter-row:focus-within {
+    border-color: currentColor;
+  }
+
+  .newsletter-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 1rem 0;
+    background: transparent;
+    border: 0;
+    outline: none;
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    font-weight: 400;
+  }
+
+  .newsletter-input::placeholder {
+    color: currentColor;
+    opacity: 0.5;
+  }
+
+  .newsletter-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    gap: 0.6rem;
+    padding: 1rem 0;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+
+  .newsletter-btn span {
+    font-family: var(--serif);
+    font-size: 1rem;
+    letter-spacing: 0;
+    line-height: 0.7;
+    transition: transform 0.5s var(--ease-out);
+  }
+
+  .newsletter-btn:hover {
+    color: var(--accent);
+  }
+
+  .newsletter-btn:hover span {
+    transform: translateX(4px);
+  }
+
+  .newsletter-note {
+    margin-top: 1rem;
+    font-size: var(--step--1);
+    opacity: 0.7;
+  }
+
+  .newsletter--dark .newsletter-row {
+    border-color: rgb(244 239 231 / 0.3);
+  }
+
+  .newsletter--dark .newsletter-row:focus-within {
+    border-color: var(--paper);
+  }
+
+  .newsletter--dark .newsletter-btn:hover {
+    color: var(--gold-light);
+  }
+
+  .newsletter.is-done .newsletter-row {
+    display: none;
+  }
+
+  .newsletter.is-done .newsletter-note {
+    margin-top: 0;
+    font-family: var(--serif);
+    font-size: var(--step-2);
+    opacity: 1;
+  }
+</style>

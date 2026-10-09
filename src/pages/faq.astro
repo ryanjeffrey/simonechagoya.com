@@ -1,0 +1,71 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../data/site';
+import { formatPrice } from '../lib/catalog';
+
+const faqs: { q: string; a: string }[] = [
+  {
+    q: 'Is every necklace really one of a kind?',
+    a: 'Yes. Natural stones are never identical in color or shape, and each necklace is strung by hand, so no two are the same. When one sells, it is gone.',
+  },
+  {
+    q: 'What are the stones?',
+    a: 'Each listing names its stones, such as clear quartz, mother of pearl, agate or opal. If you want to know more about a particular piece, just ask.',
+  },
+  {
+    q: 'How long are the necklaces?',
+    a: 'Each listing gives its length. If you need a different length, Simone can usually restring a piece or make one to order.',
+  },
+  {
+    q: 'Do you offer gift wrapping?',
+    a: 'Every order is packed ready to give. Add a gift note at checkout and it will be tucked inside. Prices are never included in the package.',
+  },
+  {
+    q: 'Are the prints signed?',
+    a: 'Yes. Prints are certified archival giclée prints, signed by Simone.',
+  },
+  {
+    q: 'How do I buy an original painting?',
+    a: 'Use the Inquire button on any painting. Simone will reply with availability, price, shipping and payment plan options.',
+  },
+  {
+    q: 'Do you do custom necklaces or wholesale?',
+    a: 'Yes to both. Use the contact form and choose the option that fits.',
+  },
+  {
+    q: 'How long does shipping take?',
+    a: `Ready-to-ship pieces leave the studio in ${site.shipping.processing}. US shipping is complimentary over ${formatPrice(site.shipping.freeThreshold)}.`,
+  },
+];
+---
+
+<Page title="FAQ and care" eyebrow="Help" description="Answers to common questions, plus how to care for your gemstone necklace.">
+  <p class="lede" slot="lede">
+    Cannot find what you need? Email <a href={`mailto:${site.email}`}>{site.email}</a>.
+  </p>
+
+  {
+    faqs.map((f) => (
+      <details>
+        <summary>{f.q}</summary>
+        <p>{f.a}</p>
+      </details>
+    ))
+  }
+
+  <h2 id="care">Caring for your necklace</h2>
+  <ul>
+    <li>Put it on last, after lotion, perfume and hairspray.</li>
+    <li>Take it off to swim, shower, clean or sleep.</li>
+    <li>Store it flat and on its own so the stones do not scratch each other.</li>
+    <li>Wipe the stones with a soft, dry cloth. Skip chemical cleaners and ultrasonic machines.</li>
+    <li>Keep pieces like clear quartz and mother of pearl out of long, direct sun when you are not wearing them.</li>
+  </ul>
+
+  <h2>Caring for prints and paintings</h2>
+  <ul>
+    <li>Hang away from direct sun, radiators and damp walls.</li>
+    <li>Frame prints behind UV-filtering glass if they will be in a bright room.</li>
+    <li>Dust paintings gently with a soft, dry brush. Never use water or cleaners.</li>
+  </ul>
+</Page>

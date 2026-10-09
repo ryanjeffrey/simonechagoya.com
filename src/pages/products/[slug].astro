@@ -1,0 +1,810 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import { getImage } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import ProductMedia from '../../components/ProductMedia.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import Newsletter from '../../components/Newsletter.astro';
+import Reviews from '../../components/Reviews.astro';
+import {
+  CATEGORY_META,
+  GROUPS,
+  formatPrice,
+  getProducts,
+  groupOf,
+  isPurchasable,
+  plainText,
+  priceLabel,
+  productUrl,
+  type Product,
+} from '../../lib/catalog';
+import { site } from '../../data/site';
+
+export const getStaticPaths = (async () => {
+  const products = await getProducts();
+  return products.map((product) => ({ params: { slug: product.id }, props: { product, all: products } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  product: Product;
+  all: Product[];
+}
+
+const { product, all } = Astro.props;
+const { data } = product;
+const { Content } = await render(product);
+
+const group = groupOf(data.category);
+const isOriginal = data.category === 'originals';
+const isArt = group === 'art';
+const buyable = isPurchasable(product);
+const slides = Math.max(1, data.images.length);
+const painting = data.painting ? all.find((p) => p.id === data.painting) : undefined;
+const prints = isOriginal ? all.filter((p) => p.data.category === 'prints' && p.data.painting === product.id) : [];
+const related = all
+  .filter((p) => p.id !== product.id && groupOf(p.data.category) === group && p.data.status !== 'sold')
+  .sort((a, b) => Number(b.data.category === data.category) - Number(a.data.category === data.category))
+  .slice(0, 4);
+
+const description = data.seoDescription ?? (data.summary || plainText(product.body ?? '', 155) || site.description);
+const ogImage = data.images[0] ? (await getImage({ src: data.images[0], width: 1200, format: 'jpg' })).src : undefined;
+const absolute = (path: string) => new URL(path, site.url).href;
+
+const breadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Shop', item: absolute('/shop') },
+    { '@type': 'ListItem', position: 2, name: CATEGORY_META[data.category].label, item: absolute(`/shop/${data.category}`) },
+    { '@type': 'ListItem', position: 3, name: data.title, item: absolute(productUrl(product)) },
+  ],
+};
+
+const structured = isOriginal
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'VisualArtwork',
+      name: data.title,
+      image: ogImage ? absolute(ogImage) : undefined,
+      dateCreated: data.year ? String(data.year) : undefined,
+      artform: 'Painting',
+      artMedium: 'Oil',
+      artworkSurface: 'Canvas',
+      size: data.dimensions,
+      creator: { '@type': 'Person', name: site.name },
+      url: absolute(productUrl(product)),
+    }
+  : {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: data.title,
+      description,
+      image: ogImage ? [absolute(ogImage)] : undefined,
+      sku: product.id,
+      brand: { '@type': 'Brand', name: site.studio },
+      material: data.materials.join(', ') || undefined,
+      offers: {
+        '@type': 'Offer',
+        url: absolute(productUrl(product)),
+        priceCurrency: 'USD',
+        price: data.price,
+        availability: buyable ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+        itemCondition: 'https://schema.org/NewCondition',
+      },
+    };
+
+const details = [
+  data.year && ['Year', String(data.year)],
+  data.medium && ['Medium', data.medium],
+  data.dimensions && [isArt ? 'Size' : 'Dimensions', data.dimensions],
+  data.materials.length && ['Materials', data.materials.join(', ')],
+  ['Made in', site.city],
+].filter(Boolean) as [string, string][];
+---
+
+<Base title={data.title} description={description} image={ogImage} type="product" jsonLd={[structured, breadcrumb]}>
+  <nav class="container crumbs" aria-label="Breadcrumb">
+    <a href="/shop">Shop</a>
+    <span aria-hidden="true">/</span>
+    <a href={`/shop/${data.category}`}>{CATEGORY_META[data.category].label}</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{data.title}</span>
+  </nav>
+
+  <section class="container pdp">
+    <div class="gallery" data-gallery>
+      <div class="gallery-track" data-gallery-track>
+        {
+          Array.from({ length: slides }, (_, i) => (
+            <figure class="gallery-slide">
+              <ProductMedia
+                product={product}
+                index={i}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                sizes="(min-width: 960px) 55vw, 100vw"
+                widths={[480, 720, 960, 1280, 1600]}
+                mode={isArt ? 'matte' : 'cover'}
+              />
+            </figure>
+          ))
+        }
+      </div>
+      {
+        slides > 1 && (
+          <p class="gallery-count" aria-hidden="true">
+            <span data-gallery-index>1</span> / {slides}
+          </p>
+        )
+      }
+    </div>
+
+    <div class="info">
+      <div class="info-inner">
+        <div class="info-badges">
+          {data.status === 'sold' && <span class="badge badge--ink">Sold</span>}
+          {data.status !== 'sold' && data.oneOfAKind && <span class="badge badge--outline">One of one</span>}
+          {data.sample && <span class="badge badge--outline">Sample listing</span>}
+        </div>
+
+        <h1 class="info-title">{data.title}</h1>
+        {
+          isOriginal ? (
+            <p class="info-sub">{[data.year, data.medium, data.dimensions].filter(Boolean).join(' · ')}</p>
+          ) : (
+            <p class="info-price">
+              {data.compareAt && data.compareAt > data.price && <s class="muted">{formatPrice(data.compareAt)}</s>}
+              <span data-price>{priceLabel(product)}</span>
+            </p>
+          )
+        }
+        {data.summary && <p class="info-summary">{data.summary}</p>}
+
+        {
+          data.status === 'inquire' && (
+            <div class="actions">
+              <a class="btn btn--accent btn--block" href={`/commissions?piece=${encodeURIComponent(data.title)}`}>
+                Inquire about this painting <span class="arrow" aria-hidden="true">→</span>
+              </a>
+              {prints.length > 0 && (
+                <a class="btn btn--ghost btn--block" href={productUrl(prints[0])}>
+                  Prints from {formatPrice(Math.min(...prints[0].data.variants.map((v) => v.price ?? prints[0].data.price), prints[0].data.price))}
+                </a>
+              )}
+              <p class="actions-note">Originals are sold directly by Simone. Ask about availability, pricing, shipping and payment plans.</p>
+            </div>
+          )
+        }
+
+        {
+          buyable && (
+            <form class="actions" data-add-to-cart data-main-form>
+              <input type="hidden" name="slug" value={product.id} />
+              {data.variants.length > 0 && (
+                <fieldset class="variants">
+                  <legend>{isArt ? 'Size' : 'Option'}</legend>
+                  <div class="variant-list">
+                    {data.variants.map((v, i) => (
+                      <label class="variant">
+                        <input
+                          type="radio"
+                          name="variant"
+                          value={v.id}
+                          required
+                          checked={i === 0}
+                          data-variant-price={formatPrice(v.price ?? data.price)}
+                        />
+                        <span>{v.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              <button class="btn btn--accent btn--block" type="submit" name="intent" value="add">
+                Add to bag <span class="arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="btn btn--ghost btn--block" type="submit" name="intent" value="buy">
+                Buy it now
+              </button>
+              <p class="buy-error" data-buy-error role="alert" hidden />
+              {data.oneOfAKind && <p class="actions-note">This is the only one. Once it sells, it is gone.</p>}
+            </form>
+          )
+        }
+
+        {
+          data.status === 'sold' && (
+            <div class="actions">
+              <button class="btn btn--block" disabled>
+                Sold
+              </button>
+              <p class="actions-note">This one has found its home. Join the list to see new pieces first.</p>
+              <Newsletter id="sold-newsletter" compact source={`sold-${product.id}`} />
+            </div>
+          )
+        }
+
+        {
+          data.status !== 'inquire' && (
+            <ul class="trust">
+              <li>Ships from Chicago in {site.shipping.processing}</li>
+              {site.shipping.freeThreshold > 0 && <li>Complimentary US shipping over {formatPrice(site.shipping.freeThreshold)}</li>}
+              {site.rating.count > 0 && <li>Rated {site.rating.average.toFixed(1)} from {site.rating.count} reviews on {site.rating.source}</li>}
+              <li>{site.returns.days}-day returns</li>
+            </ul>
+          )
+        }
+
+        {
+          data.sample && (
+            <p class="sample-note">
+              Sample listing to preview the new store. It will be replaced by Simone’s real pieces before launch.
+            </p>
+          )
+        }
+
+        <div class="accordions">
+          <details open>
+            <summary>{isOriginal ? 'About the painting' : 'Description'}</summary>
+            <div class="acc-body prose">
+              <Content />
+            </div>
+          </details>
+          <details>
+            <summary>Details</summary>
+            <dl class="acc-body specs">
+              {
+                details.map(([k, v]) => (
+                  <div>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))
+              }
+            </dl>
+          </details>
+          <details>
+            <summary>Shipping and returns</summary>
+            <div class="acc-body prose">
+              <p>
+                Ready-to-ship pieces leave the studio in {site.shipping.processing}.
+                {site.shipping.freeThreshold > 0 && ` Standard US shipping is free on orders over ${formatPrice(site.shipping.freeThreshold)}.`}
+                Express shipping is available at checkout.
+              </p>
+              <p>
+                Returns are accepted within {site.returns.days} days of delivery. <a href="/shipping-returns">Full policy</a>.
+              </p>
+            </div>
+          </details>
+          <details>
+            <summary>{isArt ? 'Framing and care' : 'Care'}</summary>
+            <div class="acc-body prose">
+              {
+                isArt ? (
+                  <p>Hang away from direct sunlight and damp walls. Prints and cards ship unframed, flat and protected.</p>
+                ) : (
+                  <p>
+                    Natural stones last for generations with a little care. Put it on after lotion and perfume, take it off
+                    before swimming or showering, and store it flat on its own. <a href="/faq#care">More care tips</a>.
+                  </p>
+                )
+              }
+            </div>
+          </details>
+        </div>
+
+        {
+          painting && painting.data.images[0] && (
+            <a class="source" href={productUrl(painting)}>
+              <ProductMedia product={painting} mode="cover" sizes="96px" widths={[96, 192]} class="source-thumb" />
+              <span>
+                <span class="source-label">From the painting</span>
+                <span class="source-title">
+                  {painting.data.title}, {painting.data.year}
+                </span>
+              </span>
+              <span aria-hidden="true">→</span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <Reviews product={product.id} />
+
+  {
+    related.length > 0 && (
+      <section class="section container related">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Keep looking</p>
+            <h2 class="h2">
+              You may also <em>like</em>
+            </h2>
+          </div>
+          <a class="link" href={`/shop/${group}`}>
+            More {GROUPS[group].label.toLowerCase()} <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="related-grid">
+          {related.map((p, i) => (
+            <ProductCard product={p} delay={i * 60} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    buyable && (
+      <div class="sticky-buy" data-sticky-buy aria-hidden="true">
+        <div>
+          <p class="sticky-title">{data.title}</p>
+          <p class="sticky-price" data-price>
+            {priceLabel(product)}
+          </p>
+        </div>
+        <button class="btn btn--accent" type="button" tabindex="-1" data-sticky-add>
+          Add to bag
+        </button>
+      </div>
+    )
+  }
+</Base>
+
+<style>
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding-block: 1.5rem;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .crumbs a {
+    text-decoration: none;
+  }
+
+  .crumbs a:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+
+  .crumbs [aria-current] {
+    color: var(--ink);
+  }
+
+  .pdp {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 6rem);
+    align-items: start;
+    padding-bottom: var(--section);
+  }
+
+  /* Gallery: stacked on desktop, swipeable on mobile */
+  .gallery {
+    position: relative;
+  }
+
+  .gallery-track {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .gallery-slide :global(.media) {
+    aspect-ratio: 4 / 5;
+  }
+
+  .gallery-count {
+    display: none;
+  }
+
+  .info {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+  }
+
+  .info-badges {
+    display: flex;
+    gap: 0.4rem;
+    min-height: 1.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-title {
+    font-size: var(--step-4);
+    font-weight: 350;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+
+  .info-price,
+  .info-sub {
+    margin-top: 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .info-price s {
+    margin-right: 0.5rem;
+    font-weight: 420;
+  }
+
+  .info-sub {
+    font-weight: 420;
+    color: var(--ink-2);
+  }
+
+  .info-summary {
+    margin-top: 1.5rem;
+    font-family: var(--serif);
+    font-size: 1.45rem;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--ink-2);
+    max-width: 26em;
+  }
+
+  .actions {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 2rem;
+  }
+
+  .actions-note {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+
+  .buy-error {
+    padding: 0.7rem 0.9rem;
+    border-left: 2px solid var(--accent);
+    background: rgb(142 65 38 / 0.08);
+    font-size: var(--step--1);
+  }
+
+  .variants {
+    border: 0;
+    padding: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .variants legend {
+    margin-bottom: 0.9rem;
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .variant-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .variant input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .variant span {
+    display: inline-block;
+    min-width: 3.25rem;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--line-strong);
+    font-size: 0.85rem;
+    font-weight: 450;
+    text-align: center;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      color 0.2s,
+      border-color 0.2s;
+  }
+
+  .variant span:hover {
+    border-color: var(--ink);
+  }
+
+  .variant input:checked + span {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  .variant input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .trust {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1.75rem;
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--line);
+    list-style: none;
+    font-size: 0.92rem;
+  }
+
+  .trust li {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .trust li::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    transform: rotate(45deg);
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .sample-note {
+    margin-top: 1.5rem;
+    padding: 0.8rem 1rem;
+    background: var(--paper-2);
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .accordions {
+    margin-top: 2rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .accordions details {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .accordions summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 0;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .accordions summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .accordions summary::after {
+    content: '+';
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    letter-spacing: 0;
+    font-weight: 300;
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .accordions details[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .acc-body {
+    padding-bottom: 1.4rem;
+    color: var(--ink-2);
+  }
+
+  .specs {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .specs div {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 1rem;
+  }
+
+  .specs dt {
+    color: var(--ink-3);
+  }
+
+  .specs dd {
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .source {
+    display: grid;
+    grid-template-columns: 4rem 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1.75rem;
+    padding: 0.75rem;
+    background: var(--paper-2);
+    text-decoration: none;
+    transition: background 0.3s;
+  }
+
+  .source:hover {
+    background: var(--paper-3);
+  }
+
+  .source :global(.source-thumb) {
+    aspect-ratio: 1;
+  }
+
+  .source-label {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .source-title {
+    display: block;
+    margin-top: 0.2rem;
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 450;
+    line-height: 1.1;
+  }
+
+  .related {
+    border-top: 1px solid var(--line);
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(1.25rem, 2.5vw, 2.5rem);
+  }
+
+  .sticky-buy {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
+    background: rgb(244 239 231 / 0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    transform: translateY(100%);
+    transition: transform 0.4s var(--ease-out);
+  }
+
+  .sticky-buy.is-visible {
+    transform: none;
+  }
+
+  .sticky-title {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 450;
+    line-height: 1.1;
+  }
+
+  .sticky-price {
+    font-size: var(--step--1);
+    font-weight: 560;
+  }
+
+  .sticky-buy .btn {
+    min-height: 2.9rem;
+  }
+
+  @media (max-width: 960px) {
+    .pdp {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .gallery {
+      margin-inline: calc(var(--gutter) * -1);
+    }
+
+    .gallery-track {
+      grid-auto-flow: column;
+      grid-auto-columns: 100%;
+      gap: 0;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+
+    .gallery-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .gallery-slide {
+      scroll-snap-align: start;
+    }
+
+    .gallery-count {
+      display: block;
+      position: absolute;
+      right: calc(var(--gutter) + 0.25rem);
+      bottom: 0.75rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      background: rgb(243 239 231 / 0.9);
+      font-size: 0.75rem;
+      font-weight: 560;
+    }
+
+    .info {
+      position: static;
+    }
+
+    .related-grid {
+      grid-template-columns: repeat(2, 1fr);
+      row-gap: 2.5rem;
+    }
+
+    .sticky-buy {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  // Variant price
+  const form = document.querySelector<HTMLFormElement>('[data-main-form]');
+  form?.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    if (input.name === 'variant' && input.dataset.variantPrice) {
+      document.querySelectorAll('[data-price]').forEach((el) => (el.textContent = input.dataset.variantPrice!));
+    }
+  });
+  const checked = form?.querySelector<HTMLInputElement>('input[name="variant"]:checked');
+  if (checked?.dataset.variantPrice) {
+    document.querySelectorAll('[data-price]').forEach((el) => (el.textContent = checked.dataset.variantPrice!));
+  }
+
+  // Mobile sticky add-to-bag appears once the main button scrolls away
+  const sticky = document.querySelector<HTMLElement>('[data-sticky-buy]');
+  const mainBtn = form?.querySelector('button[value="add"]');
+  if (sticky && mainBtn && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => {
+      const show = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+      sticky.classList.toggle('is-visible', show);
+      sticky.setAttribute('aria-hidden', String(!show));
+      sticky.querySelector('button')?.setAttribute('tabindex', show ? '0' : '-1');
+    }).observe(mainBtn);
+  }
+  sticky?.querySelector('[data-sticky-add]')?.addEventListener('click', () => {
+    form?.querySelector<HTMLButtonElement>('button[value="add"]')?.click();
+  });
+
+  // Gallery counter on mobile
+  const track = document.querySelector<HTMLElement>('[data-gallery-track]');
+  const index = document.querySelector('[data-gallery-index]');
+  track?.addEventListener(
+    'scroll',
+    () => {
+      if (index) index.textContent = String(Math.round(track.scrollLeft / track.clientWidth) + 1);
+    },
+    { passive: true },
+  );
+</script>

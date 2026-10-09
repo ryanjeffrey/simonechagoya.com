@@ -1,0 +1,25 @@
+---
+import type { GetStaticPaths } from 'astro';
+import ShopView from '../../components/ShopView.astro';
+import { CATEGORY_META, GROUPS, getProducts, groupOf, type Category, type Group } from '../../lib/catalog';
+import { CATEGORIES } from '../../content.config';
+
+export const getStaticPaths = (() => [
+  ...Object.keys(GROUPS).map((category) => ({ params: { category } })),
+  ...CATEGORIES.map((category) => ({ params: { category } })),
+]) satisfies GetStaticPaths;
+
+const { category } = Astro.params;
+const group = GROUPS[category as Group];
+const cats: Category[] = group ? [...group.categories] : [category as Category];
+const products = await getProducts((p) => cats.includes(p.data.category));
+const meta = group
+  ? { title: group.label, blurb: group.blurb, eyebrow: 'Shop' }
+  : {
+      title: CATEGORY_META[category as Category].label,
+      blurb: CATEGORY_META[category as Category].blurb,
+      eyebrow: GROUPS[groupOf(category as Category)].label,
+    };
+---
+
+<ShopView title={meta.title} eyebrow={meta.eyebrow} blurb={meta.blurb} products={products} active={category} />

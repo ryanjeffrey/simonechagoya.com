@@ -1,0 +1,198 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { getProducts, productUrl } from '../lib/catalog';
+
+const products = await getProducts();
+const originals = products.filter((p) => p.data.category === 'originals' && p.data.images[0]);
+const prints = products.filter((p) => p.data.category === 'prints' || p.data.category === 'cards');
+---
+
+<Base
+  title="Original paintings"
+  description="Original oil paintings by Chicago artist Simone Chagoya. Places, clothing and objects remembered from childhood, painted from memory."
+>
+  <section class="art-hero container">
+    <p class="eyebrow">The paintings</p>
+    <h1 class="display">Painted from <em>memory.</em></h1>
+    <div class="art-intro">
+      <p class="lede">
+        Simone combines memories of places, times and objects into each painting. The result is part real and part
+        recollection: a room, a sock, a view from a car window, a little off from how it actually was.
+      </p>
+      <p class="muted">
+        Originals are oil on canvas and sold directly by Simone. Signed prints and hand-painted watercolor cards are in the shop.
+      </p>
+    </div>
+  </section>
+
+  <section class="container salon" aria-label="Original paintings">
+    {
+      originals.map((p, i) => (
+        <a class="work" href={productUrl(p)} data-reveal style={`--reveal-delay: ${(i % 3) * 90}`}>
+          <div class="work-frame">
+            <Image
+              src={p.data.images[0]}
+              alt={`${p.data.title}, ${p.data.year}, oil on canvas by Simone Chagoya`}
+              widths={[420, 640, 900]}
+              sizes="(min-width: 1100px) 30vw, (min-width: 700px) 45vw, 92vw"
+              format="webp"
+              quality={78}
+            />
+          </div>
+          <div class="work-caption">
+            <span class="work-title">{p.data.title}</span>
+            <span class="work-meta">
+              {p.data.year} · {p.data.dimensions}
+            </span>
+            <span class="work-status">{p.data.status === 'sold' ? 'Sold' : 'Inquire'}</span>
+          </div>
+        </a>
+      ))
+    }
+  </section>
+
+  {
+    prints.length > 0 && (
+      <section class="section container prints">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prints and watercolors</p>
+            <h2 class="h2">
+              Take a piece <em>home</em>
+            </h2>
+          </div>
+          <a class="link" href="/shop/art">
+            Shop art <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="prints-grid">
+          {prints.map((p, i) => (
+            <ProductCard product={p} delay={i * 60} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <section class="container art-cta">
+    <h2 class="h2">Looking for something <em>specific?</em></h2>
+    <p class="lede">Simone takes a small number of painting commissions each year.</p>
+    <a class="btn" href="/commissions">Ask about a commission <span class="arrow" aria-hidden="true">→</span></a>
+  </section>
+</Base>
+
+<style>
+  .art-hero {
+    padding-block: clamp(2.5rem, 6vw, 5.5rem) clamp(3rem, 6vw, 5rem);
+  }
+
+  .art-hero .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .art-intro {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2rem 4rem;
+    align-items: end;
+    margin-top: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .salon {
+    columns: 3 18rem;
+    column-gap: clamp(1.25rem, 3vw, 2.5rem);
+  }
+
+  .work {
+    display: block;
+    break-inside: avoid;
+    margin-bottom: clamp(2rem, 4vw, 3.5rem);
+    text-decoration: none;
+  }
+
+  .work-frame {
+    padding: clamp(1.5rem, 3.5vw, 3rem);
+    background: linear-gradient(180deg, var(--paper-2) 0%, var(--paper-2) 82%, var(--paper-3) 100%);
+    transition: background 0.4s;
+  }
+
+  .work:hover .work-frame {
+    background: var(--paper-3);
+  }
+
+  .work-frame :global(img) {
+    width: 100%;
+    box-shadow:
+      0 1px 2px rgb(33 28 23 / 0.1),
+      0 24px 44px -20px rgb(33 28 23 / 0.55);
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .work:hover .work-frame :global(img) {
+    transform: translateY(-4px);
+  }
+
+  .work-caption {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    margin-top: 0.9rem;
+  }
+
+  .work-title {
+    font-family: var(--serif);
+    font-size: 1.55rem;
+    font-weight: 450;
+    line-height: 1.1;
+  }
+
+  .work-meta {
+    grid-row: 2;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .work-status {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: start;
+    margin-top: 0.4rem;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding-bottom: 0.1em;
+    border-bottom: 1px solid currentColor;
+  }
+
+  .prints {
+    border-top: 1px solid var(--line);
+  }
+
+  .prints-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .art-cta {
+    display: grid;
+    justify-items: center;
+    gap: 1.25rem;
+    text-align: center;
+    padding-block: 0 var(--section);
+  }
+
+  @media (max-width: 900px) {
+    .art-intro {
+      grid-template-columns: 1fr;
+    }
+
+    .prints-grid {
+      grid-template-columns: repeat(2, 1fr);
+      row-gap: 2.5rem;
+    }
+  }
+</style>

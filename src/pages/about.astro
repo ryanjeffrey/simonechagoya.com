@@ -1,0 +1,257 @@
+---
+import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import studio from '../assets/art/the-garage-with-all-our-shoes.jpg';
+import detail from '../assets/art/plastic-chandelier.jpg';
+import { site } from '../data/site';
+
+// Simone's artist statement, unchanged from the original site.
+const statement = [
+  'Memory is the main influence throughout my work.',
+  'I combine my memories of places, times or objects into the piece.',
+  'This distorts the real physical depiction into an altered image.',
+  'The altered image then includes, excludes or manipulates what the real place or objects actually were or are.',
+  'It is a greater representation of both the real and my memory.',
+  'Many of my paintings can be related back to childhood or to the places I have been.',
+  'Memory is not always accurate; it can even change over time.',
+  'As I have grown older I want more and more to remember these things and to still have some grasp on them.',
+];
+---
+
+<Base
+  title="About Simone"
+  description="Simone Chagoya is a painter and jewelry maker in Chicago, making natural gemstone necklaces, prints and original paintings."
+  type="article"
+>
+  <section class="about-hero container">
+    <div class="about-copy">
+      <p class="eyebrow">About</p>
+      <h1 class="display">Simone <em>Chagoya</em></h1>
+      <p class="lede">
+        Simone is a painter and jewelry maker living in Chicago. She strings natural gemstone necklaces, paints in oil and
+        watercolor, and works with color the same way across all of it.
+      </p>
+    </div>
+    <figure class="about-image" data-reveal="mask">
+      <Picture
+        src={studio}
+        formats={['avif', 'webp']}
+        widths={[480, 800, 1200, 1557]}
+        sizes="(min-width: 960px) 46vw, 92vw"
+        alt="The Garage With All Our Shoes, 2009, oil on canvas by Simone Chagoya"
+        loading="eager"
+      />
+      <figcaption>The Garage With All Our Shoes, 2009</figcaption>
+    </figure>
+  </section>
+
+  <section class="statement-scroll" aria-labelledby="statement-title">
+    <div class="container">
+      <h2 id="statement-title" class="eyebrow">Artist statement</h2>
+      <ol class="statement-lines">
+        {statement.map((line) => <li>{line}</li>)}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section container practices">
+    <article class="practice" data-reveal>
+      <span class="practice-n">i.</span>
+      <h2 class="h3">Painting</h2>
+      <p>
+        Oil on canvas, watercolor and signed prints. Rooms, landscapes seen through a car window, jungle leaves and night
+        skies, built up until they sit somewhere between the real thing and the remembered one.
+      </p>
+      <a class="link" href="/art">See the art <span aria-hidden="true">→</span></a>
+    </article>
+    <article class="practice" data-reveal style="--reveal-delay: 120">
+      <span class="practice-n">ii.</span>
+      <h2 class="h3">Jewelry</h2>
+      <p>
+        Natural gemstones chosen the way a painter chooses color, then strung by hand. Every necklace is named and made
+        once: Agua, Plumeria, Azul, Honey and the rest.
+      </p>
+      <a class="link" href="/shop/necklaces">Shop necklaces <span aria-hidden="true">→</span></a>
+    </article>
+    <figure class="practice-image" data-reveal style="--reveal-delay: 200">
+      <Picture
+        src={detail}
+        formats={['avif', 'webp']}
+        widths={[400, 700, 1000]}
+        sizes="(min-width: 960px) 30vw, 92vw"
+        alt="Plastic Chandelier, 2008, oil on canvas by Simone Chagoya"
+      />
+    </figure>
+  </section>
+
+  <section class="about-cta">
+    <div class="container about-cta-inner">
+      <h2 class="h2">Say <em>hello.</em></h2>
+      <p class="lede">Questions about a piece, a commission or a stockist inquiry. Simone reads every message.</p>
+      <div class="about-cta-actions">
+        <a class="btn" href="/commissions">Get in touch <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="link" href={`mailto:${site.email}`}>{site.email}</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .about-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: end;
+    padding-block: clamp(2.5rem, 6vw, 5.5rem) var(--section);
+  }
+
+  .about-copy .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .about-copy .lede {
+    margin-top: 2rem;
+  }
+
+  .about-image :global(img) {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 999px 999px 0 0;
+  }
+
+  .about-image figcaption {
+    margin-top: 0.75rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .statement-scroll {
+    background: var(--ink);
+    color: var(--paper);
+    padding-block: var(--section);
+  }
+
+  .statement-scroll .eyebrow {
+    color: rgb(244 239 231 / 0.6);
+    margin-bottom: 3rem;
+  }
+
+  .statement-scroll .eyebrow::before {
+    background: var(--gold-light);
+  }
+
+  .statement-lines {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: clamp(1.25rem, 3vw, 2.25rem);
+  }
+
+  .statement-lines li {
+    max-width: 24ch;
+    font-family: var(--serif);
+    font-size: var(--step-4);
+    font-weight: 300;
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .statement-lines li:nth-child(even) {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .statement-lines li:nth-child(7) {
+    color: var(--gold-light);
+    font-style: italic;
+  }
+
+  /* Each line brightens as it crosses the middle of the screen */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .statement-lines li {
+        animation: brighten linear both;
+        animation-timeline: view();
+        animation-range: cover 10% cover 45%;
+      }
+
+      @keyframes brighten {
+        from {
+          opacity: 0.18;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    }
+  }
+
+  .practices {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: clamp(2rem, 4vw, 4rem);
+    align-items: start;
+  }
+
+  .practice-n {
+    display: block;
+    margin-bottom: 1.25rem;
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .practice h2 {
+    margin-bottom: 1rem;
+  }
+
+  .practice p {
+    color: var(--ink-2);
+    margin-bottom: 1.5rem;
+  }
+
+  .practice-image :global(img) {
+    width: 100%;
+    border-radius: 999px 999px 0 0;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+
+  .about-cta {
+    background: var(--paper-2);
+    padding-block: var(--section);
+  }
+
+  .about-cta-inner {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 1.25rem;
+  }
+
+  .about-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem 2rem;
+    margin-top: 0.75rem;
+  }
+
+  @media (max-width: 900px) {
+    .about-hero,
+    .practices {
+      grid-template-columns: 1fr;
+    }
+
+    .statement-lines li:nth-child(even) {
+      margin-left: 0;
+      text-align: left;
+    }
+  }
+</style>

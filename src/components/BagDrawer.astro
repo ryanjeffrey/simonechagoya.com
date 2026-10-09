@@ -1,0 +1,321 @@
+---
+import { site } from '../data/site';
+---
+
+<dialog class="bag" aria-labelledby="bag-title" data-bag>
+  <div class="bag-panel">
+    <header class="bag-head">
+      <h2 id="bag-title" class="bag-title">Your bag <span data-bag-count-label></span></h2>
+      <button type="button" class="bag-close" data-bag-close>Close</button>
+    </header>
+
+    {
+      site.shipping.freeThreshold > 0 && (
+        <div class="bag-ship" data-bag-ship>
+          <p data-bag-ship-label>Complimentary US shipping on orders over ${site.shipping.freeThreshold}</p>
+          <div class="bag-ship-track" aria-hidden="true">
+            <span data-bag-ship-bar />
+          </div>
+        </div>
+      )
+    }
+
+    <div class="bag-body" data-bag-body>
+      <p class="bag-loading">Loading…</p>
+    </div>
+
+    <footer class="bag-foot" data-bag-foot hidden>
+      <div class="bag-subtotal">
+        <span>Subtotal</span>
+        <span data-bag-subtotal>$0</span>
+      </div>
+      <p class="bag-note">Shipping and tax are calculated at checkout.</p>
+      <p class="bag-error" data-bag-error role="alert" hidden></p>
+      <button type="button" class="btn btn--accent btn--block" data-bag-checkout>
+        Checkout <span class="arrow" aria-hidden="true">→</span>
+      </button>
+      <p class="bag-secure">
+        <svg width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"
+          ><path
+            fill="currentColor"
+            d="M6 0a4 4 0 0 0-4 4v2H1a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-1V4a4 4 0 0 0-4-4Zm-2.5 4a2.5 2.5 0 0 1 5 0v2h-5V4Z"
+          ></path></svg
+        >
+        Secure checkout with Stripe. Cards, Apple Pay and Google Pay.
+      </p>
+    </footer>
+  </div>
+</dialog>
+
+<style>
+  .bag {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(28rem, 100vw);
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0 0 0 auto;
+    padding: 0;
+    border: 0;
+    background: var(--paper);
+    color: var(--ink);
+    transform: translateX(100%);
+    transition:
+      transform 0.5s var(--ease-out),
+      overlay 0.5s allow-discrete,
+      display 0.5s allow-discrete;
+  }
+
+  .bag[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .bag[open] {
+      transform: translateX(100%);
+    }
+  }
+
+  .bag::backdrop {
+    background: rgb(22 28 34 / 0);
+    backdrop-filter: blur(0);
+    transition:
+      background 0.5s,
+      backdrop-filter 0.5s,
+      overlay 0.5s allow-discrete,
+      display 0.5s allow-discrete;
+  }
+
+  .bag[open]::backdrop {
+    background: rgb(33 28 23 / 0.4);
+    backdrop-filter: blur(3px);
+  }
+
+  @starting-style {
+    .bag[open]::backdrop {
+      background: rgb(22 28 34 / 0);
+      backdrop-filter: blur(0);
+    }
+  }
+
+  .bag-panel {
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    height: 100%;
+  }
+
+  .bag-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bag-title {
+    font-size: var(--step-2);
+    font-weight: 400;
+  }
+
+  .bag-title span {
+    font-family: var(--sans);
+    font-size: var(--step--1);
+    color: var(--ink-3);
+    vertical-align: middle;
+  }
+
+  .bag-close {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.5rem 0;
+  }
+
+  .bag-ship {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    font-size: var(--step--1);
+  }
+
+  .bag-ship-track {
+    height: 2px;
+    margin-top: 0.7rem;
+    background: var(--paper-3);
+    overflow: hidden;
+  }
+
+  .bag-ship-track span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--gold);
+    transition: width 0.8s var(--ease-out);
+  }
+
+  .bag-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.5rem 1.5rem;
+  }
+
+  .bag-loading {
+    padding: 2rem 0;
+    color: var(--ink-3);
+  }
+
+  .bag-foot {
+    padding: 1.25rem 1.5rem calc(1.25rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .bag-subtotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    font-weight: 450;
+  }
+
+  .bag-note {
+    margin: 0.25rem 0 1rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .bag-error {
+    margin-bottom: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    border-left: 2px solid var(--accent);
+    background: rgb(142 65 38 / 0.08);
+    font-size: var(--step--1);
+  }
+
+  .bag-secure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    font-size: 0.75rem;
+    color: var(--ink-2);
+  }
+
+  /* Rendered by src/lib/bag.ts */
+  .bag :global(.bag-line) {
+    display: grid;
+    grid-template-columns: 5rem 1fr auto;
+    gap: 1rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bag :global(.bag-thumb) {
+    display: block;
+    aspect-ratio: 4 / 5;
+    background: var(--paper-2);
+    overflow: hidden;
+  }
+
+  .bag :global(.bag-thumb img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .bag :global(.bag-line-title) {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 450;
+    line-height: 1.1;
+    text-decoration: none;
+  }
+
+  .bag :global(.bag-line-meta) {
+    margin-top: 0.25rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .bag :global(.bag-line-actions) {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .bag :global(.qty) {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line-strong);
+  }
+
+  .bag :global(.qty button) {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .bag :global(.qty button[disabled]) {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .bag :global(.qty output) {
+    min-width: 1.4rem;
+    text-align: center;
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bag :global(.bag-remove) {
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-decoration: underline;
+    text-underline-offset: 0.35em;
+  }
+
+  .bag :global(.bag-line-price) {
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bag :global(.bag-flag) {
+    display: inline-block;
+    margin-top: 0.45rem;
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .bag :global(.bag-empty) {
+    padding: 3rem 0;
+    text-align: center;
+  }
+
+  .bag :global(.bag-empty h3) {
+    font-size: var(--step-3);
+    font-weight: 300;
+    margin-bottom: 0.75rem;
+  }
+
+  .bag :global(.bag-empty p) {
+    color: var(--ink-2);
+    margin-bottom: 1.75rem;
+  }
+
+  .bag :global(.bag-empty-links) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+</style>
