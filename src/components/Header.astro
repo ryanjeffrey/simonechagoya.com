@@ -12,7 +12,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
       <span class="visually-hidden">Open menu</span>
     </button>
 
-    <a class="wordmark" href="/" aria-label={`${site.name}, home`}>
+    <a class="wordmark logo" href="/" aria-label={`${site.name}, home`}>
       Simone Chagoya
     </a>
 
@@ -55,7 +55,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
 <dialog class="menu" id="site-menu" aria-label="Menu" data-menu>
   <div class="menu-inner">
     <div class="menu-top">
-      <span class="wordmark wordmark--light">Simone Chagoya</span>
+      <span class="wordmark wordmark--light logo">Simone Chagoya</span>
       <button class="menu-close" type="button" data-menu-close>
         Close
       </button>
@@ -106,15 +106,10 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
   .wordmark {
     grid-column: 2;
     grid-row: 1;
-    font-family: var(--serif);
-    font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.3rem);
-    font-weight: 500;
-    line-height: 1;
-    letter-spacing: 0.3em;
-    margin-right: -0.3em;
-    text-transform: uppercase;
+    font-size: clamp(1.45rem, 1.2rem + 0.8vw, 1.95rem);
+    letter-spacing: 0.1em;
+    margin-right: -0.1em;
     text-decoration: none;
-    white-space: nowrap;
   }
 
   .wordmark--light {
@@ -236,9 +231,9 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
 
   @media (max-width: 420px) {
     .wordmark {
-      font-size: 0.95rem;
-      letter-spacing: 0.22em;
-      margin-right: -0.22em;
+      font-size: 1.3rem;
+      letter-spacing: 0.06em;
+      margin-right: -0.06em;
     }
   }
 
@@ -291,7 +286,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
   }
 
   .menu-top .wordmark {
-    font-size: 0.95rem;
+    font-size: 1.3rem;
   }
 
   .menu-close {

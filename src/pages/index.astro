@@ -199,10 +199,8 @@ const jsonLd = [
   <section class="band" aria-label="Simone Chagoya Studio">
     <Image src={water} alt="" widths={[800, 1200, 1600]} sizes="100vw" format="webp" quality={76} class="band-img" />
     <div class="lockup" data-reveal>
-      <span class="lockup-name">Simone Chagoya</span>
-      <span class="lockup-rule" aria-hidden="true"></span>
+      <span class="lockup-name logo">Simone Chagoya</span>
       <span class="lockup-studio">Studio</span>
-      <span class="lockup-line">Love, beauty, new beginnings</span>
     </div>
   </section>
 
@@ -434,11 +432,10 @@ const jsonLd = [
   }
 
   .hero-seal .seal-mono {
-    font-family: var(--serif);
-    font-size: 32px;
+    font-family: var(--logo);
+    font-size: 34px;
     font-weight: 400;
-    font-style: italic;
-    text-transform: none;
+    letter-spacing: 0.04em;
     fill: var(--gold);
   }
 
@@ -780,48 +777,29 @@ const jsonLd = [
 
   .lockup {
     display: grid;
-    justify-items: center;
-    gap: 0.9rem;
+    justify-items: end;
+    gap: clamp(0.9rem, 1.6vw, 1.35rem);
     margin: var(--gutter);
-    padding: clamp(2rem, 4vw, 3.25rem) clamp(2rem, 6vw, 5rem);
-    background: rgb(244 239 231 / 0.78);
-    backdrop-filter: blur(10px) saturate(1.1);
-    -webkit-backdrop-filter: blur(10px) saturate(1.1);
-    outline: 1px solid rgb(169 132 78 / 0.55);
-    outline-offset: -10px;
-    text-align: center;
+    padding: clamp(1.75rem, 3.2vw, 2.75rem) clamp(1.75rem, 4.5vw, 3.75rem) clamp(1.25rem, 2.4vw, 2rem);
+    background: rgb(250 248 244 / 0.86);
+    backdrop-filter: blur(6px) saturate(1.05);
+    -webkit-backdrop-filter: blur(6px) saturate(1.05);
+    box-shadow: 0 30px 60px -40px rgb(33 28 23 / 0.45);
   }
 
   .lockup-name {
-    font-family: var(--serif);
-    font-size: clamp(1.6rem, 1rem + 3vw, 3.4rem);
-    font-weight: 400;
-    letter-spacing: 0.32em;
-    margin-right: -0.32em;
-    text-transform: uppercase;
-    line-height: 1;
-  }
-
-  .lockup-rule {
-    width: 2.5rem;
-    height: 1px;
-    background: var(--gold);
+    font-size: clamp(2.1rem, 0.9rem + 5.4vw, 5.6rem);
+    letter-spacing: 0.06em;
+    margin-right: -0.06em;
+    padding-top: 0.12em;
   }
 
   .lockup-studio {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.5em;
-    margin-right: -0.5em;
+    font-size: clamp(0.62rem, 0.55rem + 0.25vw, 0.8rem);
+    font-weight: 400;
+    letter-spacing: 0.6em;
+    margin-right: -0.6em;
     text-transform: uppercase;
-  }
-
-  .lockup-line {
-    margin-top: 0.6rem;
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 1.2rem;
-    color: var(--ink-2);
   }
 
   /* Hero rating */
