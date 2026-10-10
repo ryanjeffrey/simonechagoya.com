@@ -197,8 +197,9 @@ const jsonLd = [
   }
 
   <!-- Brand band -->
-  <section class="band" aria-label="Simone Chagoya Studio">
+  <section class="band" aria-label="Simone Chagoya Studio" data-pond-band>
     <Image src={water} alt="" widths={[800, 1200, 1600]} sizes="100vw" format="webp" quality={76} class="band-img" />
+    <canvas class="band-canvas" aria-hidden="true" data-pond></canvas>
     <div class="lockup" data-reveal>
       <Logo variant="lockup" class="lockup-mark" />
     </div>
@@ -757,9 +758,25 @@ const jsonLd = [
     position: relative;
     display: grid;
     place-items: center;
-    min-height: clamp(20rem, 32vw, 30rem);
+    min-height: clamp(24rem, 38vw, 34rem);
     overflow: hidden;
     isolation: isolate;
+    touch-action: pan-y;
+  }
+
+  /* Live koi pond drawn over the photograph (src/lib/pond.ts) */
+  .band-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.6s var(--ease-out);
+  }
+
+  .band-canvas:global(.is-live) {
+    opacity: 1;
   }
 
   .band :global(.band-img) {
@@ -776,9 +793,7 @@ const jsonLd = [
     margin: var(--gutter);
     padding: clamp(1.75rem, 3.6vw, 3.25rem) clamp(1.5rem, 4.5vw, 4rem);
     color: #111;
-    background: rgb(250 248 244 / 0.86);
-    backdrop-filter: blur(6px) saturate(1.05);
-    -webkit-backdrop-filter: blur(6px) saturate(1.05);
+    background: rgb(250 248 244 / 0.88);
     box-shadow: 0 30px 60px -40px rgb(33 28 23 / 0.45);
   }
 
@@ -980,6 +995,8 @@ const jsonLd = [
 </style>
 
 <script>
+  import '../lib/pond';
+
   const rail = document.querySelector<HTMLElement>('[data-rail]');
   const step = () => (rail ? rail.clientWidth * 0.8 : 0);
   document.querySelector('[data-rail-prev]')?.addEventListener('click', () => rail?.scrollBy({ left: -step(), behavior: 'smooth' }));
