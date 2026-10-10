@@ -1,0 +1,99 @@
+---
+import { Image } from 'astro:assets';
+import ProductArt from './ProductArt.astro';
+import type { Product } from '../lib/catalog';
+
+interface Props {
+  product: Product;
+  /** Which image to show (falls back to the first). */
+  index?: number;
+  sizes?: string;
+  widths?: number[];
+  loading?: 'eager' | 'lazy';
+  /** "matte" shows the full painting on a wall-colored mount; "cover" fills the frame. */
+  mode?: 'cover' | 'matte';
+  class?: string;
+}
+
+const {
+  product,
+  index = 0,
+  sizes = '(min-width: 1100px) 25vw, (min-width: 700px) 33vw, 50vw',
+  widths = [360, 540, 720, 960, 1200],
+  loading = 'lazy',
+  mode,
+  class: className,
+} = Astro.props;
+
+const { data } = product;
+const img = data.images[index] ?? data.images[0];
+const isArt = data.category === 'originals' || data.category === 'prints';
+const resolvedMode = img ? (mode ?? (isArt ? 'matte' : 'cover')) : 'cover';
+const alt =
+  data.category === 'originals'
+    ? `${data.title}, ${data.year ?? ''} ${data.medium ?? ''} by Simone Chagoya`.replace(/\s+/g, ' ').trim()
+    : `${data.title} by Simone Chagoya`;
+---
+
+<div class:list={['media', `media--${resolvedMode}`, className]}>
+  {
+    img ? (
+      <Image
+        src={img}
+        alt={alt}
+        widths={widths}
+        sizes={sizes}
+        loading={loading}
+        fetchpriority={loading === 'eager' ? 'high' : 'auto'}
+        format="webp"
+        quality={78}
+      />
+    ) : data.art ? (
+      <ProductArt id={`${product.id}-${index}`} label={alt} {...data.art} />
+    ) : (
+      <div class="media-empty" aria-hidden="true" />
+    )
+  }
+</div>
+
+<style>
+  .media {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: var(--paper-2);
+  }
+
+  .media--cover :global(img),
+  .media--cover :global(svg) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .media--matte {
+    display: grid;
+    place-items: center;
+    padding: 15%;
+    background: linear-gradient(180deg, var(--paper-2) 0%, var(--paper-2) 78%, var(--paper-3) 100%);
+  }
+
+  .media--matte :global(img) {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow:
+      0 1px 2px rgb(33 28 23 / 0.1),
+      0 22px 40px -18px rgb(33 28 23 / 0.5);
+  }
+
+  .media-empty {
+    position: absolute;
+    inset: 0;
+    background: var(--paper-3);
+  }
+</style>

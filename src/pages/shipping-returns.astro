@@ -1,0 +1,50 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../data/site';
+import { formatPrice } from '../lib/catalog';
+
+const { shipping, returns } = site;
+---
+
+<Page
+  title="Shipping and returns"
+  eyebrow="Help"
+  description={`How Simone Chagoya Studio ships orders from ${site.city}, and how returns work.`}
+>
+  <p class="lede" slot="lede">Everything ships from the studio in {site.city}.</p>
+
+  <h2>Shipping</h2>
+  <ul>
+    <li>Ready-to-ship pieces leave the studio in {shipping.processing}.</li>
+    <li>
+      Standard US shipping is {formatPrice(shipping.standardRate)}{shipping.freeThreshold > 0 && `, and complimentary on orders over ${formatPrice(shipping.freeThreshold)}`}.
+      It usually arrives 4 to 8 business days after your order.
+    </li>
+    <li>Express shipping is {formatPrice(shipping.expressRate)} and usually arrives in 2 to 4 business days.</li>
+    <li>Every order ships with tracking. You will get the number by email as soon as it leaves.</li>
+    <li>Made-to-order pieces and commissions have their own timelines, agreed with you before work starts.</li>
+    <li>Right now the shop ships within the United States. For international orders, <a href="/commissions">get in touch</a>.</li>
+  </ul>
+
+  <h2>Original paintings</h2>
+  <p>
+    Originals are packed and shipped by a specialist art shipper, fully insured. Shipping is quoted separately when you
+    inquire, and local pickup in Chicago is welcome.
+  </p>
+
+  <h2>Returns</h2>
+  <ul>
+    <li>Ready-to-ship necklaces, prints and cards can be returned within {returns.days} days of delivery for a full refund of the item price.</li>
+    <li>Pieces need to come back unworn and in their original packaging.</li>
+    <li>Custom, personalized and made-to-order pieces are final sale.</li>
+  </ul>
+  <p>
+    To start a return, email <a href={`mailto:${site.email}`}>{site.email}</a> with your order number. Refunds go back to
+    the original payment method within a few days of the piece arriving back at the studio.
+  </p>
+
+  <h2>Something wrong?</h2>
+  <p>
+    If anything arrives damaged, email a photo within 7 days and Simone will repair or replace it.
+  </p>
+</Page>

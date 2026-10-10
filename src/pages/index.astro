@@ -1,0 +1,1013 @@
+---
+import { Image, Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import ProductCard from '../components/ProductCard.astro';
+import ProductMedia from '../components/ProductMedia.astro';
+import Marquee from '../components/Marquee.astro';
+import Reviews from '../components/Reviews.astro';
+import Logo from '../components/Logo.astro';
+import { getProducts, isPurchasable, priceLabel, productUrl, type Category, type Product } from '../lib/catalog';
+import { site } from '../data/site';
+import heroPainting from '../assets/art/altered-beliefs.jpg';
+import doorPainting from '../assets/art/regarding-my-wayward-ways.jpg';
+import water from '../assets/brand/water.jpg';
+
+const products = await getProducts();
+const necklaces = products.filter((p) => p.data.category === 'necklaces');
+const originals = products.filter((p) => p.data.category === 'originals');
+const forSale = (list: Product[]) => list.filter(isPurchasable);
+
+const heroPiece = products.find((p) => p.id === 'smoke-necklace' && isPurchasable(p)) ?? forSale(necklaces)[0];
+
+// The named stones: every necklace for sale, shown as one expanding row.
+const stones = forSale(necklaces).slice(0, 8);
+
+// Art for sale (prints, card sets), shown as a three-up grid.
+const art = forSale(products.filter((p) => p.data.category === 'prints' || p.data.category === 'cards')).slice(0, 3);
+
+const firstIn = (category: Category) =>
+  products.find((p) => p.data.category === category && isPurchasable(p)) ?? products.find((p) => p.data.category === category);
+const tiles = [
+  { label: 'Necklaces', href: '/shop/necklaces', product: firstIn('necklaces') },
+  { label: 'Prints', href: '/shop/prints', product: firstIn('prints') },
+  { label: 'Watercolor cards', href: '/shop/cards', product: firstIn('cards') },
+  { label: 'Paintings', href: '/art', product: originals.find((p) => p.id === 'plastic-chandelier') ?? originals[0] },
+].filter((t) => t.product);
+
+const { rating } = site;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: site.studio,
+    url: site.url,
+    email: site.email,
+    logo: `${site.url}/brand/simone-chagoya-logo.png`,
+    address: { '@type': 'PostalAddress', addressLocality: 'Chicago', addressRegion: 'IL', addressCountry: 'US' },
+    sameAs: Object.values(site.social).filter(Boolean),
+  },
+  { '@context': 'https://schema.org', '@type': 'WebSite', name: site.name, url: site.url },
+];
+---
+
+<Base jsonLd={jsonLd}>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow hero-eyebrow">Gemstone jewelry and art · Chicago</p>
+        <h1 class="hero-title">
+          <span class="line"><span>Made to</span></span>
+          <span class="line"><span>be <em>kept.</em></span></span>
+        </h1>
+        <p class="lede hero-lede">
+          Natural gemstone necklaces, signed prints and original paintings by Simone Chagoya. A painter’s eye for color,
+          strung by hand in Chicago.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn" href="/shop/jewelry">Shop jewelry <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="link" href="/art">The art</a>
+        </div>
+        {
+          rating.count > 0 && (
+            <p class="hero-rating">
+              <span class="stars" aria-hidden="true">
+                ★★★★★
+              </span>
+              {rating.average.toFixed(1)} from {rating.count} reviews on {rating.source}
+            </p>
+          )
+        }
+      </div>
+
+      <div class="hero-visual">
+        <figure class="hero-painting">
+          <div class="arch hero-arch">
+            <Picture
+              src={heroPainting}
+              formats={['avif', 'webp']}
+              widths={[480, 720, 960, 1159]}
+              sizes="(min-width: 960px) 40vw, 88vw"
+              alt="Altered Beliefs, a 2010 oil painting by Simone Chagoya of a rock cave with an orange floor"
+              loading="eager"
+              fetchpriority="high"
+            />
+          </div>
+          <figcaption><em>Altered Beliefs</em>, 2010 · Oil on canvas</figcaption>
+        </figure>
+
+        <svg class="hero-seal" viewBox="0 0 200 200" aria-hidden="true">
+          <defs><path id="seal-circle" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"></path></defs>
+          <circle class="seal-bg" cx="100" cy="100" r="98"></circle>
+          <circle class="seal-ring" cx="100" cy="100" r="54"></circle>
+          <text textLength="448" lengthAdjust="spacing"
+            ><textPath href="#seal-circle">Handmade in Chicago · One of one · </textPath></text
+          >
+          <path class="seal-arch" d="M90 114V99a10 10 0 0 1 20 0v15Z"></path>
+        </svg>
+
+        {
+          heroPiece && (
+            <a class="hero-piece" href={productUrl(heroPiece)}>
+              <span class="arch hero-piece-media">
+                <ProductMedia product={heroPiece} sizes="160px" widths={[160, 320]} loading="eager" />
+              </span>
+              <span class="hero-piece-info">
+                <span class="hero-piece-label">Signature piece</span>
+                <span class="hero-piece-title">{heroPiece.data.title}</span>
+                <span class="hero-piece-price">{priceLabel(heroPiece)}</span>
+              </span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <Marquee items={['Natural gemstones', 'Strung by hand in Chicago', 'One of one', 'Love, beauty, new beginnings', 'Made to be kept']} />
+
+  <!-- Categories -->
+  <section class="section container">
+    <div class="section-head section-head--center">
+      <p class="eyebrow eyebrow--center">The studio</p>
+      <h2 class="h2">Find your <em>piece</em></h2>
+    </div>
+    <div class="tiles" style={`--tiles: ${tiles.length}`}>
+      {
+        tiles.map((tile, i) => (
+          <a class="tile" href={tile.href} data-reveal style={`--reveal-delay: ${i * 110}`}>
+            <div class="arch zoom tile-media">
+              <ProductMedia product={tile.product!} mode="cover" sizes="(min-width: 960px) 30vw, 46vw" />
+            </div>
+            <span class="tile-label">{tile.label}</span>
+            <span class="tile-cta">
+              Explore <span aria-hidden="true">→</span>
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- The stones -->
+  {
+    stones.length > 0 && (
+      <section class="stones section">
+        <div class="container">
+          <div class="stones-head">
+            <div>
+              <p class="eyebrow">The necklaces</p>
+              <h2 class="h2" data-reveal>
+                Every stone <em>has a name</em>
+              </h2>
+            </div>
+            <div data-reveal style="--reveal-delay: 150">
+              <p class="lede">
+                Simone chooses stones the way she chooses paint: for color, light and how they sit together. Each necklace
+                is strung by hand, named, and made once.
+              </p>
+              <a class="link stones-all" href="/shop/necklaces">
+                All necklaces <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+
+          <ul class="pairs">
+            {stones.map((piece) => (
+              <li class="pair">
+                <a href={productUrl(piece)}>
+                  <div class="pair-piece">
+                    <ProductMedia product={piece} mode="cover" sizes="(min-width: 960px) 32vw, 72vw" />
+                  </div>
+                  <div class="pair-caption">
+                    <span class="pair-name">{piece.data.title.replace(/ Necklace$/, '')}</span>
+                    <span class="pair-from">{piece.data.materials[0]}</span>
+                    <span class="pair-link">
+                      {priceLabel(piece)} <span aria-hidden="true">→</span>
+                    </span>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Brand band -->
+  <section class="band" aria-label="Simone Chagoya Studio" data-pond-band>
+    <Image src={water} alt="" widths={[800, 1200, 1600]} sizes="100vw" format="webp" quality={76} class="band-img" />
+    <canvas class="band-canvas" aria-hidden="true" data-pond></canvas>
+    <div class="lockup" data-reveal>
+      <Logo variant="lockup" class="lockup-mark" />
+    </div>
+  </section>
+
+  <!-- Art for sale -->
+  {
+    art.length > 0 && (
+      <section class="section container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Prints and watercolors</p>
+            <h2 class="h2">
+              Art to <em>keep</em>
+            </h2>
+          </div>
+          <a class="link" href="/shop/art">
+            Shop art <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="grid">
+          {art.map((p, i) => (
+            <ProductCard product={p} delay={i * 110} sizes="(min-width: 1100px) 31vw, (min-width: 760px) 45vw, 50vw" />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Statement -->
+  <section class="statement section container">
+    <p class="eyebrow eyebrow--center">From the artist statement</p>
+    <blockquote>
+      <p data-reveal>Memory is not always accurate; it can even change over time.</p>
+    </blockquote>
+    <a class="link" href="/about">Read Simone’s story <span aria-hidden="true">→</span></a>
+  </section>
+
+  <!-- Paintings rail -->
+  {
+    originals.length > 0 && (
+      <section class="section section--flush-top">
+        <div class="container section-head">
+          <div>
+            <p class="eyebrow">The paintings</p>
+            <h2 class="h2">
+              Oil on canvas, <em>one of each</em>
+            </h2>
+          </div>
+          <div class="rail-controls">
+            <button type="button" class="rail-btn" data-rail-prev aria-label="Previous paintings">
+              ←
+            </button>
+            <button type="button" class="rail-btn" data-rail-next aria-label="Next paintings">
+              →
+            </button>
+            <a class="link" href="/art">
+              See all {originals.length}
+            </a>
+          </div>
+        </div>
+        <div class="rail" tabindex="0" aria-label="Original paintings, scroll sideways" data-rail>
+          {originals.slice(0, 10).map((p) => (
+            <div class="rail-item">
+              <ProductCard product={p} sizes="(min-width: 960px) 26vw, 72vw" />
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Promises -->
+  <section class="promises container" aria-label="Why buy from the studio">
+    <div class="promise" data-reveal>
+      <span class="promise-n">i.</span>
+      <h3>Natural stones, strung by hand</h3>
+      <p>Every necklace is chosen, strung and finished in Simone’s Chicago studio.</p>
+    </div>
+    <div class="promise" data-reveal style="--reveal-delay: 110">
+      <span class="promise-n">ii.</span>
+      <h3>One of one</h3>
+      <p>Natural stones are never identical, so neither are the necklaces. When one sells, it is gone.</p>
+    </div>
+    <div class="promise" data-reveal style="--reveal-delay: 220">
+      <span class="promise-n">iii.</span>
+      <h3>Ships in {site.shipping.processing}</h3>
+      <p>Gift wrapped by hand and tracked to your door. Free US shipping over ${site.shipping.freeThreshold}.</p>
+    </div>
+    <div class="promise" data-reveal style="--reveal-delay: 330">
+      <span class="promise-n">iv.</span>
+      <h3>{site.returns.days}-day returns</h3>
+      <p>If it is not right, send it back within {site.returns.days} days.</p>
+    </div>
+  </section>
+
+  <Reviews />
+
+  <!-- Commissions -->
+  <section class="commission">
+    <div class="container commission-grid">
+      <div class="commission-copy">
+        <p class="eyebrow">Commissions</p>
+        <h2 class="commission-title" data-reveal>Something made <em>only for you</em></h2>
+        <p class="lede" data-reveal style="--reveal-delay: 120">
+          A necklace in your colors, a stone that means something, a painting of a place you love. Tell Simone what you
+          have in mind and she will make it by hand.
+        </p>
+        <a class="btn" href="/commissions">Begin a commission <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+      <figure class="commission-image" data-reveal="mask">
+        <div class="arch">
+          <Image
+            src={doorPainting}
+            alt="Regarding My Wayward Ways, 2009, oil painting of a wooden door set in rock"
+            widths={[420, 640, 900]}
+            sizes="(min-width: 900px) 34vw, 80vw"
+            format="webp"
+            quality={78}
+          />
+        </div>
+      </figure>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* Hero ------------------------------------------------------------ */
+  .hero {
+    padding-block: clamp(2.5rem, 6vw, 6rem) clamp(4rem, 8vw, 8rem);
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: clamp(2rem, 6vw, 7rem);
+    align-items: center;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: clamp(1.75rem, 3.5vw, 3rem);
+    animation: fade 1.6s 0.1s var(--ease-out) both;
+  }
+
+  .hero-title {
+    font-size: var(--step-6);
+    font-weight: 300;
+    line-height: 0.86;
+    letter-spacing: -0.03em;
+  }
+
+  .hero-title .line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.08em;
+  }
+
+  .hero-title .line > span {
+    display: inline-block;
+    animation: rise 1.8s var(--ease-out) both;
+  }
+
+  .hero-title .line:nth-child(2) > span {
+    animation-delay: 0.15s;
+    padding-left: 0.6em;
+  }
+
+  .hero-title em {
+    font-weight: 300;
+    color: var(--accent);
+  }
+
+  .hero-lede {
+    margin-top: clamp(1.75rem, 3vw, 2.75rem);
+    animation: fade 1.6s 0.45s var(--ease-out) both;
+  }
+
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem 2.5rem;
+    margin-top: 2.5rem;
+    animation: fade 1.6s 0.6s var(--ease-out) both;
+  }
+
+  .hero-visual {
+    position: relative;
+    padding: 2.5rem 0 3.5rem 3rem;
+    animation: fade 2s 0.2s var(--ease-out) both;
+  }
+
+  .hero-arch :global(img) {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    max-height: 78vh;
+    object-fit: cover;
+  }
+
+  .hero-painting figcaption {
+    margin-top: 1rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    text-align: right;
+  }
+
+  .hero-seal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: clamp(6.5rem, 9vw, 8.5rem);
+    animation: spin 60s linear infinite;
+  }
+
+  .seal-bg {
+    fill: var(--paper);
+  }
+
+  .seal-ring {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 0.75;
+  }
+
+  .hero-seal text {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: uppercase;
+    fill: var(--ink);
+  }
+
+  .seal-arch {
+    fill: var(--gold);
+  }
+
+  .hero-piece {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: 5.5rem auto;
+    gap: 1.25rem;
+    align-items: center;
+    padding: 0.9rem 1.75rem 0.9rem 0.9rem;
+    background: var(--paper);
+    text-decoration: none;
+    box-shadow: 0 30px 60px -30px rgb(33 28 23 / 0.45);
+    transition: transform 0.8s var(--ease-out);
+  }
+
+  .hero-piece:hover {
+    transform: translateY(-4px);
+  }
+
+  .hero-piece-media {
+    display: block;
+  }
+
+  .hero-piece-info {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .hero-piece-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .hero-piece-title {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 450;
+    line-height: 1.05;
+  }
+
+  .hero-piece-price {
+    font-size: 0.9rem;
+  }
+
+  @keyframes rise {
+    from {
+      transform: translateY(105%);
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-title .line > span,
+    .hero-eyebrow,
+    .hero-lede,
+    .hero-ctas,
+    .hero-visual,
+    .hero-rating,
+    .hero-seal {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-title {
+      font-size: clamp(4.6rem, 22vw, 8rem);
+    }
+
+    .hero-visual {
+      padding: 2rem 0 3rem 1.25rem;
+      max-width: 34rem;
+      justify-self: end;
+      width: 100%;
+    }
+
+    .hero-painting figcaption {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .hero-piece {
+      grid-template-columns: 4rem auto;
+      gap: 1rem;
+      padding-right: 1.25rem;
+    }
+
+    .hero-piece-title {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* Sections -------------------------------------------------------- */
+  .section--tight,
+  .section--flush-top {
+    padding-top: 0;
+  }
+
+  .section-head--center {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .section-head--center .eyebrow {
+    margin-bottom: 0.25rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(3rem, 5vw, 5rem) clamp(1.25rem, 2.5vw, 2.5rem);
+  }
+
+  @media (max-width: 760px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2.75rem 1rem;
+    }
+  }
+
+  /* Tiles */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(var(--tiles, 4), 1fr);
+    max-width: calc(var(--tiles, 4) * 22rem);
+    margin-inline: auto;
+    gap: clamp(1rem, 2.5vw, 2.5rem);
+  }
+
+  .tile {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .tile-media {
+    width: 100%;
+  }
+
+  .tile-label {
+    margin-top: 1.5rem;
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 2.2rem);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .tile-cta {
+    margin-top: 0.7rem;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    transition: color 0.4s;
+  }
+
+  .tile:hover .tile-cta {
+    color: var(--accent);
+  }
+
+  /* Two up on phones; an odd last tile sits centered rather than orphaned left. */
+  @media (max-width: 760px) {
+    .tiles {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2.5rem 1rem;
+    }
+
+    .tile {
+      flex: 0 0 calc(50% - 0.5rem);
+    }
+  }
+
+  /* Stones -------------------------------------------------------- */
+  .stones {
+    background: var(--paper-2);
+  }
+
+  .stones-head {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1.5rem 5rem;
+    align-items: end;
+    margin-bottom: clamp(3rem, 6vw, 5rem);
+  }
+
+  .stones-head .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .stones-all {
+    margin-top: 1.75rem;
+  }
+
+  .pairs {
+    display: flex;
+    gap: clamp(0.5rem, 1vw, 0.9rem);
+    list-style: none;
+    padding: 0;
+    height: clamp(30rem, 52vw, 42rem);
+  }
+
+  .pair {
+    flex: 1;
+    min-width: 0;
+    transition: flex 1.2s var(--ease-out);
+  }
+
+  .pair:hover,
+  .pair:focus-within {
+    flex: 2.4;
+  }
+
+  .pair a {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    height: 100%;
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  .pair-piece {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pair-piece :global(.media) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .pair-piece :global(svg) {
+    transition: transform 1.8s var(--ease-out);
+  }
+
+  .pair:hover .pair-piece :global(svg) {
+    transform: scale(1.05);
+  }
+
+  .pair-caption {
+    display: grid;
+    gap: 0.3rem;
+    padding: 1.1rem 1rem 1.2rem;
+    background: var(--paper);
+    min-height: 7.25rem;
+  }
+
+  .pair-name {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 450;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pair-from {
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pair-link {
+    margin-top: 0.4rem;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 900px) {
+    .stones-head {
+      grid-template-columns: 1fr;
+    }
+
+    .pairs {
+      height: auto;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .pair,
+    .pair:hover,
+    .pair:focus-within {
+      flex: 0 0 68%;
+      scroll-snap-align: start;
+    }
+
+    .pair a {
+      grid-template-rows: 22rem auto;
+    }
+  }
+
+  /* Brand band ------------------------------------------------------ */
+  .band {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: clamp(24rem, 38vw, 34rem);
+    overflow: hidden;
+    isolation: isolate;
+    touch-action: pan-y;
+  }
+
+  /* Live koi pond drawn over the photograph (src/lib/pond.ts) */
+  .band-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.6s var(--ease-out);
+  }
+
+  .band-canvas:global(.is-live) {
+    opacity: 1;
+  }
+
+  .band :global(.band-img) {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .lockup {
+    width: min(100% - 2 * var(--gutter), 52rem);
+    margin: var(--gutter);
+    padding: clamp(1.75rem, 3.6vw, 3.25rem) clamp(1.5rem, 4.5vw, 4rem);
+    color: #111;
+    background: rgb(250 248 244 / 0.88);
+    box-shadow: 0 30px 60px -40px rgb(33 28 23 / 0.45);
+  }
+
+
+  /* Hero rating */
+  .hero-rating {
+    margin-top: 1.75rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    animation: fade 1.6s 0.75s var(--ease-out) both;
+  }
+
+  .hero-rating .stars {
+    margin-right: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+
+  /* Statement ------------------------------------------------------- */
+  .statement {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .statement blockquote {
+    margin: 2.25rem 0 2.75rem;
+  }
+
+  .statement blockquote p {
+    max-width: 17ch;
+    font-family: var(--serif);
+    font-size: var(--step-5);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* Rail ------------------------------------------------------------ */
+  .rail-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .rail-controls .link {
+    margin-left: 1.25rem;
+  }
+
+  .rail-btn {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    transition:
+      background 0.4s,
+      color 0.4s,
+      border-color 0.4s;
+  }
+
+  .rail-btn:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  .rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(16rem, 27vw, 25rem);
+    gap: clamp(1.25rem, 2.5vw, 2.5rem);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    padding: 0 var(--gutter) 1.5rem;
+    max-width: calc(var(--max) + (100vw - var(--max)) / 2);
+    margin-left: auto;
+    scrollbar-width: none;
+  }
+
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rail-item {
+    scroll-snap-align: start;
+  }
+
+  @media (max-width: 760px) {
+    .rail {
+      grid-auto-columns: 74%;
+    }
+
+    .rail-btn {
+      display: none;
+    }
+
+    .rail-controls .link {
+      margin-left: 0;
+    }
+  }
+
+  /* Promises -------------------------------------------------------- */
+  .promises {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2.5rem;
+    padding-block: clamp(3.5rem, 7vw, 6rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .promise-n {
+    display: block;
+    margin-bottom: 1.25rem;
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .promise h3 {
+    font-size: var(--step-2);
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+  }
+
+  .promise p {
+    color: var(--ink-2);
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 900px) {
+    .promises {
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem 1.5rem;
+    }
+  }
+
+  /* Commission ------------------------------------------------------ */
+  .commission {
+    background: var(--paper-2);
+    padding-block: var(--section);
+  }
+
+  .commission-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 3rem 6rem;
+    align-items: center;
+  }
+
+  .commission-copy .eyebrow {
+    margin-bottom: 1.5rem;
+  }
+
+  .commission-title {
+    font-size: var(--step-5);
+    font-weight: 300;
+    line-height: 0.92;
+    letter-spacing: -0.025em;
+  }
+
+  .commission-title em {
+    color: var(--accent);
+  }
+
+  .commission-copy .lede {
+    margin: 2rem 0 2.5rem;
+  }
+
+  .commission-image {
+    max-width: 28rem;
+    justify-self: end;
+    width: 100%;
+  }
+
+  .commission-image :global(img) {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+
+  @media (max-width: 900px) {
+    .commission-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .commission-image {
+      justify-self: center;
+      max-width: 22rem;
+    }
+  }
+</style>
+
+<script>
+  import '../lib/pond';
+
+  const rail = document.querySelector<HTMLElement>('[data-rail]');
+  const step = () => (rail ? rail.clientWidth * 0.8 : 0);
+  document.querySelector('[data-rail-prev]')?.addEventListener('click', () => rail?.scrollBy({ left: -step(), behavior: 'smooth' }));
+  document.querySelector('[data-rail-next]')?.addEventListener('click', () => rail?.scrollBy({ left: step(), behavior: 'smooth' }));
+</script>

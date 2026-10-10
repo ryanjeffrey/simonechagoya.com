@@ -1,0 +1,87 @@
+---
+interface Props {
+  items: string[];
+  tone?: 'paper' | 'ink';
+}
+
+const { items, tone = 'paper' } = Astro.props;
+const run = [...items, ...items];
+---
+
+<div class:list={['marquee', `marquee--${tone}`]} aria-label={items.join(', ')} role="marquee">
+  <div class="marquee-track" aria-hidden="true">
+    {
+      [0, 1].map(() => (
+        <div class="marquee-run">
+          {run.map((item) => (
+            <span class="marquee-item">
+              {item}
+              <span class="marquee-dot" />
+            </span>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .marquee {
+    overflow: hidden;
+    border-block: 1px solid var(--line);
+    padding-block: 1.15rem;
+  }
+
+  .marquee--ink {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: transparent;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 90s linear infinite;
+  }
+
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .marquee-run {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3rem;
+    padding-right: 3rem;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.15rem, 1rem + 0.6vw, 1.6rem);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .marquee-dot {
+    width: 5px;
+    height: 5px;
+    transform: rotate(45deg);
+    background: var(--gold);
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+</style>

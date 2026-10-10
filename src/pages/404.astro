@@ -1,0 +1,58 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import transcendence from '../assets/art/transcendence-into-white.jpg';
+---
+
+<Base title="Page not found" noindex>
+  <section class="container lost">
+    <div>
+      <p class="eyebrow">404</p>
+      <h1 class="display">Lost to <em>memory.</em></h1>
+      <p class="lede">This page is not where it used to be. Memory is not always accurate, and neither are links.</p>
+      <div class="lost-actions">
+        <a class="btn" href="/shop">Shop the studio <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="link" href="/">Back home</a>
+      </div>
+    </div>
+    <Image
+      src={transcendence}
+      alt="Transcendence Into White, 2010, oil on canvas by Simone Chagoya"
+      widths={[480, 800]}
+      sizes="(min-width: 900px) 40vw, 90vw"
+      format="webp"
+    />
+  </section>
+</Base>
+
+<style>
+  .lost {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    padding-block: clamp(3rem, 8vw, 7rem) var(--section);
+  }
+
+  .lost .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .lost .lede {
+    margin-top: 1.5rem;
+  }
+
+  .lost-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 900px) {
+    .lost {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

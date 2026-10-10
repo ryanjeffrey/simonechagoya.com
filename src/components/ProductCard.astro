@@ -1,0 +1,185 @@
+---
+import ProductMedia from './ProductMedia.astro';
+import { CATEGORY_META, isPurchasable, priceLabel, productUrl, type Product } from '../lib/catalog';
+
+interface Props {
+  product: Product;
+  loading?: 'eager' | 'lazy';
+  sizes?: string;
+  delay?: number;
+}
+
+const { product, loading, sizes, delay = 0 } = Astro.props;
+const { data } = product;
+const url = productUrl(product);
+const buyable = isPurchasable(product);
+const quickAdd = buyable && data.variants.length === 0;
+const meta =
+  data.category === 'originals'
+    ? [data.year, data.dimensions].filter(Boolean).join(' · ')
+    : data.variants.length > 1 && data.category === 'prints'
+      ? `${data.variants.length} sizes`
+      : data.materials[0] && data.category === 'necklaces'
+        ? data.materials[0]
+        : CATEGORY_META[data.category].singular;
+---
+
+<article class="card" data-reveal style={`--reveal-delay: ${delay}`}>
+  <a href={url} class="card-link">
+    <div class="card-media zoom">
+      <ProductMedia product={product} loading={loading} sizes={sizes} />
+      <div class="card-badges">
+        {data.status === 'sold' && <span class="badge badge--ink">Sold</span>}
+        {data.status !== 'sold' && data.oneOfAKind && data.category !== 'originals' && <span class="badge">One of one</span>}
+        {data.compareAt && data.compareAt > data.price && <span class="badge badge--accent">Sale</span>}
+      </div>
+    </div>
+    <div class="card-info">
+      <h3 class="card-title">{data.title}</h3>
+      <p class="card-price">
+        {data.compareAt && data.compareAt > data.price && <s class="muted">${data.compareAt}</s>}
+        {data.status === 'inquire' ? 'Inquire' : priceLabel(product)}
+      </p>
+    </div>
+    <p class="card-meta">{meta}</p>
+  </a>
+  {
+    quickAdd && (
+      <form class="card-quick" data-add-to-cart>
+        <input type="hidden" name="slug" value={product.id} />
+        <button type="submit" class="card-quick-btn">
+          Add to bag <span aria-hidden="true">+</span>
+          <span class="visually-hidden">: {data.title}</span>
+        </button>
+      </form>
+    )
+  }
+</article>
+
+<style>
+  .card {
+    position: relative;
+  }
+
+  .card-link {
+    display: block;
+    text-decoration: none;
+  }
+
+  .card-media {
+    position: relative;
+  }
+
+  .card-badges {
+    position: absolute;
+    top: 0.9rem;
+    left: 0.9rem;
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .card-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  .card-title {
+    font-size: clamp(1.3rem, 1.15rem + 0.45vw, 1.6rem);
+    font-weight: 450;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .card-price {
+    flex-shrink: 0;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .card-price s {
+    margin-right: 0.35em;
+  }
+
+  .card-meta {
+    margin-top: 0.45rem;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .card-quick {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    aspect-ratio: 4 / 5;
+    display: flex;
+    align-items: flex-end;
+    padding: 0.9rem;
+    pointer-events: none;
+  }
+
+  .card-quick-btn {
+    pointer-events: auto;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.15rem;
+    background: rgb(244 239 231 / 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.6s var(--ease-out),
+      transform 0.6s var(--ease-out),
+      background 0.4s,
+      color 0.4s;
+  }
+
+  .card-quick-btn > span:first-of-type {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    letter-spacing: 0;
+    line-height: 0.6;
+  }
+
+  .card-quick-btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .card:hover .card-quick-btn,
+  .card-quick-btn:focus-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (hover: none) {
+    .card-quick {
+      display: none;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .card-info {
+      display: block;
+      margin-top: 0.9rem;
+    }
+
+    .card-price {
+      margin-top: 0.3rem;
+    }
+  }
+</style>

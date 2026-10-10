@@ -1,0 +1,100 @@
+---
+import '../styles/global.css';
+import serifFont from '@fontsource-variable/cormorant/files/cormorant-latin-wght-normal.woff2?url';
+import sansFont from '@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import BagDrawer from '../components/BagDrawer.astro';
+import { site } from '../data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'product' | 'article';
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Hide the announcement bar (e.g. on checkout pages). */
+  bare?: boolean;
+}
+
+const { title, description = site.description, image = '/og.jpg', type = 'website', noindex = false, jsonLd, bare = false } = Astro.props;
+
+const fullTitle = title ? `${title} | ${site.name}` : `${site.name} | Jewelry and original art, made in Chicago`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
+const ogImage = new URL(image, Astro.site ?? site.url).href;
+const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f4efe7" />
+
+    <link rel="preload" href={serifFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sansFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/brand/simone-chagoya-wordmark.svg" as="image" type="image/svg+xml" crossorigin />
+
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:type" content={type === 'product' ? 'product' : 'website'} />
+    <meta property="og:title" content={title ?? site.name} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {ld.map((block) => <script type="application/ld+json" set:html={JSON.stringify(block)} />)}
+
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    {
+      !bare && site.announcement && (
+        <div class="announcement">
+          <p>{site.announcement}</p>
+        </div>
+      )
+    }
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <BagDrawer />
+
+    <script>
+      import '../lib/reveal';
+      import '../lib/forms';
+      import '../lib/bag';
+    </script>
+  </body>
+</html>
+
+<style>
+  .announcement {
+    background: var(--ink);
+    color: var(--paper);
+    text-align: center;
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 0.7rem var(--gutter);
+  }
+</style>

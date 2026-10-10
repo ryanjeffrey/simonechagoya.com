@@ -1,0 +1,553 @@
+---
+/**
+ * Editorial stand-in illustration for products that have no photography yet.
+ * Swapped out automatically once a product has `images`.
+ */
+interface Props {
+  id: string;
+  kind: 'necklace' | 'print' | 'cards' | 'studs' | 'drops' | 'hoops' | 'pendant' | 'chain' | 'ring' | 'cuff';
+  ground: string;
+  stone?: string;
+  metal?: 'gold' | 'silver';
+  colors?: string[];
+  beads?: 'round' | 'oval' | 'flower' | 'tube';
+  count?: number;
+  clear?: boolean;
+  pattern?: 'speckle' | 'leaves' | 'wash';
+  label: string;
+  class?: string;
+}
+
+const {
+  id,
+  kind,
+  ground,
+  stone = '#ffffff',
+  metal = 'gold',
+  colors = [],
+  beads = 'round',
+  count = 36,
+  clear = false,
+  pattern = 'wash',
+  label,
+  class: className,
+} = Astro.props;
+
+const uid = `pa-${id}`.replace(/[^a-z0-9-]/gi, '');
+const m = `url(#${uid}-metal)`;
+const s = `url(#${uid}-stone)`;
+
+const metals = {
+  gold: ['#fbf0cf', '#e2c079', '#a3772b', '#f3dba0', '#8d6828'],
+  silver: ['#fbfbfa', '#d3d4d2', '#8b8d8c', '#efefec', '#9fa19f'],
+}[metal];
+
+// Deterministic randomness so every build draws the same piece.
+let seed = [...id].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0;
+const rand = () => {
+  seed = (seed + 0x6d2b79f5) >>> 0;
+  let t = seed;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const pick = <T,>(list: T[]) => list[Math.floor(rand() * list.length)];
+
+const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.replace('#', '').padEnd(6, '0').slice(i - 1, i + 1), 16));
+const mix = (a: string, b: string, t: number) =>
+  `rgb(${rgb(a)
+    .map((v, i) => Math.round(v * (1 - t) + rgb(b)[i] * t))
+    .join(' ')})`;
+const [gr, gg, gb] = rgb(ground);
+const lum = (gr * 299 + gg * 587 + gb * 114) / 1000;
+const softGround = lum < 60 ? mix(ground, '#4a3a2c', 0.35) : lum > 200 ? ground : mix(ground, '#e6ddcf', 0.3);
+const shadowOpacity = lum > 150 ? 0.2 : 0.32;
+const palette = colors.length ? colors : [stone];
+
+/* Necklace: beads laid at equal spacing along a softly tapered loop, clasp at the top. */
+type Bead = { x: number; y: number; a: number; c: number; small: boolean; rot: number };
+const strand = (() => {
+  if (kind !== 'necklace') return null;
+  const cx = 400;
+  const cy = 520;
+  const rx = 215;
+  const ry = 290;
+  const at = (t: number) => {
+    const taper = 0.78 + 0.22 * ((Math.sin(t) + 1) / 2);
+    return [cx + rx * Math.cos(t) * taper, cy + ry * Math.sin(t)] as const;
+  };
+  const gap = 0.17;
+  const t0 = -Math.PI / 2 + gap;
+  const t1 = (3 * Math.PI) / 2 - gap;
+  const steps = 900;
+  const pts = Array.from({ length: steps + 1 }, (_, i) => at(t0 + ((t1 - t0) * i) / steps));
+  const lens = [0];
+  for (let i = 1; i < pts.length; i++) {
+    lens.push(lens[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  const spacing = lens[lens.length - 1] / count;
+  const list: Bead[] = [];
+  let j = 0;
+  for (let k = 0; k < count; k++) {
+    const target = (k + 0.5) * spacing;
+    while (j < lens.length - 2 && lens[j + 1] < target) j++;
+    const [x0, y0] = pts[j];
+    const [x1, y1] = pts[j + 1];
+    const f = (target - lens[j]) / (lens[j + 1] - lens[j] || 1);
+    list.push({
+      x: x0 + (x1 - x0) * f,
+      y: y0 + (y1 - y0) * f,
+      a: (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI,
+      c: Math.floor(rand() * palette.length),
+      small: beads === 'tube' && k % 2 === 1,
+      rot: rand() * 72,
+    });
+  }
+  const size = spacing * (beads === 'oval' ? 0.62 : beads === 'flower' ? 0.58 : 0.5);
+  const top = at(-Math.PI / 2);
+  const ends = [at(t0), at(t1)];
+  const path = pts
+    .filter((_, i) => i % 6 === 0)
+    .map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`)
+    .join(' ');
+  return { list, size, top, ends, path };
+})();
+
+type Shape = { tag: 'ellipse' | 'rect' | 'circle'; attrs: Record<string, string | number> };
+const beadShape = (b: Bead, size: number, fill: string, extra: Record<string, string | number> = {}): Shape => {
+  if (beads === 'oval') {
+    return {
+      tag: 'ellipse',
+      attrs: { cx: b.x, cy: b.y, rx: size, ry: size * 0.74, transform: `rotate(${b.a} ${b.x} ${b.y})`, fill, ...extra },
+    };
+  }
+  if (beads === 'tube' && !b.small) {
+    return {
+      tag: 'rect',
+      attrs: {
+        x: b.x - size * 0.95,
+        y: b.y - size * 0.6,
+        width: size * 1.9,
+        height: size * 1.2,
+        rx: size * 0.35,
+        transform: `rotate(${b.a} ${b.x} ${b.y})`,
+        fill,
+        ...extra,
+      },
+    };
+  }
+  return { tag: 'circle', attrs: { cx: b.x, cy: b.y, r: b.small ? size * 0.55 : size, fill, ...extra } };
+};
+
+const petals = (b: Bead, size: number) =>
+  Array.from({ length: 5 }, (_, p) => {
+    const ang = ((b.rot + p * 72) * Math.PI) / 180;
+    return { cx: b.x + Math.cos(ang) * size * 0.42, cy: b.y + Math.sin(ang) * size * 0.42, r: size * 0.52 };
+  });
+
+/* Prints and cards */
+const speckles =
+  kind === 'print' && pattern === 'speckle'
+    ? Array.from({ length: 420 }, () => ({
+        x: 182 + rand() * 436,
+        y: 198 + rand() * 436,
+        r: 0.5 + rand() ** 3 * 3.4,
+        c: pick(palette),
+        o: 0.45 + rand() * 0.55,
+      }))
+    : [];
+const leaves =
+  kind === 'print' && pattern === 'leaves'
+    ? Array.from({ length: 40 }, () => ({
+        x: 170 + rand() * 460,
+        y: 186 + rand() * 460,
+        rx: 34 + rand() * 60,
+        ry: 14 + rand() * 26,
+        a: rand() * 180,
+        c: pick(palette),
+      })).filter((l) => Math.hypot(l.x - 400, (l.y - 416) * 1.8) > 105)
+    : [];
+const cardSet =
+  kind === 'cards'
+    ? palette.slice(0, 6).map((c, i) => ({
+        x: 112 + (i % 3) * 196,
+        y: 330 + Math.floor(i / 3) * 176,
+        rot: (rand() - 0.5) * 3,
+        c,
+        c2: palette[(i + 1) % palette.length],
+      }))
+    : [];
+
+// Single-piece jewelry kinds, kept simple for future listings.
+const links = Array.from({ length: 28 }, (_, i) => {
+  const t = (i / 28) * Math.PI * 2;
+  const x = 400 + 210 * Math.cos(t);
+  const y = 500 + 290 * Math.sin(t);
+  const angle = (Math.atan2(290 * Math.cos(t), -210 * Math.sin(t)) * 180) / Math.PI;
+  return { x, y, angle, flat: i % 2 === 0 };
+});
+const simple = ['studs', 'drops', 'hoops', 'pendant', 'chain', 'ring', 'cuff'].includes(kind);
+---
+
+<svg
+  class:list={['product-art', className]}
+  viewBox="0 0 800 1000"
+  role="img"
+  aria-label={label}
+  preserveAspectRatio="xMidYMid slice"
+>
+  <defs>
+    <linearGradient id={`${uid}-metal`} x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color={metals[0]}></stop>
+      <stop offset="0.3" stop-color={metals[1]}></stop>
+      <stop offset="0.55" stop-color={metals[2]}></stop>
+      <stop offset="0.8" stop-color={metals[3]}></stop>
+      <stop offset="1" stop-color={metals[4]}></stop>
+    </linearGradient>
+    <radialGradient id={`${uid}-stone`} cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.75"></stop>
+      <stop offset="0.25" stop-color={stone}></stop>
+      <stop offset="1" stop-color={stone} stop-opacity="0.85"></stop>
+    </radialGradient>
+    {
+      palette.map((c, i) =>
+        clear ? (
+          <radialGradient id={`${uid}-b${i}`} cx="0.36" cy="0.3" r="0.85">
+            <stop offset="0" stop-color="#fff" stop-opacity="0.95" />
+            <stop offset="0.3" stop-color={c} stop-opacity="0.35" />
+            <stop offset="0.75" stop-color={c} stop-opacity="0.5" />
+            <stop offset="1" stop-color="#8e9da2" stop-opacity="0.75" />
+          </radialGradient>
+        ) : (
+          <radialGradient id={`${uid}-b${i}`} cx="0.34" cy="0.3" r="0.8">
+            <stop offset="0" stop-color={mix(c, '#ffffff', 0.7)} />
+            <stop offset="0.28" stop-color={mix(c, '#ffffff', 0.15)} />
+            <stop offset="0.75" stop-color={c} />
+            <stop offset="1" stop-color={mix(c, '#000000', 0.35)} />
+          </radialGradient>
+        ),
+      )
+    }
+    <radialGradient id={`${uid}-pearl`} cx="0.4" cy="0.35" r="0.8">
+      <stop offset="0" stop-color="#ffffff"></stop>
+      <stop offset="0.45" stop-color="#f6f0e6"></stop>
+      <stop offset="0.75" stop-color="#ece3e4"></stop>
+      <stop offset="1" stop-color="#d9dde0"></stop>
+    </radialGradient>
+    <linearGradient id={`${uid}-night`} x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2a55"></stop>
+      <stop offset="0.5" stop-color="#2c4f86"></stop>
+      <stop offset="1" stop-color="#183044"></stop>
+    </linearGradient>
+    <radialGradient id={`${uid}-iris`} cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd44d"></stop>
+      <stop offset="0.7" stop-color="#f08a1c"></stop>
+      <stop offset="1" stop-color="#b8510e"></stop>
+    </radialGradient>
+    {
+      cardSet.map((card, i) => (
+        <linearGradient id={`${uid}-wash${i}`} x1="0" y1="0" x2="1" y2="0.6">
+          <stop offset="0" stop-color={card.c} />
+          <stop offset="0.6" stop-color={mix(card.c, card.c2, 0.25)} />
+          <stop offset="1" stop-color={mix(card.c, '#ffffff', 0.35)} />
+        </linearGradient>
+      ))
+    }
+    <radialGradient id={`${uid}-light`} cx="0.25" cy="0.15" r="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.3"></stop>
+      <stop offset="0.6" stop-color="#fff" stop-opacity="0"></stop>
+    </radialGradient>
+    <radialGradient id={`${uid}-vignette`} cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0.55" stop-color="#000" stop-opacity="0"></stop>
+      <stop offset="1" stop-color="#1a140f" stop-opacity="0.16"></stop>
+    </radialGradient>
+    <filter id={`${uid}-blur`} x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation={kind === 'necklace' ? 5 : 16}></feGaussianBlur>
+    </filter>
+    <filter id={`${uid}-soft`} x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10"></feGaussianBlur>
+    </filter>
+    <clipPath id={`${uid}-frame`}>
+      <rect x="170" y="186" width="460" height="460"></rect>
+    </clipPath>
+    <filter id={`${uid}-linen`} x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9 0.6" numOctaves="2" seed="4"></feTurbulence>
+      <feColorMatrix values="0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.55 0"></feColorMatrix>
+    </filter>
+  </defs>
+
+  <rect width="800" height="1000" fill={softGround}></rect>
+  <rect width="800" height="1000" filter={`url(#${uid}-linen)`} opacity="0.3"></rect>
+  <rect width="800" height="1000" fill={`url(#${uid}-light)`}></rect>
+  <rect width="800" height="1000" fill={`url(#${uid}-vignette)`}></rect>
+
+  {
+    strand && (
+      <g>
+        {/* Sunlit shadow, offset like window light in the studio */}
+        <g
+          fill={`rgb(40 30 20 / ${clear ? 0.13 : shadowOpacity})`}
+          filter={`url(#${uid}-blur)`}
+          transform="translate(16 22)"
+        >
+          {strand.list.map((b) => {
+            const { tag: Tag, attrs } = beadShape(b, strand.size, 'inherit');
+            return <Tag {...attrs} />;
+          })}
+        </g>
+        {clear && (
+          <g fill="#fff" opacity="0.55" filter={`url(#${uid}-soft)`} transform="translate(16 22)">
+            {strand.list.map((b) => (
+              <ellipse cx={b.x} cy={b.y} rx={strand.size * 0.35} ry={strand.size * 0.22} />
+            ))}
+          </g>
+        )}
+        <path d={strand.path} fill="none" stroke="rgb(60 50 40 / 0.35)" stroke-width="1.4" />
+
+        {strand.list.map((b) => {
+          if (beads === 'flower') {
+            return (
+              <g>
+                {petals(b, strand.size).map((p) => (
+                  <circle {...p} fill={`url(#${uid}-pearl)`} stroke="rgb(150 130 110 / 0.28)" stroke-width="1" />
+                ))}
+                <circle cx={b.x} cy={b.y} r={strand.size * 0.22} fill="#efe2cf" stroke="rgb(150 130 110 / 0.3)" />
+              </g>
+            );
+          }
+          const { tag: Tag, attrs } = beadShape(
+            b,
+            strand.size,
+            `url(#${uid}-b${b.c})`,
+            clear ? { stroke: 'rgb(255 255 255 / 0.75)', 'stroke-width': 1.5 } : {},
+          );
+          return <Tag {...attrs} />;
+        })}
+
+        {clear &&
+          strand.list.map((b) => (
+            <ellipse
+              cx={b.x + strand.size * 0.18}
+              cy={b.y + strand.size * 0.2}
+              rx={strand.size * 0.45}
+              ry={strand.size * 0.18}
+              transform={`rotate(${b.a + 20} ${b.x} ${b.y})`}
+              fill="rgb(70 85 92 / 0.14)"
+            />
+          ))}
+
+        {/* Clasp */}
+        <g fill={m}>
+          {strand.ends.map(([x, y]) => (
+            <circle cx={x} cy={y} r="7" />
+          ))}
+        </g>
+        <g fill="none" stroke={m}>
+          <path
+            d={`M${strand.ends[0][0]} ${strand.ends[0][1]} Q${strand.top[0] + 14} ${strand.top[1] - 4} ${strand.top[0] + 12} ${strand.top[1] + 2}`}
+            stroke-width="3"
+          />
+          <path
+            d={`M${strand.ends[1][0]} ${strand.ends[1][1]} Q${strand.top[0] - 30} ${strand.top[1] - 6} ${strand.top[0] - 22} ${strand.top[1]}`}
+            stroke-width="3"
+          />
+          <circle cx={strand.top[0] - 6} cy={strand.top[1]} r="18" stroke-width="7" />
+          <circle cx={strand.top[0] + 20} cy={strand.top[1] + 2} r="8" stroke-width="3.5" />
+        </g>
+      </g>
+    )
+  }
+
+  {
+    kind === 'print' && (
+      <g>
+        <rect
+          x="132"
+          y="150"
+          width="536"
+          height="640"
+          fill="rgb(40 30 20 / 0.28)"
+          filter={`url(#${uid}-soft)`}
+          transform="translate(10 16)"
+        />
+        <rect x="132" y="150" width="536" height="640" fill="#fbfaf6" />
+        {pattern === 'speckle' && (
+          <g clip-path={`url(#${uid}-frame)`}>
+            <rect x="170" y="186" width="460" height="460" fill={`url(#${uid}-night)`} />
+            {speckles.map((d) => (
+              <circle cx={d.x} cy={d.y} r={d.r} fill={d.c} opacity={d.o} />
+            ))}
+          </g>
+        )}
+        {pattern === 'leaves' && (
+          <g clip-path={`url(#${uid}-frame)`}>
+            <rect x="170" y="186" width="460" height="460" fill="#21173a" />
+            {leaves.map((l) => (
+              <ellipse
+                cx={l.x}
+                cy={l.y}
+                rx={l.rx}
+                ry={l.ry}
+                transform={`rotate(${l.a} ${l.x} ${l.y})`}
+                fill={l.c}
+                opacity="0.92"
+              />
+            ))}
+            {[356, 444].map((x) => (
+              <g>
+                <path d={`M${x - 34} 416 Q${x} 390 ${x + 34} 416 Q${x} 438 ${x - 34} 416 Z`} fill="#fbf6ea" />
+                <circle cx={x} cy="415" r="14" fill={`url(#${uid}-iris)`} />
+                <ellipse cx={x} cy="415" rx="3.2" ry="11" fill="#120d18" />
+              </g>
+            ))}
+            <rect x="170" y="186" width="460" height="460" fill="none" stroke="#fbfaf6" stroke-width="2" />
+          </g>
+        )}
+        <path
+          d="M512 716 c10 -14 20 -12 18 0 c-2 10 10 -10 22 -8 c10 2 6 12 16 4 c8 -6 14 -4 24 -2"
+          fill="none"
+          stroke="#3a3530"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </g>
+    )
+  }
+
+  {
+    kind === 'cards' && (
+      <g>
+        {cardSet.map((card, i) => (
+          <g transform={`rotate(${card.rot} ${card.x + 90} ${card.y + 61})`}>
+            <rect
+              x={card.x}
+              y={card.y}
+              width="180"
+              height="122"
+              fill="rgb(40 30 20 / 0.25)"
+              filter={`url(#${uid}-soft)`}
+              transform="translate(5 9)"
+            />
+            <rect x={card.x} y={card.y} width="180" height="122" fill="#fbfaf6" />
+            <rect x={card.x + 8} y={card.y + 8} width="164" height="106" fill={`url(#${uid}-wash${i})`} />
+            <rect x={card.x + 8} y={card.y + 8} width="164" height="106" filter={`url(#${uid}-linen)`} opacity="0.45" />
+            <path
+              d={`M${card.x + 8} ${card.y + 60} q40 -22 82 0 t82 0`}
+              fill="none"
+              stroke="#ffffff"
+              stroke-opacity="0.35"
+              stroke-width="6"
+            />
+          </g>
+        ))}
+      </g>
+    )
+  }
+
+  {
+    simple && (
+      <g fill={`rgb(0 0 0 / ${shadowOpacity})`} filter={`url(#${uid}-blur)`}>
+        <ellipse cx="400" cy="760" rx="170" ry="22" />
+      </g>
+    )
+  }
+  {
+    kind === 'studs' && (
+      <g>
+        <circle cx="330" cy="520" r="66" fill={m} />
+        <circle cx="330" cy="520" r="52" fill={s} />
+        <circle cx="480" cy="480" r="66" fill={m} />
+        <circle cx="480" cy="480" r="52" fill={s} />
+      </g>
+    )
+  }
+  {
+    kind === 'drops' && (
+      <g>
+        {[
+          [320, 250],
+          [480, 230],
+        ].map(([x, y]) => (
+          <g>
+            <path
+              d={`M${x} ${y + 120} L${x} ${y + 40} C${x} ${y - 20}, ${x + 70} ${y - 20}, ${x + 70} ${y + 30}`}
+              fill="none"
+              stroke={m}
+              stroke-width="7"
+              stroke-linecap="round"
+            />
+            <path
+              d={`M${x} ${y + 150} C${x + 64} ${y + 270}, ${x + 74} ${y + 400}, ${x} ${y + 470} C${x - 74} ${y + 400}, ${x - 64} ${y + 270}, ${x} ${y + 150} Z`}
+              fill={s}
+            />
+          </g>
+        ))}
+      </g>
+    )
+  }
+  {
+    kind === 'hoops' && (
+      <g fill="none" stroke={m} stroke-width="17">
+        <ellipse cx="320" cy="470" rx="125" ry="150" transform="rotate(-8 320 470)" />
+        <ellipse cx="500" cy="500" rx="125" ry="150" transform="rotate(6 500 500)" />
+      </g>
+    )
+  }
+  {
+    kind === 'pendant' && (
+      <g>
+        <path d="M140 -20 C 210 470, 590 470, 660 -20" fill="none" stroke={m} stroke-width="5" stroke-dasharray="12 7" />
+        <circle cx="400" cy="480" r="100" fill={m} />
+      </g>
+    )
+  }
+  {
+    kind === 'chain' && (
+      <g fill="none" stroke={m}>
+        {links.map((l) =>
+          l.flat ? (
+            <rect
+              x={l.x - 26}
+              y={l.y - 10}
+              width="52"
+              height="20"
+              rx="10"
+              stroke-width="6"
+              transform={`rotate(${l.angle} ${l.x} ${l.y})`}
+            />
+          ) : (
+            <line
+              x1={l.x - 22}
+              y1={l.y}
+              x2={l.x + 22}
+              y2={l.y}
+              stroke-width="7"
+              transform={`rotate(${l.angle} ${l.x} ${l.y})`}
+            />
+          ),
+        )}
+      </g>
+    )
+  }
+  {
+    kind === 'ring' && (
+      <g>
+        <ellipse cx="400" cy="560" rx="140" ry="150" fill="none" stroke={m} stroke-width="30" />
+        <rect x="338" y="352" width="124" height="86" rx="34" fill={m} />
+        <ellipse cx="400" cy="395" rx="44" ry="30" fill={s} />
+      </g>
+    )
+  }
+  {
+    kind === 'cuff' && (
+      <path d="M 250 600 A 210 110 0 1 1 550 600" fill="none" stroke={m} stroke-width="54" stroke-linecap="round" />
+    )
+  }
+</svg>
+
+<style>
+  .product-art {
+    width: 100%;
+    height: 100%;
+  }
+</style>

@@ -1,0 +1,67 @@
+---
+import Base from '../../layouts/Base.astro';
+import { site } from '../../data/site';
+---
+
+<Base title="Thank you" noindex bare>
+  <section class="container done" data-bag-clear>
+    <p class="eyebrow">Order confirmed</p>
+    <h1 class="display">Thank <em>you.</em></h1>
+    <p class="lede">
+      Your order is in. A receipt is on its way to your inbox, and Simone will send tracking as soon as your piece leaves
+      the studio.
+    </p>
+    <ol class="next">
+      <li><span>i.</span> Receipt by email, right now</li>
+      <li><span>ii.</span> Packed by hand in {site.shipping.processing}</li>
+      <li><span>iii.</span> Tracking number when it ships</li>
+    </ol>
+    <div class="done-actions">
+      <a class="btn" href="/shop">Keep browsing <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="link" href={`mailto:${site.email}`}>Questions? {site.email}</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .done {
+    max-width: 52rem;
+    padding-block: clamp(3rem, 8vw, 7rem) var(--section);
+  }
+
+  .done .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .done .lede {
+    margin-top: 1.5rem;
+  }
+
+  .next {
+    list-style: none;
+    padding: 0;
+    margin: 2.5rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .next li {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: var(--step-1);
+  }
+
+  .next span {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .done-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 2rem;
+  }
+</style>

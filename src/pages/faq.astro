@@ -1,0 +1,81 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../data/site';
+import { formatPrice } from '../lib/catalog';
+
+const faqs: { q: string; a: string }[] = [
+  {
+    q: 'Is every necklace one of a kind?',
+    a: 'Most are. Natural stones are never identical in color or shape, and each necklace is strung by hand. Pieces marked One of one are made once; when they sell, they are gone. A few designs are made in small runs, and the listing says how many are left.',
+  },
+  {
+    q: 'What are the stones?',
+    a: 'Natural gemstones such as amethyst, aquamarine, smoky quartz, apatite, fluorite and tiger’s eye. Each listing names its stones, their size and shape, and the intention the piece carries.',
+  },
+  {
+    q: 'What metals do you use?',
+    a: 'Statement pieces use solid 925 sterling silver clasps, rings and beads. Other pieces use silver- or gold-finished brass clasps with sterling silver or 14k gold-filled beads. Each listing says which.',
+  },
+  {
+    q: 'How are the necklaces strung?',
+    a: 'By hand, on 49-strand stainless steel wire with a nylon coating. It is strong, flexible and drapes well against the skin.',
+  },
+  {
+    q: 'How long are the necklaces?',
+    a: 'Most are 16 in. Each listing gives the exact length. If you need a different length, Simone can usually restring a piece or make one to order.',
+  },
+  {
+    q: 'Do you offer gift wrapping?',
+    a: 'Every necklace arrives gift wrapped in a box with ribbon and a natural cotton muslin bag, with a card that carries its intention and care. Sterling silver pieces include a polishing cloth. Prints arrive wrapped and ready to give. Add a gift note at checkout and Simone will write it by hand. Prices are never included in the package.',
+  },
+  {
+    q: 'Are the prints signed?',
+    a: 'Yes. Prints are 10 x 10 in. certified archival giclée prints on white fine art paper, border included, hand signed by Simone and sent with a certificate of authenticity.',
+  },
+  {
+    q: 'How do I buy an original painting?',
+    a: 'Use the Inquire button on any painting. Simone will reply with availability, price, shipping and payment plan options.',
+  },
+  {
+    q: 'Do you do custom necklaces or wholesale?',
+    a: 'Yes to both. Use the contact form and choose the option that fits.',
+  },
+  {
+    q: 'How long does shipping take?',
+    a: `Ready-to-ship pieces leave the studio in ${site.shipping.processing}. US shipping is complimentary over ${formatPrice(site.shipping.freeThreshold)}.`,
+  },
+];
+---
+
+<Page title="FAQ and care" eyebrow="Help" description="Answers to common questions, plus how to care for your gemstone necklace.">
+  <p class="lede" slot="lede">
+    Cannot find what you need? Email <a href={`mailto:${site.email}`}>{site.email}</a>.
+  </p>
+
+  {
+    faqs.map((f) => (
+      <details>
+        <summary>{f.q}</summary>
+        <p>{f.a}</p>
+      </details>
+    ))
+  }
+
+  <h2 id="care">Caring for your necklace</h2>
+  <ul>
+    <li>Store it on its own in the cotton muslin bag it came in.</li>
+    <li>Put it on last, after perfume, lotion and hairspray.</li>
+    <li>Take it off to swim, shower or sleep.</li>
+    <li>Clean it with a soft, damp cloth and dry it fully before storing or wearing.</li>
+    <li>Use the included polishing cloth to bring up the shine on sterling silver clasps, rings and beads.</li>
+    <li>Check that the clasp is fully closed each time you put it on.</li>
+    <li>Skip chemical cleaners and ultrasonic machines, and keep amethyst and quartz out of long, direct sun.</li>
+  </ul>
+
+  <h2>Caring for prints and paintings</h2>
+  <ul>
+    <li>Hang away from direct sun, radiators and damp walls.</li>
+    <li>Frame prints behind UV-filtering glass if they will be in a bright room.</li>
+    <li>Dust paintings gently with a soft, dry brush. Never use water or cleaners.</li>
+  </ul>
+</Page>

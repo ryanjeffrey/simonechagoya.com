@@ -1,0 +1,96 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  eyebrow?: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { title, eyebrow, description, noindex } = Astro.props;
+---
+
+<Base title={title} description={description} noindex={noindex}>
+  <article class="container page">
+    <header class="page-head">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      <h1 class="display">{title}</h1>
+      <slot name="lede" />
+    </header>
+    <div class="page-body prose">
+      <slot />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .page {
+    padding-block: clamp(2.5rem, 6vw, 5.5rem) var(--section);
+  }
+
+  .page-head {
+    max-width: 52rem;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .page-head .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .page-head :global(.lede) {
+    margin-top: 1.5rem;
+  }
+
+  .page-body {
+    color: var(--ink-2);
+  }
+
+  .page-body :global(h2),
+  .page-body :global(h3) {
+    color: var(--ink);
+  }
+
+  .page-body :global(details) {
+    border-bottom: 1px solid var(--line);
+    margin: 0;
+  }
+
+  .page-body :global(details:first-of-type) {
+    border-top: 1px solid var(--line);
+  }
+
+  .page-body :global(summary) {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.3rem 0;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 450;
+    line-height: 1.2;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .page-body :global(summary::-webkit-details-marker) {
+    display: none;
+  }
+
+  .page-body :global(summary::after) {
+    content: '+';
+    font-weight: 300;
+    font-size: 1.3rem;
+    line-height: 1;
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .page-body :global(details[open] summary::after) {
+    transform: rotate(45deg);
+  }
+
+  .page-body :global(details > :not(summary)) {
+    padding-bottom: 1.25rem;
+  }
+</style>

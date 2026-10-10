@@ -1,0 +1,271 @@
+---
+import Base from '../layouts/Base.astro';
+import ProductCard from './ProductCard.astro';
+import Newsletter from './Newsletter.astro';
+import { CATEGORY_META, GROUPS, type Product, type Category } from '../lib/catalog';
+import { getProducts } from '../lib/catalog';
+
+interface Props {
+  title: string;
+  eyebrow: string;
+  blurb: string;
+  products: Product[];
+  active: string;
+  metaTitle?: string;
+}
+
+const { title, eyebrow, blurb, products, active, metaTitle } = Astro.props;
+
+const all = await getProducts();
+const has = (c: Category) => all.some((p) => p.data.category === c);
+const chips = [
+  { id: 'all', label: 'All', href: '/shop' },
+  { id: 'jewelry', label: 'Jewelry', href: '/shop/jewelry' },
+  ...GROUPS.jewelry.categories.filter(has).map((c) => ({ id: c, label: CATEGORY_META[c].label, href: `/shop/${c}` })),
+  { id: 'art', label: 'Art', href: '/shop/art' },
+  ...GROUPS.art.categories.filter(has).map((c) => ({ id: c, label: CATEGORY_META[c].label, href: `/shop/${c}` })),
+];
+---
+
+<Base title={metaTitle ?? title} description={blurb}>
+  <section class="shop-hero container">
+    <p class="eyebrow eyebrow--center">{eyebrow}</p>
+    <h1 class="display">{title}</h1>
+    <p class="lede">{blurb}</p>
+  </section>
+
+  <div class="toolbar-wrap">
+    <div class="container toolbar">
+      <nav class="chips" aria-label="Categories">
+        {
+          chips.map((c) => (
+            <a class="chip" href={c.href} aria-current={c.id === active ? 'page' : undefined}>
+              {c.label}
+            </a>
+          ))
+        }
+      </nav>
+      <div class="toolbar-end">
+        <span class="count">{products.length} {products.length === 1 ? 'piece' : 'pieces'}</span>
+        <label class="visually-hidden" for="sort">Sort</label>
+        <select id="sort" class="sort" data-sort>
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price, low to high</option>
+          <option value="price-desc">Price, high to low</option>
+          <option value="title">A to Z</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <section class="container shop-body">
+    {
+      products.length ? (
+        <div class="grid" data-grid>
+          {products.map((p, i) => (
+            <div
+              class="grid-item"
+              data-price={p.data.status === 'inquire' ? 1e9 : p.data.price}
+              data-order={i}
+              data-title={p.data.title}
+            >
+              <ProductCard
+                product={p}
+                loading={i < 3 ? 'eager' : 'lazy'}
+                delay={(i % 3) * 90}
+                sizes="(min-width: 1100px) 31vw, (min-width: 760px) 45vw, 50vw"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="empty">
+          <h2 class="h3">Nothing here right now.</h2>
+          <p class="muted">New pieces go to the studio list first. Join and you will hear before anyone else.</p>
+          <Newsletter id="empty-newsletter" source={`empty-${active}`} />
+        </div>
+      )
+    }
+  </section>
+</Base>
+
+<style>
+  .shop-hero {
+    padding-block: clamp(3rem, 7vw, 6.5rem) clamp(2.5rem, 4.5vw, 3.5rem);
+    text-align: center;
+    display: grid;
+    justify-items: center;
+  }
+
+  .shop-hero .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .shop-hero .lede {
+    margin-top: 1.25rem;
+  }
+
+  .toolbar-wrap {
+    position: sticky;
+    top: var(--header-h);
+    z-index: 10;
+    background: rgb(244 239 231 / 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-block: 1px solid var(--line);
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 4rem;
+  }
+
+  .chips {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block: 0.6rem;
+    margin-left: -0.2rem;
+    padding-left: 0.2rem;
+  }
+
+  .chip {
+    position: relative;
+    flex-shrink: 0;
+    padding: 0.6rem 0;
+    margin-right: 1.6rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--ink-2);
+    transition: color 0.3s;
+  }
+
+  .chip::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.3rem;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.6s var(--ease-out);
+  }
+
+  .chip:hover,
+  .chip[aria-current='page'] {
+    color: var(--ink);
+  }
+
+  .chip:hover::after,
+  .chip[aria-current='page']::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .count,
+  .sort {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .count {
+    color: var(--ink-2);
+  }
+
+  .sort {
+    appearance: none;
+    padding: 0.5rem 1.4rem 0.5rem 0;
+    border: 0;
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' fill='none'%3E%3Cpath stroke='%23211c17' stroke-width='1.2' d='m1 1.5 4 4 4-4'/%3E%3C/svg%3E") no-repeat right 0.1rem center;
+    cursor: pointer;
+  }
+
+  .shop-body {
+    padding-block: clamp(2rem, 4vw, 3.5rem) var(--section);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(3rem, 5vw, 5rem) clamp(1.25rem, 2.5vw, 2.5rem);
+  }
+
+  @media (max-width: 760px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2.75rem 1rem;
+    }
+
+    .toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding-bottom: 0.6rem;
+    }
+
+    .toolbar-end {
+      justify-content: space-between;
+    }
+  }
+
+  .empty {
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+    padding-block: 2rem 4rem;
+  }
+</style>
+
+<script>
+  const grid = document.querySelector<HTMLElement>('[data-grid]');
+  const select = document.querySelector<HTMLSelectElement>('[data-sort]');
+
+  function apply(mode: string) {
+    if (!grid) return;
+    const items = [...grid.children] as HTMLElement[];
+    const n = (el: HTMLElement, k: string) => Number(el.dataset[k]);
+    const sorters: Record<string, (a: HTMLElement, b: HTMLElement) => number> = {
+      featured: (a, b) => n(a, 'order') - n(b, 'order'),
+      'price-asc': (a, b) => n(a, 'price') - n(b, 'price'),
+      'price-desc': (a, b) => (n(b, 'price') % 1e9) - (n(a, 'price') % 1e9),
+      title: (a, b) => (a.dataset.title ?? '').localeCompare(b.dataset.title ?? ''),
+    };
+    items.sort(sorters[mode] ?? sorters.featured).forEach((el) => {
+      el.querySelector('[data-reveal]')?.classList.add('is-in');
+      grid.append(el);
+    });
+  }
+
+  const initial = new URLSearchParams(location.search).get('sort');
+  if (select && initial && [...select.options].some((o) => o.value === initial)) {
+    select.value = initial;
+    apply(initial);
+  }
+
+  select?.addEventListener('change', () => {
+    apply(select.value);
+    const url = new URL(location.href);
+    if (select.value === 'featured') url.searchParams.delete('sort');
+    else url.searchParams.set('sort', select.value);
+    history.replaceState(null, '', url);
+  });
+</script>
