@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import { reviews as all } from '../data/reviews';
 
 interface Props {
@@ -10,12 +11,16 @@ interface Props {
 
 const { product, fallback = false, limit = 6 } = Astro.props;
 const own = product ? all.filter((r) => r.product === product) : all;
-const matching = own.length ? own : fallback ? all : [];
+// A piece whose only words are unrated (an Instagram post) leads with them, then the shop's reviews.
+const ownRated = own.some((r) => r.rating);
+const matching = ownRated ? own : own.length || fallback ? [...own, ...(fallback ? all.filter((r) => !own.includes(r)) : [])] : [];
 const list = matching.slice(0, limit);
-// The count and average cover every matching review, so they agree with the rating shown elsewhere.
-const average = matching.length ? matching.reduce((n, r) => n + r.rating, 0) / matching.length : 0;
-const allEtsy = matching.every((r) => r.source === 'Etsy');
-const label = `From ${matching.length} ${matching.length === 1 ? 'review' : 'reviews'}${allEtsy ? ' on Etsy' : ''}`;
+// The count and average cover every matching star rating, so they agree with the rating shown elsewhere.
+// Words shared without stars (an Instagram post) are shown but not counted.
+const rated = matching.filter((r) => r.rating);
+const average = rated.length ? rated.reduce((n, r) => n + (r.rating ?? 0), 0) / rated.length : 0;
+const allEtsy = rated.every((r) => r.source === 'Etsy');
+const label = `From ${rated.length} ${rated.length === 1 ? 'review' : 'reviews'}${allEtsy ? ' on Etsy' : ''}`;
 ---
 
 {
@@ -25,22 +30,27 @@ const label = `From ${matching.length} ${matching.length === 1 ? 'review' : 'rev
         <div>
           <p class="eyebrow">Kind words</p>
           <h2 id="reviews-title" class="h2">
-            {average.toFixed(1)} <em>out of 5</em>
+            {rated.length ? <>{average.toFixed(1)} <em>out of 5</em></> : <>Worn and <em>loved</em></>}
           </h2>
         </div>
-        <p class="muted">{label}</p>
+        {rated.length > 0 && <p class="muted">{label}</p>}
       </div>
       <ul class="review-list">
         {list.map((r, i) => (
           <li class="review" data-reveal style={`--reveal-delay: ${(i % 3) * 80}`}>
-            <p class="review-stars" aria-label={`${r.rating} out of 5 stars`}>
-              {'★'.repeat(r.rating)}
-              <span>{'★'.repeat(5 - r.rating)}</span>
-            </p>
+            {r.photo && (
+              <Image class="review-photo" src={r.photo.src} alt={r.photo.alt} widths={[320, 600]} sizes="(min-width: 960px) 30vw, 100vw" loading="lazy" />
+            )}
+            {r.rating && (
+              <p class="review-stars" aria-label={`${r.rating} out of 5 stars`}>
+                {'★'.repeat(r.rating)}
+                <span>{'★'.repeat(5 - r.rating)}</span>
+              </p>
+            )}
             <blockquote>{r.text}</blockquote>
             <p class="review-by">
               {r.name}
-              {r.source === 'Etsy' && <span> · via Etsy</span>}
+              {r.source !== 'Direct' && <span> · via {r.source}</span>}
             </p>
           </li>
         ))}
@@ -62,6 +72,15 @@ const label = `From ${matching.length} ${matching.length === 1 ? 'review' : 'rev
     margin-bottom: 1.25rem;
     padding: 1.75rem;
     background: var(--paper-2);
+  }
+
+  .review-photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    margin-bottom: 1.5rem;
   }
 
   .review-stars {
