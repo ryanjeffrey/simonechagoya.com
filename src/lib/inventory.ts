@@ -1,5 +1,6 @@
 /**
- * Live inventory for single pieces, so a one-of-one necklace cannot sell twice.
+ * Live inventory, so a one-of-one necklace cannot sell twice and a small run
+ * cannot sell more than it has.
  *
  * The site is static, so a piece only shows Sold after a rebuild. Between the
  * sale and the rebuild, this store is the source of truth. It lives in Netlify
@@ -8,8 +9,9 @@
  *   orders/<checkout session id>  what a checkout bought, written by the Stripe webhook
  *   holds/<slug>                  a single piece reserved while a buyer is in Stripe Checkout
  *
- * Only single pieces (stock 1, no variants) are guarded. Prints and small runs
- * keep the stock number in their product file, which Simone lowers by hand.
+ * Every recorded order counts against `stock` in the product file, so `stock`
+ * is how many were ever offered here, and restocking means raising it. Only
+ * single pieces (stock 1, no variants) are also held during Checkout.
  *
  * Outside Netlify there is no store: local dev and local builds use the product
  * files as they are, and checkout skips the guards.
@@ -39,36 +41,48 @@ export function inventoryStore(): Store | null {
 
 export const isSinglePiece = (p: Product) => p.data.stock === 1 && p.data.variants.length === 0;
 
-/** Slugs with a recorded order, paid or awaiting a delayed payment. */
-export async function soldSlugs(s = inventoryStore()): Promise<Set<string>> {
-  const sold = new Set<string>();
+/** Units with a recorded order, paid or awaiting a delayed payment, keyed by slug and by `slug:variant`. */
+export async function soldCounts(s = inventoryStore()): Promise<Map<string, number>> {
+  const sold = new Map<string, number>();
   if (!s) return sold;
   const { blobs } = await s.list({ prefix: 'orders/' });
   const orders = await Promise.all(blobs.map((b) => s.get(b.key, { type: 'json' }) as Promise<Order | null>));
-  for (const order of orders) for (const line of order?.lines ?? []) sold.add(line.slug);
+  const add = (key: string, qty: number) => sold.set(key, (sold.get(key) ?? 0) + qty);
+  for (const order of orders) {
+    for (const line of order?.lines ?? []) {
+      add(line.slug, line.qty);
+      if (line.variant) add(`${line.slug}:${line.variant}`, line.qty);
+    }
+  }
   return sold;
 }
 
-let buildTimeSold: Promise<Set<string>> | undefined;
+let buildTimeSold: Promise<Map<string, number>> | undefined;
 
 /**
- * Marks single pieces with an order as sold. Pages built after a sale show it as
- * Sold. `fresh` skips the per-process cache, for checkout at request time.
+ * Subtracts recorded orders from stock, and marks products that ran out as
+ * sold. Pages built after a sale show it. `fresh` skips the per-process cache,
+ * for checkout at request time.
  */
 export async function withInventory(products: Product[], { fresh = false } = {}): Promise<Product[]> {
-  let sold: Set<string>;
+  let sold: Map<string, number>;
   try {
-    sold = await (fresh ? soldSlugs() : (buildTimeSold ??= soldSlugs()));
+    sold = await (fresh ? soldCounts() : (buildTimeSold ??= soldCounts()));
   } catch (err) {
     console.warn('Inventory store unreachable; using product files as they are.', err);
     return products;
   }
   if (!sold.size) return products;
-  return products.map((p) =>
-    p.data.status === 'available' && isSinglePiece(p) && sold.has(p.id)
-      ? { ...p, data: { ...p.data, status: 'sold' as const } }
-      : p,
-  );
+  return products.map((p) => {
+    const count = sold.get(p.id);
+    if (!count) return p;
+    const stock = Math.max(0, p.data.stock - count);
+    const variants = p.data.variants.map((v) =>
+      v.stock === undefined ? v : { ...v, stock: Math.max(0, v.stock - (sold.get(`${p.id}:${v.id}`) ?? 0)) },
+    );
+    const soldOut = p.data.status === 'available' && !variants.length && stock === 0;
+    return { ...p, data: { ...p.data, stock, variants, status: soldOut ? ('sold' as const) : p.data.status } };
+  });
 }
 
 /** Reserves single pieces for one checkout. Returns the slugs it could not hold. */
