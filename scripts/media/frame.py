@@ -3,8 +3,8 @@
 Each photo is a graded flat lay: the piece on a plain light background. For each one:
   1. the piece is found as everything that stands apart from the plain background,
   2. the background is modeled as a smooth surface fitted to everything clear of the piece,
-  3. the photo is scaled so the piece's bounding box fits one shared box, and centered
-     on one shared point of a 4:5 canvas,
+  3. the photo is scaled so every piece has the same height, and centered on one shared
+     point of a 4:5 canvas, so tops and bottoms line up in a grid,
   4. the background is evened out to one shared color, so the canvas edge never shows.
 
 The piece itself is only scaled, never retouched. Stone colors are left as graded.
@@ -23,9 +23,12 @@ from PIL import Image, ImageCms, ImageDraw
 SRGB_BYTES = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
 
 CANVAS = (1200, 1500)
-# The piece's bounding box is fitted inside this box (a share of the canvas width), so a
-# round necklace always lands at the same diameter and a long one at the same height.
+# Every piece is scaled to this height (a share of the canvas width), so its top and bottom
+# land on the same lines as every other piece, whatever its shape.
 BOX = 0.68
+# Widest a piece may get, as a share of the canvas width. Only a very wide piece hits it,
+# and then it comes out shorter than the rest.
+MAX_W = 0.84
 # Optical center: a touch above the middle reads as centered.
 CENTER_Y = 0.485
 # Shared background, the graded flat-lay white (see grade.py).
@@ -93,7 +96,9 @@ def frame(img):
     (x0, y0, x1, y1), surface = find_piece(img)
     cw, ch = CANVAS
     box = BOX * cw
-    s = min(box / (x1 - x0), box / (y1 - y0))
+    # Every piece gets the same height, so tops and bottoms line up across a row. A wide piece
+    # may run wider than the box, up to MAX_W.
+    s = min(box / (y1 - y0), MAX_W * cw / (x1 - x0))
     # Where the source's top-left lands on the canvas.
     ox = cw / 2 - s * (x0 + x1) / 2
     oy = ch * CENTER_Y - s * (y0 + y1) / 2
