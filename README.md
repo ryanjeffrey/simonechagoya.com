@@ -107,4 +107,6 @@ scripts/import-etsy.mjs  Etsy CSV importer
 
 **Design system.** Colors, type scale and spacing are CSS variables at the top of `src/styles/global.css`: linen and stone grounds, espresso ink, fired clay and brass accents. The type is Cormorant (display) with Instrument Sans (text). Both fonts are self-hosted.
 
+**Logo.** Simone's mark lives in `public/brand/` as SVG (wordmark, and the full lockup with STUDIO), vectorized from her logo file, plus a PNG for search engines. The site draws it through `src/components/Logo.astro`, which takes its color from the surrounding text, so the same file works on light and dark backgrounds. To update the logo, replace the SVG files and keep their names.
+
 **Checkout safety.** The browser only sends product slugs and quantities. Prices, stock, sample status and one-of-one limits are all checked again on the server before Stripe sees the order.

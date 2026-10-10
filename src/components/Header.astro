@@ -1,4 +1,5 @@
 ---
+import Logo from './Logo.astro';
 import { nav, site } from '../data/site';
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -12,8 +13,8 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
       <span class="visually-hidden">Open menu</span>
     </button>
 
-    <a class="wordmark logo" href="/" aria-label={`${site.name}, home`}>
-      Simone Chagoya
+    <a class="wordmark" href="/" aria-label={`${site.name}, home`}>
+      <Logo label={`${site.name} Studio`} />
     </a>
 
     <nav class="primary-nav nav-left" aria-label="Shop">
@@ -55,7 +56,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
 <dialog class="menu" id="site-menu" aria-label="Menu" data-menu>
   <div class="menu-inner">
     <div class="menu-top">
-      <span class="wordmark wordmark--light logo">Simone Chagoya</span>
+      <span class="wordmark wordmark--light"><Logo /></span>
       <button class="menu-close" type="button" data-menu-close>
         Close
       </button>
@@ -106,10 +107,9 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
   .wordmark {
     grid-column: 2;
     grid-row: 1;
-    font-size: clamp(1.45rem, 1.2rem + 0.8vw, 1.95rem);
-    letter-spacing: 0.1em;
-    margin-right: -0.1em;
-    text-decoration: none;
+    display: block;
+    width: clamp(11rem, 7rem + 9vw, 16.5rem);
+    color: var(--ink);
   }
 
   .wordmark--light {
@@ -231,9 +231,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
 
   @media (max-width: 420px) {
     .wordmark {
-      font-size: 1.3rem;
-      letter-spacing: 0.06em;
-      margin-right: -0.06em;
+      width: 10.25rem;
     }
   }
 
@@ -286,7 +284,7 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
   }
 
   .menu-top .wordmark {
-    font-size: 1.3rem;
+    width: 10.25rem;
   }
 
   .menu-close {

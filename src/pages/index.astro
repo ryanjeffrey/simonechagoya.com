@@ -5,6 +5,7 @@ import ProductCard from '../components/ProductCard.astro';
 import ProductMedia from '../components/ProductMedia.astro';
 import Marquee from '../components/Marquee.astro';
 import Reviews from '../components/Reviews.astro';
+import Logo from '../components/Logo.astro';
 import { getProducts, isPurchasable, priceLabel, productUrl, type Category, type Product } from '../lib/catalog';
 import { site } from '../data/site';
 import heroPainting from '../assets/art/altered-beliefs.jpg';
@@ -42,7 +43,7 @@ const jsonLd = [
     name: site.studio,
     url: site.url,
     email: site.email,
-    logo: `${site.url}/favicon.svg`,
+    logo: `${site.url}/brand/simone-chagoya-logo.png`,
     address: { '@type': 'PostalAddress', addressLocality: 'Chicago', addressRegion: 'IL', addressCountry: 'US' },
     sameAs: Object.values(site.social).filter(Boolean),
   },
@@ -103,7 +104,7 @@ const jsonLd = [
           <text textLength="448" lengthAdjust="spacing"
             ><textPath href="#seal-circle">Handmade in Chicago · One of one · </textPath></text
           >
-          <text class="seal-mono" x="100" y="111" text-anchor="middle">SC</text>
+          <path class="seal-arch" d="M90 114V99a10 10 0 0 1 20 0v15Z"></path>
         </svg>
 
         {
@@ -199,8 +200,7 @@ const jsonLd = [
   <section class="band" aria-label="Simone Chagoya Studio">
     <Image src={water} alt="" widths={[800, 1200, 1600]} sizes="100vw" format="webp" quality={76} class="band-img" />
     <div class="lockup" data-reveal>
-      <span class="lockup-name logo">Simone Chagoya</span>
-      <span class="lockup-studio">Studio</span>
+      <Logo variant="lockup" class="lockup-mark" />
     </div>
   </section>
 
@@ -431,11 +431,7 @@ const jsonLd = [
     fill: var(--ink);
   }
 
-  .hero-seal .seal-mono {
-    font-family: var(--logo);
-    font-size: 34px;
-    font-weight: 400;
-    letter-spacing: 0.04em;
+  .seal-arch {
     fill: var(--gold);
   }
 
@@ -776,31 +772,16 @@ const jsonLd = [
   }
 
   .lockup {
-    display: grid;
-    justify-items: end;
-    gap: clamp(0.9rem, 1.6vw, 1.35rem);
+    width: min(100% - 2 * var(--gutter), 52rem);
     margin: var(--gutter);
-    padding: clamp(1.75rem, 3.2vw, 2.75rem) clamp(1.75rem, 4.5vw, 3.75rem) clamp(1.25rem, 2.4vw, 2rem);
+    padding: clamp(1.75rem, 3.6vw, 3.25rem) clamp(1.5rem, 4.5vw, 4rem);
+    color: #111;
     background: rgb(250 248 244 / 0.86);
     backdrop-filter: blur(6px) saturate(1.05);
     -webkit-backdrop-filter: blur(6px) saturate(1.05);
     box-shadow: 0 30px 60px -40px rgb(33 28 23 / 0.45);
   }
 
-  .lockup-name {
-    font-size: clamp(2.1rem, 0.9rem + 5.4vw, 5.6rem);
-    letter-spacing: 0.06em;
-    margin-right: -0.06em;
-    padding-top: 0.12em;
-  }
-
-  .lockup-studio {
-    font-size: clamp(0.62rem, 0.55rem + 0.25vw, 0.8rem);
-    font-weight: 400;
-    letter-spacing: 0.6em;
-    margin-right: -0.6em;
-    text-transform: uppercase;
-  }
 
   /* Hero rating */
   .hero-rating {

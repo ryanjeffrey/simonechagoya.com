@@ -2,7 +2,6 @@
 import '../styles/global.css';
 import serifFont from '@fontsource-variable/cormorant/files/cormorant-latin-wght-normal.woff2?url';
 import sansFont from '@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url';
-import logoFont from '@fontsource/italiana/files/italiana-latin-400-normal.woff2?url';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BagDrawer from '../components/BagDrawer.astro';
@@ -44,7 +43,7 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
     <link rel="preload" href={serifFont} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={sansFont} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={logoFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/brand/simone-chagoya-wordmark.svg" as="image" type="image/svg+xml" />
 
     <meta property="og:site_name" content={site.name} />
     <meta property="og:type" content={type === 'product' ? 'product' : 'website'} />

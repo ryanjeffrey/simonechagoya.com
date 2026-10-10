@@ -1,5 +1,6 @@
 ---
 import Newsletter from './Newsletter.astro';
+import Logo from './Logo.astro';
 import { site } from '../data/site';
 
 const year = new Date().getFullYear();
@@ -55,7 +56,7 @@ const social = [
       <span>Secure checkout by Stripe</span>
     </div>
 
-    <p class="footer-mark" aria-hidden="true"><span class="logo">Simone Chagoya</span></p>
+    <div class="footer-mark" aria-hidden="true"><Logo /></div>
   </div>
 </footer>
 
@@ -145,18 +146,10 @@ const social = [
   }
 
   .footer-mark {
-    margin-top: clamp(1.5rem, 4vw, 3.5rem);
-    padding-bottom: clamp(2rem, 4.5vw, 4rem);
-    font-size: min(9.4vw, 9.6rem);
+    width: min(100%, 78rem);
+    margin: clamp(2rem, 5vw, 4.5rem) auto 0;
+    padding-bottom: clamp(2.5rem, 5vw, 4.5rem);
     color: var(--paper);
-    text-align: center;
-    overflow: hidden;
-  }
-
-  .footer-mark .logo {
-    letter-spacing: 0.04em;
-    margin-right: -0.04em;
-    padding-top: 0.15em;
   }
 
   @media (max-width: 900px) {

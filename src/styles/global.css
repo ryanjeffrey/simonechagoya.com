@@ -1,7 +1,6 @@
 @import '@fontsource-variable/cormorant/wght.css';
 @import '@fontsource-variable/cormorant/wght-italic.css';
 @import '@fontsource-variable/instrument-sans/wght.css';
-@import '@fontsource/italiana/400.css';
 
 /* ---------------------------------------------------------------
    Tokens
@@ -25,8 +24,6 @@
 
   --serif: 'Cormorant Variable', 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
   --sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* Logo face: tall, high-contrast deco capitals in the spirit of the studio's original mark */
-  --logo: 'Italiana', 'Didot', 'Bodoni 72', serif;
 
   /* Fluid type scale */
   --step--2: clamp(0.68rem, 0.66rem + 0.08vw, 0.74rem);
@@ -603,18 +600,6 @@ h3 em,
 hr.rule {
   border: 0;
   border-top: 1px solid var(--line);
-}
-
-/* The studio wordmark. Italiana is drawn a little taller to echo the original condensed mark. */
-.logo {
-  display: inline-block;
-  font-family: var(--logo);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  transform: scaleY(1.2);
-  white-space: nowrap;
 }
 
 .eyebrow--center::after {

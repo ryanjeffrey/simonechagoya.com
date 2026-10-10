@@ -1,0 +1,30 @@
+---
+/**
+ * The studio's own mark, vectorized from Simone's logo file (public/brand/).
+ * Drawn as a CSS mask so a single cached SVG can take any color via `color`.
+ */
+interface Props {
+  variant?: 'wordmark' | 'lockup';
+  label?: string;
+  class?: string;
+}
+
+const { variant = 'wordmark', label = 'Simone Chagoya Studio', class: className } = Astro.props;
+const ratio = variant === 'lockup' ? '1107 / 205' : '1097 / 134';
+---
+
+<span
+  class:list={['logo-mark', className]}
+  role="img"
+  aria-label={label}
+  style={`--logo-src: url(/brand/simone-chagoya-${variant}.svg); aspect-ratio: ${ratio};`}></span>
+
+<style>
+  .logo-mark {
+    display: block;
+    width: 100%;
+    background-color: currentColor;
+    -webkit-mask: var(--logo-src) center / contain no-repeat;
+    mask: var(--logo-src) center / contain no-repeat;
+  }
+</style>
