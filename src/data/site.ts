@@ -40,6 +40,16 @@ export const site = {
   },
 
   announcement: 'Complimentary US shipping over $75',
+
+  // "Become a collector" popup. Shows once per visitor, after a short delay.
+  // The code is created in Stripe by `npm run setup:stripe` (10% off, first order only).
+  // Set enabled to false to turn the popup off.
+  collector: {
+    enabled: true,
+    code: 'COLLECTOR10',
+    percentOff: 10,
+    delaySeconds: 12,
+  },
 };
 
 export const nav = [

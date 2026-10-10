@@ -5,6 +5,7 @@ import sansFont from '@fontsource-variable/instrument-sans/files/instrument-sans
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import BagDrawer from '../components/BagDrawer.astro';
+import CollectorPopup from '../components/CollectorPopup.astro';
 import { site } from '../data/site';
 
 interface Props {
@@ -77,6 +78,7 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     </main>
     <Footer />
     <BagDrawer />
+    {!bare && site.collector.enabled && <CollectorPopup />}
 
     <script>
       import '../lib/reveal';

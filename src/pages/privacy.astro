@@ -1,0 +1,39 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../data/site';
+---
+
+<Page
+  title="Privacy policy"
+  eyebrow="Help"
+  description={`What ${site.studio} collects when you shop, sign up or get in touch, and how it is used.`}
+>
+  <p class="lede" slot="lede">A small studio, a short policy. Your details are used to run the shop and nothing else.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>The studio list and collector sign-up:</strong> your email address, and your name if you give it.</li>
+    <li><strong>Commission and contact forms:</strong> what you write to us and any images you attach.</li>
+    <li><strong>Orders:</strong> your name, email, shipping address and what you bought. Payment is handled by Stripe, so your card details never reach us.</li>
+  </ul>
+
+  <h2>How it is used</h2>
+  <ul>
+    <li>To ship your order and reply to your messages.</li>
+    <li>To send studio updates, early access to new pieces and offers, if you signed up for them. Every email has a way to unsubscribe.</li>
+    <li>We never sell or rent your details, and we do not share them with anyone except the services that run the shop.</li>
+  </ul>
+
+  <h2>Services that run the shop</h2>
+  <ul>
+    <li>Netlify hosts the site and receives form submissions.</li>
+    <li>Stripe processes payments and sends order receipts.</li>
+    <li>The site keeps a small note in your browser so the sign-up window only shows once, and remembers your bag between visits. It does not use advertising or tracking cookies.</li>
+  </ul>
+
+  <h2>Your choices</h2>
+  <p>
+    To see, correct or delete what we hold about you, or to leave the list, email
+    <a href={`mailto:${site.email}`}>{site.email}</a> and it will be done.
+  </p>
+</Page>
