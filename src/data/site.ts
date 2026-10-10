@@ -5,9 +5,9 @@
 export const site = {
   name: 'Simone Chagoya',
   studio: 'Simone Chagoya Studio',
-  tagline: 'Made to be kept.',
+  tagline: 'Memory, in stone.',
   description:
-    'Natural gemstone necklaces, signed prints and original paintings by Chicago artist Simone Chagoya. Strung and painted by hand, made to be kept.',
+    'Natural gemstone necklaces, signed prints and original paintings by Chicago artist Simone Chagoya. Painted and strung by hand, from memory.',
   url: 'https://simonechagoya.com',
   email: 'hello@simonechagoya.com',
   city: 'Chicago, IL',
