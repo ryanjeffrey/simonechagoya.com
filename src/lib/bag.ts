@@ -146,7 +146,7 @@ function render() {
     body.innerHTML = `
       <div class="bag-empty">
         <h3>Your bag is empty</h3>
-        <p>Every necklace is one of one. When it is gone, it is gone.</p>
+        <p>No two necklaces are alike. When one is gone, it is gone.</p>
         <div class="bag-empty-links">
           <a class="btn" href="/shop/necklaces">Shop necklaces</a>
           <a class="btn btn--ghost" href="/shop/art">Shop art</a>

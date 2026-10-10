@@ -46,7 +46,7 @@ export const GROUPS = {
   jewelry: {
     label: 'Jewelry',
     categories: ['necklaces', 'earrings', 'bracelets', 'rings'] as Category[],
-    blurb: 'Natural gemstones, strung by hand in Chicago. Every necklace is one of one.',
+    blurb: 'Natural gemstones, strung by hand in Chicago. No two are alike.',
   },
   art: {
     label: 'Art',

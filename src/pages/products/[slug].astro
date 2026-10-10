@@ -94,13 +94,14 @@ const structured = isOriginal
       },
     };
 
-const details = [
+// Imported listings carry their own spec sheet; everything else is derived from the fields.
+const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value]), ['Made in', site.city]] : [
   data.year && ['Year', String(data.year)],
   data.medium && ['Medium', data.medium],
   data.dimensions && [isArt ? 'Size' : 'Dimensions', data.dimensions],
   data.materials.length && ['Materials', data.materials.join(', ')],
   ['Made in', site.city],
-].filter(Boolean) as [string, string][];
+]).filter(Boolean) as [string, string][];
 ---
 
 <Base title={data.title} description={description} image={ogImage} type="product" jsonLd={[structured, breadcrumb]}>
@@ -147,6 +148,7 @@ const details = [
           {data.sample && <span class="badge badge--outline">Sample listing</span>}
         </div>
 
+        {data.intention && <p class="info-intention">{data.intention}</p>}
         <h1 class="info-title">{data.title}</h1>
         {
           isOriginal ? (
@@ -227,6 +229,7 @@ const details = [
         {
           data.status !== 'inquire' && (
             <ul class="trust">
+              <li>{isArt ? 'Wrapped and ready to give' : 'Gift boxed with ribbon, ready to give'}</li>
               <li>Ships from Chicago in {site.shipping.processing}</li>
               {site.shipping.freeThreshold > 0 && <li>Complimentary US shipping over {formatPrice(site.shipping.freeThreshold)}</li>}
               {site.rating.count > 0 && <li>Rated {site.rating.average.toFixed(1)} from {site.rating.count} reviews on {site.rating.source}</li>}
@@ -280,7 +283,13 @@ const details = [
             <summary>{isArt ? 'Framing and care' : 'Care'}</summary>
             <div class="acc-body prose">
               {
-                isArt ? (
+                data.care.length > 0 ? (
+                  <ul class="care">
+                    {data.care.map((line) => (
+                      <li>{line}</li>
+                    ))}
+                  </ul>
+                ) : isArt ? (
                   <p>Hang away from direct sunlight and damp walls. Prints and cards ship unframed, flat and protected.</p>
                 ) : (
                   <p>
@@ -415,6 +424,15 @@ const details = [
     gap: 0.4rem;
     min-height: 1.6rem;
     margin-bottom: 1rem;
+  }
+
+  .info-intention {
+    margin-bottom: 0.9rem;
+    font-size: var(--step--2);
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold-text);
   }
 
   .info-title {

@@ -22,11 +22,14 @@ Node 22.12 or newer.
    - Apple Pay and Google Pay appear in Checkout automatically.
    - Promotion codes are switched on, so discount codes made in the Stripe dashboard work at checkout.
    - Once Stripe Tax is set up for the states where you are registered, set `STRIPE_AUTOMATIC_TAX=true`.
-3. **Products.** Every product currently on the site is a `sample: true` listing built from the Etsy shop. Sample listings show a notice on their page and **cannot be bought**: checkout refuses them. For each real piece:
-   - add photos, confirm the price, stones and length, and
-   - delete the `sample: true` line.
+3. **Product photos.** The 13 live Etsy listings are imported (titles, prices, stock, descriptions, intentions, specs, care). Their photos are not in the repo yet because the build sandbox could not reach Etsy's image host. On any normal machine, run once and commit the result:
 
-   Or import the full shop from Etsy in one step (see below).
+   ```bash
+   npm run import:etsy -- --fetch-images
+   git add src/assets/products src/content/products && git commit -m "Add Etsy product photos"
+   ```
+
+   Until then each piece shows its drawn illustration, and the Google/Pinterest feed leaves it out. Listing videos are not imported; the gallery is photo only for now.
 4. **Forms.** In Netlify > Forms, turn on form detection. Add an email notification for the `inquiry` form (commissions and contact) and the `newsletter` form.
 5. **Confirm the policies** listed under "Needs Simone's sign-off" below.
 6. **Free listings.** Submit `https://simonechagoya.com/feeds/products.xml` to Google Merchant Center (free Shopping listings) and as a Pinterest catalog. Only real, available products with photos are included.
@@ -34,19 +37,23 @@ Node 22.12 or newer.
 
 ## Adding and editing products
 
-Each product is one Markdown file in `src/content/products/`. The file name is the URL: `agua-necklace.md` becomes `/products/agua-necklace`.
+Each product is one Markdown file in `src/content/products/`. The file name is the URL: `smoke-necklace.md` becomes `/products/smoke-necklace`.
 
 ```md
 ---
-title: "Agua Necklace"
+title: "Smoke Necklace"
 category: necklaces          # necklaces, earrings, bracelets, rings, prints, cards, originals
-price: 120
-summary: "Clear quartz, softly tumbled and strung by hand."
+price: 250
+summary: "The Smoke Necklace is for the woman who is grounded, steady, and clear in her purpose."
+intention: "Grounding · Focus · Protection"   # brass caps line above the title
 images:
-  - ../../assets/products/agua-necklace/1.jpg
-  - ../../assets/products/agua-necklace/2.jpg
-materials: ["Clear quartz", "Silver-tone spring ring clasp"]
-dimensions: "18 in."
+  - ../../assets/products/smoke-necklace/1.jpg
+materials: ["Smoky and Clear Quartz", "Solid 925 Sterling Silver Clasp, rings, and beads"]
+dimensions: "17 in"
+specs:                       # the Details tab; derived from materials and dimensions if left out
+  - { label: "Bead size", value: "23 x 8 mm" }
+care:                        # the Care tab; a general note is shown if left out
+  - "Store the necklace separately in the included cotton muslin bag."
 stock: 1
 oneOfAKind: true
 status: available            # available, sold, or inquire (originals)
@@ -71,18 +78,21 @@ npm run import:etsy -- ~/Downloads/EtsyListingsDownload.csv --dry-run          #
 npm run import:etsy -- ~/Downloads/EtsyListingsDownload.csv --replace-samples  # import and remove sample listings
 ```
 
-The importer creates one file per listing, downloads every listing photo, guesses the category from the title and tags, and prints a list of anything to check by hand. It never overwrites an existing product unless you pass `--force`, and it never touches original paintings.
+The importer creates one file per listing, downloads every listing photo, guesses the category from the title and tags, and prints a list of anything to check by hand. It reads Simone's description format: the intention line, the Details block (into `specs`), the Care block (into `care`), and drops the repeated title and the sign-off. It never overwrites an existing product unless you pass `--force`, and it never touches original paintings.
+
+- `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later.
+- `--force` rewrites every field from the CSV except `featured`. Make other hand edits after the last import, or redo them.
+- The CSV does not include videos, sold listings or reviews. Sold listings and videos need the Etsy API (a developer key and OAuth); reviews are a separate download (Shop Manager > Settings > Options > Download Data).
 
 ## Needs Simone's sign-off
 
 These are sensible defaults. Change them in `src/data/site.ts` or the page named.
 
-- **Prices** of every sample necklace, print and card set. Plumeria is $100, from Etsy; the others are placeholders.
 - **Shipping:** $6 standard, $18 express, complimentary over $75, ships in 2 to 4 business days, US only.
 - **Returns:** 30 days for unworn ready-to-ship pieces, custom work final sale (`/shipping-returns`).
-- **Claims in the copy:** "strung by hand in Chicago", "every necklace is one of one", signed prints, gift notes tucked into orders, originals shipped by an art shipper (`/faq`, `/shipping-returns`, home page).
-- **Social links:** add Instagram and Pinterest URLs in `site.ts` to show them in the footer.
-- **Reviews:** add real Etsy reviews word for word in `src/data/reviews.ts` and a review section appears. The 5.0 rating from 8 Etsy reviews is shown in the hero and on product pages; update it in `site.ts`.
+- **Claims in the copy:** "strung by hand in Chicago", "most necklaces are made once", handwritten gift notes, originals shipped by an art shipper (`/faq`, `/shipping-returns`, home page). Materials, packaging and care in `/faq` come from her Etsy listings.
+- **Social links:** Instagram is set. Add Pinterest in `site.ts` to show it in the footer.
+- **Reviews:** the seven customer reviews from the Etsy export are in `src/data/reviews.ts`, word for word. The eighth, from a family member, is left out on purpose: the FTC review rule requires disclosing that relationship, and an undisclosed family review is the first thing a skeptical buyer spots. The rating line ("5.0 from 7 reviews on Etsy") is in `site.ts`.
 - **Portrait:** the About page uses a painting where a photo of Simone in the studio would convert better.
 
 ## How it is put together

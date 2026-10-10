@@ -16,6 +16,11 @@
  *   --replace-samples  After importing, delete the placeholder products (`sample: true`).
  *   --no-images        Do not download photos. Products get `images: []`.
  *
+ *   npm run import:etsy -- --fetch-images
+ *                      Download the Etsy photos recorded in each product's `etsyImages`
+ *                      for products that have no `images` yet. No CSV needed. Use this
+ *                      after an import with --no-images, once the network allows it.
+ *
  * Each listing becomes src/content/products/<slug>.md and its photos are saved to
  * src/assets/products/<slug>/<n>.<ext>. Re-running is safe: existing files are
  * skipped unless --force, and paintings (category: originals) are never touched.
@@ -47,8 +52,15 @@ const CONTENT_TYPES = {
   'image/avif': 'avif',
 };
 
-const FLAGS = { '--dry-run': 'dryRun', '--force': 'force', '--replace-samples': 'replaceSamples', '--no-images': 'noImages' };
-const USAGE = `Usage: npm run import:etsy -- <EtsyListingsDownload.csv> [--dry-run] [--force] [--replace-samples] [--no-images]`;
+const FLAGS = {
+  '--dry-run': 'dryRun',
+  '--force': 'force',
+  '--replace-samples': 'replaceSamples',
+  '--no-images': 'noImages',
+  '--fetch-images': 'fetchImages',
+};
+const USAGE = `Usage: npm run import:etsy -- <EtsyListingsDownload.csv> [--dry-run] [--force] [--replace-samples] [--no-images]
+       npm run import:etsy -- --fetch-images`;
 
 /** Errors that end the run with a short message instead of a stack trace. */
 class Fatal extends Error {}
@@ -172,6 +184,18 @@ function shortTitle(full) {
   return (first || full).replace(/\s+/g, ' ').replace(/[\s.;:]+$/, '');
 }
 
+const SMALL_WORDS = new Set(['a', 'an', 'and', 'the', 'of', 'for', 'with', 'in', 'on', 'or', 'to', 'by', 'at', 'from']);
+
+/** "MYSTIC MOTHER NECKLACE" reads as shouting on the site; give all-caps titles title case. */
+function tidyCase(title) {
+  if (title !== title.toUpperCase() || !/[A-Z]/.test(title)) return title;
+  return title
+    .toLowerCase()
+    .split(' ')
+    .map((w, i) => (i > 0 && SMALL_WORDS.has(w) ? w : w.replace(/^(\p{L})/u, (c) => c.toUpperCase())))
+    .join(' ');
+}
+
 const STOP_WORDS = new Set(['a', 'an', 'and', 'the', 'of', 'for', 'with', 'in', 'on', 'or', 'to', 'by', 'at', 'from']);
 
 /** Up to six meaningful words and 60 characters, ASCII only, cut on a word boundary. */
@@ -274,6 +298,148 @@ const markdownLine = (line) => line.replace(/</g, '&lt;').replace(/^(#{1,6}\s|>)
 /** Blank lines separate paragraphs; single newlines become Markdown line breaks. */
 const toMarkdown = (paragraphs) => paragraphs.map((lines) => lines.map(markdownLine).join('  \n')).join('\n\n');
 
+/**
+ * The studio's listings follow a pattern: the title again, an intention line
+ * ("TRANQUILITY · PROTECTION · CLARITY"), the story, a "Details" block of
+ * "Label: value" lines, a care list, then a shop sign-off. Pull the structured
+ * parts out and drop the repeated title and the sign-off.
+ */
+const INTENTION = /^[\p{Lu}][\p{Lu}'\s]+(\s*[\u00b7\u2022|]\s*[\p{Lu}][\p{Lu}'\s]+){1,4}$/u;
+const SIGN_OFF = /^(\p{Extended_Pictographic}|instagram:|portfolio|follow for|shop meaningful)|art & power|simone chagoya studio$/iu;
+const COPYRIGHT = /^(\u00a9|\(c\))|all rights reserved/i;
+
+/** One spec value: no trailing period, single spaces, and "15 mm \u2014 30 mm" ranges read "15 mm to 30 mm". */
+const tidySpec = (v) =>
+  v
+    .trim()
+    .replace(/\.$/, '')
+    .replace(/\s+/g, ' ')
+    .replace(/(\d\s*(?:mm|cm|in)?)\s*[\u2013\u2014]\s*(?=\d)/g, '$1 to ');
+
+function structuredDescription(raw, shortName) {
+  const lines = clean(raw).replace(/\r\n?/g, '\n').split('\n').map((l) => l.trim());
+  const out = { intention: undefined, specs: [], care: [], kept: [] };
+  let section = 'body';
+  const titleStart = ascii(shortName).toLowerCase();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Check the copyright line first: \u00a9 counts as a pictograph to SIGN_OFF.
+    if (COPYRIGHT.test(line)) continue;
+    if (SIGN_OFF.test(line)) break;
+    if (i < 2 && line && ascii(line).toLowerCase().startsWith(titleStart)) continue;
+    if (!out.intention && INTENTION.test(line) && line.split(/\s+/).length <= 8) {
+      out.intention = tidyCase(line.replace(/\s*[\u00b7\u2022|]\s*/g, ' \u00b7 '));
+      continue;
+    }
+    if (/^details:?$/i.test(line)) {
+      section = 'details';
+      continue;
+    }
+    if (/^(jewelry |jewellery )?care:?$/i.test(line)) {
+      section = 'care';
+      continue;
+    }
+    if (!line || SEPARATOR.test(line)) {
+      section = 'body';
+      out.kept.push('');
+      continue;
+    }
+    if (section === 'details') {
+      const m = line.match(/^([^:]{2,40}):\s*(.+)$/) ?? line.match(/^(Clasp)\s+(.+)$/i);
+      if (m) out.specs.push({ label: capitalize(m[1].trim()), value: tidySpec(m[2]) });
+      else if (/hand strung/i.test(line)) out.specs.push({ label: 'Stringing', value: capitalize(tidySpec(line.replace(/^.*?(hand strung)/i, '$1'))) });
+      else if (/silver|gold|clasp/i.test(line)) out.specs.push({ label: 'Metal', value: tidySpec(line) });
+      else out.specs.push({ label: 'Detail', value: tidySpec(line) });
+      continue;
+    }
+    if (section === 'care') {
+      out.care.push(line);
+      continue;
+    }
+    out.kept.push(line);
+  }
+  return out;
+}
+
+/** Paragraphs from kept lines; a lead line ending in ":" becomes a bold label. */
+function keptParagraphs(kept) {
+  const paragraphs = [];
+  let current = [];
+  for (const line of [...kept, '']) {
+    if (line) {
+      if (!BOILERPLATE.test(line)) current.push(line);
+    } else if (current.length) {
+      paragraphs.push(current);
+      current = [];
+    }
+  }
+  return paragraphs.map((lines) => (/:$/.test(lines[0]) && lines.length > 1 ? [`**${lines[0].slice(0, -1)}**`, ...lines.slice(1)] : lines));
+}
+
+const specValue = (specs, re) => specs.find((s) => re.test(s.label))?.value;
+
+/**
+ * Stone colors for the stand-in illustration a product shows until its photos
+ * arrive. Matched against the gemstone line, then the title and materials.
+ */
+const STONES = [
+  { re: /smoky|smoke/i, colors: ['#8a7868', '#b8aa9a', '#e9ecec', '#6e5f52', '#d9d2c8'], clear: true, ground: '#e8e3dc' },
+  { re: /aquamarine/i, colors: ['#a9d4dc', '#8cc3cf', '#c6e3e8', '#7fb6c4'], clear: true, ground: '#e2e7e6' },
+  { re: /crackle|clear quartz|rock crystal/i, colors: ['#eef3f4', '#e3eaec', '#f6f8f8'], clear: true, ground: '#e5e3de' },
+  { re: /amethyst/i, colors: ['#7b4fa0', '#9065b5', '#5e3a86', '#a77fc6', '#6a4593'], ground: '#e9e4e6' },
+  { re: /fluorite/i, colors: ['#7fb59a', '#5c3f80', '#a9d1c0', '#d9e6e3', '#6aa18f', '#9b7fc0'], ground: '#e4e5df' },
+  { re: /goldstone/i, colors: ['#b5651d', '#c97a2b', '#8f4a14', '#d68b3c'], ground: '#ece4d8' },
+  { re: /tiger/i, colors: ['#a8742f', '#7a4f1e', '#c48f45', '#5e3a17', '#d4a35a'], ground: '#ebe3d6' },
+  { re: /apatite/i, colors: ['#2f8fa6', '#4fb0c4', '#d9823b', '#1f6f86', '#e7a35a'], ground: '#e3e6e4' },
+  { re: /mother of pearl|pearl/i, colors: ['#fbf8f2'], beads: 'flower', ground: '#ebe3d9' },
+  { re: /opal/i, colors: ['#5f6b5d', '#7d8676', '#46514a', '#9aa08f', '#b5b09f'], ground: '#e3e2d9' },
+  { re: /agate|lapis/i, colors: ['#0f5a73', '#167089', '#0c4a60', '#1f7f95'], ground: '#e2e4e0' },
+  { re: /jade/i, colors: ['#2f4a35', '#3d5c40', '#1f3326', '#4a6b4a'], ground: '#e5e3db' },
+  { re: /turquoise/i, colors: ['#1f8a86', '#2ba39b', '#5fbdb2', '#176e6b'], ground: '#e3e6e3' },
+  { re: /coral|carnelian/i, colors: ['#f07a5a', '#f28a6a', '#e86c4e'], ground: '#ece4dc' },
+  { re: /citrine|honey|amber/i, colors: ['#c98a3c', '#b8742c', '#d9a65a', '#e0b674'], ground: '#ece5d9' },
+  { re: /rose quartz/i, colors: ['#f2c9cc', '#eab7bc', '#f7dadd'], ground: '#ece4e2' },
+  { re: /onyx|obsidian|black/i, colors: ['#1c1b1d', '#2a292c', '#121113'], ground: '#e6e2db' },
+];
+
+function inferArt(p, specs, text) {
+  if (p.category === 'prints' || p.category === 'cards') {
+    const night = /star|night|galaxy|cosmos|sky/i.test(text);
+    const leaves = /jungle|leaf|leaves|plant|monstera/i.test(text);
+    return {
+      kind: p.category === 'cards' ? 'cards' : 'print',
+      ground: '#e6e1d8',
+      pattern: night ? 'speckle' : leaves ? 'leaves' : 'wash',
+      colors: night
+        ? ['#ffffff', '#f3e7a6', '#a9d18e', '#cfe3f2']
+        : leaves
+          ? ['#2f7d4a', '#4fae5c', '#1f5f3c', '#7cc46a', '#38966b']
+          : ['#e2554f', '#f39a3c', '#5aa64a', '#2bb3b1', '#9b7fd1', '#24345c'],
+    };
+  }
+  if (!['necklaces', 'bracelets'].includes(p.category)) return undefined;
+  const gem = specValue(specs, /gem|stone/i) ?? '';
+  const stone = STONES.find((s) => s.re.test(gem)) ?? STONES.find((s) => s.re.test(`${p.title} ${p.materials.join(' ')}`));
+  const metalText = `${specValue(specs, /clasp|metal|component/i) ?? ''} ${text}`;
+  const metal = /\bgold/i.test(specValue(specs, /clasp|metal|component/i) ?? '') ? 'gold' : /sterling|silver/i.test(metalText) ? 'silver' : 'gold';
+  const shape = `${specValue(specs, /shape/i) ?? ''} ${specValue(specs, /size/i) ?? ''}`;
+  const sizes = (specValue(specs, /bead size/i) ?? '').match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+  const length = parseFloat(specValue(specs, /length/i) ?? '') || 16;
+  const along = sizes.length ? (/oval|faceted|multi/i.test(shape) ? Math.max(...sizes) : /x/i.test(shape) ? Math.min(...sizes) : sizes[0]) : 10;
+  const average = /multi/i.test(shape) && sizes.length > 1 ? (sizes[0] + sizes.at(-1)) / 2 : along;
+  const count = Math.round(Math.min(80, Math.max(14, (length * 25.4) / average)));
+  const beads = stone?.beads ?? (/oval|faceted multi/i.test(shape) ? 'oval' : /cube|tube|x/i.test(shape) && sizes.length > 1 ? 'tube' : 'round');
+  return {
+    kind: 'necklace',
+    ground: stone?.ground ?? '#e7e2da',
+    metal,
+    beads,
+    count,
+    clear: Boolean(stone?.clear),
+    colors: stone?.colors ?? ['#b9b1a5', '#8d8478', '#d8d0c4'],
+  };
+}
+
 /** First sentence of the description when it reads like one: capitalized, 4+ words, ends in . ! or ? */
 function firstSentence(paragraphs) {
   const first = paragraphs[0]?.[0] ?? '';
@@ -291,7 +457,7 @@ function buildProduct(get, row, index, taken, originals) {
     warn(`row ${index + 2}`, 'no TITLE, skipped');
     return undefined;
   }
-  const title = shortTitle(fullTitle);
+  const title = tidyCase(shortTitle(fullTitle));
   const tags = splitList(get(row, 'TAGS')).map((t) => t.toLowerCase()).slice(0, MAX_TAGS);
   const materials = splitList(get(row, 'MATERIALS')).map(capitalize);
   const inferred = inferCategory([fullTitle, tags.join(', '), materials.join(', ')]);
@@ -317,16 +483,36 @@ function buildProduct(get, row, index, taken, originals) {
 
   const quantity = parseInt(get(row, 'QUANTITY'), 10);
   const stock = Number.isFinite(quantity) ? Math.max(0, quantity) : 1;
-  const paragraphs = descriptionParagraphs(get(row, 'DESCRIPTION'));
+  const description = get(row, 'DESCRIPTION');
+  const parsed = structuredDescription(description, shortTitle(fullTitle));
+  const paragraphs = keptParagraphs(parsed.kept);
   const imageUrls = Array.from({ length: MAX_IMAGES }, (_, i) => get(row, `IMAGE${i + 1}`)).filter(Boolean);
+
+  // Lead with the gemstone and the clasp from the Details block when there is one.
+  const gem = specValue(parsed.specs, /gem|stone/i);
+  const clasp = specValue(parsed.specs, /clasp|metal|component/i);
+  const detailed = [gem, clasp].filter(Boolean);
+  // Compare with curly apostrophes folded, so "Tiger's eye" from the materials column matches "Tiger\u2019s Eye" from the description.
+  const fold = (t) => t.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+  const allMaterials = detailed.length ? [...new Set([...detailed, ...materials.filter((m) => !/^gemstone$/i.test(m) && !detailed.some((d) => fold(d).includes(fold(m))))])] : materials;
+  const dimensions =
+    specValue(parsed.specs, /length/i) ?? fullTitle.match(/\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*in\.?/i)?.[0];
+  const storyStart = paragraphs.findIndex((lines) => /\bis for\b/i.test(lines[0]));
+  const summary = firstSentence(storyStart > -1 ? paragraphs.slice(storyStart) : paragraphs);
+  const draft = { title, category, materials: allMaterials };
 
   return {
     slug,
     title,
     category,
     price,
-    summary: firstSentence(paragraphs),
-    materials,
+    summary,
+    intention: parsed.intention,
+    specs: parsed.specs,
+    care: parsed.care,
+    dimensions,
+    art: inferArt(draft, parsed.specs, `${fullTitle} ${description}`),
+    materials: allMaterials,
     variants: buildVariants(get, row, slug),
     stock,
     oneOfAKind: stock === 1,
@@ -351,6 +537,7 @@ async function readProductFlags(file) {
   return {
     original: /^category:\s*["']?originals["']?\s*(#.*)?$/m.test(fm),
     sample: /^sample:\s*true\s*(#.*)?$/m.test(fm),
+    featured: /^featured:\s*true\s*(#.*)?$/m.test(fm),
   };
 }
 
@@ -371,10 +558,17 @@ const q = (s) => JSON.stringify(s);
 function toFile(p) {
   const lines = [`title: ${q(p.title)}`, `category: ${p.category}`, `price: ${p.price}`];
   if (p.summary) lines.push(`summary: ${q(p.summary)}`);
+  if (p.intention) lines.push(`intention: ${q(p.intention)}`);
   lines.push(p.images.length ? 'images:' : 'images: []', ...p.images.map((img) => `  - ${q(img)}`));
+  lines.push(`etsyImages: ${JSON.stringify(p.imageUrls)}`);
+  if (p.art) lines.push(`art: ${JSON.stringify(p.art)}`);
   lines.push(`materials: [${p.materials.map(q).join(', ')}]`);
+  if (p.dimensions) lines.push(`dimensions: ${q(p.dimensions)}`);
+  if (p.specs?.length) lines.push('specs:', ...p.specs.map((s) => `  - { label: ${q(s.label)}, value: ${q(s.value)} }`));
+  if (p.care?.length) lines.push('care:', ...p.care.map((c) => `  - ${q(c)}`));
   if (p.variants.length) lines.push('variants:', ...p.variants.map((v) => `  - { id: ${q(v.id)}, label: ${q(v.label)} }`));
   lines.push(`stock: ${p.stock}`, `oneOfAKind: ${p.oneOfAKind}`, `status: ${p.status}`);
+  if (p.featured) lines.push('featured: true');
   lines.push(`tags: [${p.tags.map(q).join(', ')}]`, `order: ${p.order}`);
   if (p.etsyId) lines.push(`etsyId: ${q(p.etsyId)}`);
   return `---\n${lines.join('\n')}\n---\n${p.body ? `\n${p.body}\n` : ''}`;
@@ -504,7 +698,7 @@ function printSummary(lines) {
 // Main --------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const opts = { csv: undefined, dryRun: false, force: false, replaceSamples: false, noImages: false };
+  const opts = { csv: undefined, dryRun: false, force: false, replaceSamples: false, noImages: false, fetchImages: false };
   for (const arg of argv) {
     if (arg === '-h' || arg === '--help') {
       console.log(USAGE);
@@ -514,12 +708,49 @@ function parseArgs(argv) {
     else if (!opts.csv) opts.csv = arg;
     else throw new Fatal(`unexpected argument ${arg}`);
   }
-  if (!opts.csv) throw new Fatal('missing the path to the Etsy listings CSV');
+  if (!opts.csv && !opts.fetchImages) throw new Fatal('missing the path to the Etsy listings CSV');
   return opts;
+}
+
+/**
+ * Downloads photos for products imported earlier without them: every product file
+ * with an `etsyImages` list and `images: []` gets its photos and an `images` list.
+ */
+async function fetchMissingImages() {
+  const files = (await readdir(PRODUCTS_DIR)).filter((f) => f.endsWith('.md'));
+  const pending = [];
+  for (const f of files) {
+    const file = path.join(PRODUCTS_DIR, f);
+    const text = await readFile(file, 'utf8');
+    const urls = text.match(/^etsyImages:\s*(\[.*\])\s*$/m)?.[1];
+    if (!urls || !/^images:\s*\[\]\s*$/m.test(text)) continue;
+    const imageUrls = JSON.parse(urls);
+    if (imageUrls.length) pending.push({ slug: f.slice(0, -3), file, text, imageUrls, images: [] });
+  }
+  if (!pending.length) {
+    console.log('Every product with Etsy photos already has images. Nothing to do.');
+    return;
+  }
+  console.log(`Downloading photos for ${pending.length} product${pending.length === 1 ? '' : 's'}...`);
+  const counts = { downloaded: 0, reused: 0, failed: 0 };
+  await downloadImages(pending, counts);
+  let updated = 0;
+  for (const p of pending) {
+    if (!p.images.length) continue;
+    const list = ['images:', ...p.images.map((img) => `  - ${q(img)}`)].join('\n');
+    await writeFile(p.file, p.text.replace(/^images:\s*\[\]\s*$/m, list));
+    updated++;
+  }
+  printSummary([
+    ['products updated', updated],
+    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.failed} failed)`],
+    ['warnings', warnings.length],
+  ]);
 }
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
+  if (opts.fetchImages) return fetchMissingImages();
   // npm runs scripts from the project root; INIT_CWD is where the command was typed.
   const csvPath = path.resolve(process.env.INIT_CWD ?? process.cwd(), opts.csv);
   const text = await readFile(csvPath, 'utf8').catch((err) => {
@@ -543,6 +774,7 @@ async function main() {
   // Originals are never written, whatever the flags. Samples count as replaceable with --replace-samples.
   for (const p of products) {
     const existing = onDisk.get(p.slug);
+    p.featured = Boolean(existing?.featured); // curation survives --force
     p.action = !existing
       ? 'create'
       : existing.original

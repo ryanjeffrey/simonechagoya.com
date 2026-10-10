@@ -4,10 +4,14 @@ import ShopView from '../../components/ShopView.astro';
 import { CATEGORY_META, GROUPS, getProducts, groupOf, type Category, type Group } from '../../lib/catalog';
 import { CATEGORIES } from '../../content.config';
 
-export const getStaticPaths = (() => [
-  ...Object.keys(GROUPS).map((category) => ({ params: { category } })),
-  ...CATEGORIES.map((category) => ({ params: { category } })),
-]) satisfies GetStaticPaths;
+// Empty categories get no page: thin pages hurt search, and nothing links to them.
+export const getStaticPaths = (async () => {
+  const stocked = new Set((await getProducts()).map((p) => p.data.category));
+  return [
+    ...Object.keys(GROUPS).map((category) => ({ params: { category } })),
+    ...CATEGORIES.filter((c) => stocked.has(c)).map((category) => ({ params: { category } })),
+  ];
+}) satisfies GetStaticPaths;
 
 const { category } = Astro.params;
 const group = GROUPS[category as Group];

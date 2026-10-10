@@ -14,7 +14,7 @@ export const site = {
 
   // Leave a value empty to hide that link everywhere.
   social: {
-    instagram: '', // e.g. https://instagram.com/simonechagoya
+    instagram: 'https://www.instagram.com/simonechagoya/',
     pinterest: '',
     etsy: 'https://www.etsy.com/shop/SimoneChagoyaStudio',
   },
@@ -22,7 +22,8 @@ export const site = {
   currency: 'USD',
 
   // From the Etsy shop. Update as reviews come in; set count to 0 to hide.
-  rating: { average: 5, count: 8, source: 'Etsy' },
+  // Matches src/data/reviews.ts (7 of 8 Etsy reviews; the family review is excluded).
+  rating: { average: 5, count: 7, source: 'Etsy' },
 
   // CONFIRM: shipping policy
   shipping: {

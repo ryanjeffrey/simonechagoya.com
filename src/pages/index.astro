@@ -17,7 +17,7 @@ const necklaces = products.filter((p) => p.data.category === 'necklaces');
 const originals = products.filter((p) => p.data.category === 'originals');
 const forSale = (list: Product[]) => list.filter(isPurchasable);
 
-const heroPiece = products.find((p) => p.id === 'agua-necklace' && isPurchasable(p)) ?? forSale(necklaces)[0];
+const heroPiece = products.find((p) => p.id === 'smoke-necklace' && isPurchasable(p)) ?? forSale(necklaces)[0];
 
 // The named stones: every necklace for sale, shown as one expanding row.
 const stones = forSale(necklaces).slice(0, 8);
@@ -133,12 +133,12 @@ const jsonLd = [
       <p class="eyebrow eyebrow--center">The studio</p>
       <h2 class="h2">Find your <em>piece</em></h2>
     </div>
-    <div class="tiles">
+    <div class="tiles" style={`--tiles: ${tiles.length}`}>
       {
         tiles.map((tile, i) => (
           <a class="tile" href={tile.href} data-reveal style={`--reveal-delay: ${i * 110}`}>
             <div class="arch zoom tile-media">
-              <ProductMedia product={tile.product!} mode="cover" sizes="(min-width: 960px) 24vw, 46vw" />
+              <ProductMedia product={tile.product!} mode="cover" sizes="(min-width: 960px) 30vw, 46vw" />
             </div>
             <span class="tile-label">{tile.label}</span>
             <span class="tile-cta">
@@ -287,7 +287,7 @@ const jsonLd = [
     <div class="promise" data-reveal style="--reveal-delay: 220">
       <span class="promise-n">iii.</span>
       <h3>Ships in {site.shipping.processing}</h3>
-      <p>Packed by hand and tracked to your door. Free US shipping over ${site.shipping.freeThreshold}.</p>
+      <p>Gift wrapped by hand and tracked to your door. Free US shipping over ${site.shipping.freeThreshold}.</p>
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 330">
       <span class="promise-n">iv.</span>
@@ -579,7 +579,9 @@ const jsonLd = [
   /* Tiles */
   .tiles {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--tiles, 4), 1fr);
+    max-width: calc(var(--tiles, 4) * 22rem);
+    margin-inline: auto;
     gap: clamp(1rem, 2.5vw, 2.5rem);
   }
 
@@ -616,10 +618,17 @@ const jsonLd = [
     color: var(--accent);
   }
 
+  /* Two up on phones; an odd last tile sits centered rather than orphaned left. */
   @media (max-width: 760px) {
     .tiles {
-      grid-template-columns: repeat(2, 1fr);
-      row-gap: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2.5rem 1rem;
+    }
+
+    .tile {
+      flex: 0 0 calc(50% - 0.5rem);
     }
   }
 

@@ -21,6 +21,7 @@
   --accent-deep: #6f311c;
   --gold: #a9844e; /* brass, decorative on light grounds */
   --gold-light: #c9a46a; /* brass on espresso */
+  --gold-text: #7d5f31; /* brass for small text on linen, 5.2:1 */
 
   --serif: 'Cormorant Variable', 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
   --sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;

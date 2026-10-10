@@ -21,7 +21,11 @@ const products = defineCollection({
       compareAt: z.number().nonnegative().optional(),
       /** One line shown under the title on the product page. */
       summary: z.string().optional(),
+      /** The piece's intention, e.g. "Tranquility · Protection · Clarity". */
+      intention: z.string().optional(),
       images: z.array(image()).default([]),
+      /** Photo URLs from the Etsy listing, kept so `import:etsy --fetch-images` can download them later. */
+      etsyImages: z.array(z.string()).default([]),
       /** Stand-in illustration used until real photos are added. */
       art: z
         .object({
@@ -39,6 +43,10 @@ const products = defineCollection({
         .optional(),
       materials: z.array(z.string()).default([]),
       dimensions: z.string().optional(),
+      /** Structured details (gemstones, bead size, clasp, length...). */
+      specs: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
+      /** Care instructions, one per line. */
+      care: z.array(z.string()).default([]),
       variants: z
         .array(
           z.object({
