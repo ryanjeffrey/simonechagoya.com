@@ -10,7 +10,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "import:etsy": "node scripts/import-etsy.mjs",
-    "test": "node --test scripts/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "setup:stripe": "node scripts/setup-stripe.mjs"
   },
   "dependencies": {
     "@astrojs/netlify": "^8.2.9",
