@@ -13,3 +13,5 @@ order: 1
 ---
 
 A place remembered rather than recorded. Simone paints from memory, so what you see is part real and part recollection.
+
+Shown in Simone’s BFA exhibition at the School of the Art Institute of Chicago, May 2011.
