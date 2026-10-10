@@ -1,6 +1,5 @@
 ---
 import { Image } from 'astro:assets';
-import ProductArt from './ProductArt.astro';
 import type { Product } from '../lib/catalog';
 
 interface Props {
@@ -27,6 +26,8 @@ const {
 
 const { data } = product;
 const img = data.images[index] ?? data.images[0];
+/** Until a piece has photos, the first frame of its video stands in. Never a drawing. */
+const poster = img ? undefined : data.videos[0]?.poster;
 const isArt = data.category === 'originals' || data.category === 'prints';
 const resolvedMode = img ? (mode ?? (isArt ? 'matte' : 'cover')) : 'cover';
 const alt =
@@ -48,8 +49,8 @@ const alt =
         format="webp"
         quality={78}
       />
-    ) : data.art ? (
-      <ProductArt id={`${product.id}-${index}`} label={alt} {...data.art} />
+    ) : poster ? (
+      <img src={poster} alt={alt} width="800" height="1000" loading={loading} decoding="async" />
     ) : (
       <div class="media-empty" aria-hidden="true" />
     )

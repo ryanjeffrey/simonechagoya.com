@@ -1,0 +1,18 @@
+{
+  "count": 1,
+  "results": [
+    {
+      "listing_id": 101,
+      "title": "Smoke Necklace, Smoky Quartz Gemstone Necklace | Gift for Her",
+      "description": "Smoke Necklace\nThe Smoke Necklace is for the woman who moves quietly and decides fast.",
+      "state": "active",
+      "quantity": 1,
+      "price": { "amount": 14500, "divisor": 100, "currency_code": "USD" },
+      "tags": ["necklace", "smoky quartz"],
+      "materials": ["Smoky quartz"],
+      "skus": [],
+      "images": [{ "listing_image_id": 1, "rank": 1, "url_fullxfull": "{{BASE}}/media/il_fullxfull.1.jpg" }],
+      "videos": [{ "video_id": 9001, "height": 800, "width": 640, "thumbnail_url": "{{BASE}}/media/il_fullxfull.1.jpg", "video_url": "{{BASE}}/media/listing-video.mp4", "video_state": "active" }]
+    }
+  ]
+}

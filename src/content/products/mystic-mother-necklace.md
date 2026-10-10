@@ -4,11 +4,15 @@ category: necklaces
 price: 150
 summary: "The Mystic Mother Necklace is for the woman who is a protective force of nature."
 intention: "Tranquility · Protection · Clarity"
-images: []
+images:
+  - "../../assets/products/mystic-mother-necklace/1.jpg"
+  - "../../assets/products/mystic-mother-necklace/2.jpg"
+  - "../../assets/products/mystic-mother-necklace/3.jpg"
+  - "../../assets/products/mystic-mother-necklace/4.jpg"
+  - "../../assets/products/mystic-mother-necklace/5.jpg"
 videos:
   - { src: "/media/products/mystic-mother-necklace/1.mp4", poster: "/media/products/mystic-mother-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/f65012/8013226698/il_fullxfull.8013226698_blvb.jpg","https://i.etsystatic.com/56491047/r/il/b99805/8050451994/il_fullxfull.8050451994_e96g.jpg","https://i.etsystatic.com/56491047/r/il/e2a99b/8061132821/il_fullxfull.8061132821_hsl0.jpg","https://i.etsystatic.com/56491047/r/il/bdaf53/7940047167/il_fullxfull.7940047167_49ly.jpg","https://i.etsystatic.com/56491047/r/il/a6f73f/7940048823/il_fullxfull.7940048823_23b7.jpg","https://i.etsystatic.com/56491047/r/il/ae2823/7892090400/il_fullxfull.7892090400_t8st.jpg","https://i.etsystatic.com/56491047/r/il/561777/8061132827/il_fullxfull.8061132827_833k.jpg"]
-art: {"kind":"necklace","ground":"#e9e4e6","metal":"silver","beads":"round","count":34,"clear":false,"colors":["#7b4fa0","#9065b5","#5e3a86","#a77fc6","#6a4593"]}
 materials: ["Amethyst", "Silver finished brass with sterling silver end beads"]
 dimensions: "16 in"
 specs:

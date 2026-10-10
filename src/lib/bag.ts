@@ -12,8 +12,6 @@ type CatalogItem = {
   price: number;
   variants: { id: string; label: string; price: number }[];
   image?: string;
-  ground?: string;
-  beads?: string[];
   oneOfAKind: boolean;
   stock: number;
   available: boolean;
@@ -80,20 +78,6 @@ const count = () => lines.reduce((n, l) => n + l.qty, 0);
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-}
-
-/** A tiny strand of the necklace's stones, for pieces without photos yet. */
-function beadThumb(p: CatalogItem) {
-  const ground = escapeHtml(p.ground ?? '#eae3d8');
-  if (!p.beads?.length) return `<span style="display:block;width:100%;height:100%;background:${ground}"></span>`;
-  const colors = p.beads.map(escapeHtml);
-  const dots = Array.from({ length: 16 }, (_, i) => {
-    const t = (i / 16) * Math.PI * 2 - Math.PI / 2 + 0.2;
-    const x = 40 + 22 * Math.cos(t);
-    const y = 52 + 30 * Math.sin(t);
-    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.6" fill="${colors[i % colors.length]}" stroke="rgb(0 0 0 / .12)" stroke-width=".6"/>`;
-  }).join('');
-  return `<svg viewBox="0 0 80 100" width="160" height="200" aria-hidden="true"><rect width="80" height="100" fill="${ground}"/>${dots}</svg>`;
 }
 
 export async function add(slug: string, variant: string | undefined, qty = 1) {
@@ -172,7 +156,7 @@ function render() {
       const key = escapeHtml(keyOf(l));
       const thumb = p.image
         ? `<img src="${p.image}" alt="" width="160" height="200" loading="lazy" />`
-        : beadThumb(p);
+        : '';
       const flag = !p.available
         ? '<span class="bag-flag">No longer available. Please remove to check out.</span>'
         : p.sample

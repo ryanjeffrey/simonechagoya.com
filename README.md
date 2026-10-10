@@ -26,14 +26,9 @@ Node 22.12 or newer.
    5. **Payment methods** are managed in Stripe > Settings > Payment methods. The code never hardcodes a list, so Apple Pay, Google Pay and Link appear where they fit.
    6. **Sales tax.** On Etsy, Etsy collected and paid sales tax as the marketplace. On her own site, Simone is responsible, starting with Illinois orders. In Stripe Tax, set the head office address (the studio), add an Illinois registration, then set `STRIPE_AUTOMATIC_TAX=true`. Without an active registration, Stripe collects no tax and shows no error. Stripe Tax charges a per-transaction fee; confirm the setup with her accountant.
    - Promotion codes are switched on, so discount codes made in the Stripe dashboard work at checkout.
-3. **Product photos.** The 13 live Etsy listings are imported (titles, prices, stock, descriptions, intentions, specs, care). Their photos are not in the repo yet because the build sandbox could not reach Etsy's image host. On any normal machine, run once and commit the result:
+3. **Product photos.** The 13 live Etsy listings are imported with their real photos (71 of them, graded to the shared finish). Etsy's designed mock-up cards (the photo on a scene with the name and logo) and collages are left out on purpose: the site shows real product photos only. The two print scans are converted to sRGB without grading, so the art's colors stay true.
 
-   ```bash
-   npm run import:etsy -- --fetch-images
-   git add src/assets/products src/content/products && git commit -m "Add Etsy product photos"
-   ```
-
-   Until then each piece shows its drawn illustration, and the Google/Pinterest feed leaves it out. Listing videos are not imported; the gallery is photo only for now.
+   Sold pieces and listing videos come through the Etsy API, which the sandbox also cannot reach. On a normal machine, follow "Sold listings and videos" under Importing from Etsy, then commit `src/content/products`, `src/assets/products` and `public/media/products`.
 4. **Forms.** In Netlify > Forms, turn on form detection. Add an email notification for the `inquiry` form (commissions and contact) and the `newsletter` form.
 5. **Confirm the policies** listed under "Needs Simone's sign-off" below.
 6. **Free listings.** Submit `https://simonechagoya.com/feeds/products.xml` to Google Merchant Center (free Shopping listings) and as a Pinterest catalog. Only real, available products with photos are included.
@@ -72,7 +67,7 @@ The description goes here, in plain paragraphs.
 - **Relisting a returned piece:** delete its order in Netlify > Blobs > `inventory` (`orders/<checkout session id>`), then trigger a deploy. If a sold piece ever still shows as available after a rebuild, set `status: sold` in its file; checkout refuses it either way.
 - **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. Run them through `scripts/media` first (below) so every photo shares one white balance and finish. The site resizes and compresses them automatically.
 - **Videos** go in `public/media/products/<slug>/` as short muted MP4 loops with a poster frame, listed under `videos:` in the product file. They play second in the gallery, only while on screen, and never on their own for visitors who turn off motion.
-- **Products without photos** draw an illustration from the `art:` block (bead colors, clasp metal and so on). It disappears as soon as `images` has a photo.
+- **Products without photos** show the first frame of their video, or a plain tile when there is no video either. Nothing is drawn or mocked up. The Google/Pinterest feed leaves out any product without a photo.
 - **Original paintings** use `status: inquire`. They show an Inquire button that opens the commissions form with the painting's name filled in.
 
 ### Photos and video
@@ -104,9 +99,34 @@ npm run import:etsy -- ~/Downloads/EtsyListingsDownload.csv --replace-samples  #
 
 The importer creates one file per listing, downloads every listing photo, guesses the category from the title and tags, and prints a list of anything to check by hand. It reads Simone's description format: the intention line, the Details block (into `specs`), the Care block (into `care`), and drops the repeated title and the sign-off. It never overwrites an existing product unless you pass `--force`, and it never touches original paintings.
 
-- `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later.
+- `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later. Either way, an image at Etsy's mock-up card size (1080 x 1350) or a repeat of an earlier image in the same listing is left out with a warning. Check the warnings for collages, which it cannot spot.
 - `--force` rewrites every field from the CSV except `featured`. Make other hand edits after the last import, or redo them.
-- The CSV does not include videos, sold listings or reviews. Sold listings and videos need the Etsy API (a developer key and OAuth); reviews are a separate download (Shop Manager > Settings > Options > Download Data).
+- The CSV does not include videos, sold listings or reviews. Sold listings and videos come from the Etsy API (below). Reviews are a separate download (Shop Manager > Settings > Options > Download Data).
+
+#### Sold listings and videos
+
+The API import adds what the CSV leaves out: every sold-out listing becomes a product with `status: sold` (the Sold badge, a disabled Sold button, left out of the feed and refused at checkout), and every listing video becomes a gallery loop.
+
+1. Create an app at [etsy.com/developers/your-apps](https://www.etsy.com/developers/your-apps). Add `http://localhost:3003/etsy-callback` as a callback URL.
+2. Put its keystring and shared secret in `.env` as `ETSY_API_KEY` and `ETSY_SHARED_SECRET`.
+3. Sign in once as the shop owner. This saves a token to `etsy-export/etsy-token.json` (gitignored) that refreshes itself for 90 days:
+
+   ```bash
+   npm run import:etsy -- --etsy-login
+   ```
+
+4. Preview, then import:
+
+   ```bash
+   npm run import:etsy -- --api --dry-run
+   npm run import:etsy -- --api
+   ```
+
+How it matches listings to product files: by `etsyListingId` when the file has one (the import records it), otherwise by title. A sold listing whose title matches a product still for sale on Etsy is an earlier piece of the same design, so it gets its own page (`smoke-necklace-2`) instead of marking the one for sale as sold. A product imported from the CSV that has since sold on Etsy is marked sold in place (`status: sold`, `stock: 0`); nothing else in the file changes. Original paintings are never touched.
+
+Videos download to `etsy-export/videos/<slug>/` and are graded with `scripts/media/video.py` into `public/media/products/<slug>/etsy-<n>.mp4` with a poster frame, then added to the product's `videos` list. A product that already has its own videos keeps them and skips the Etsy ones, since they are usually the same footage. That needs the media tools (see Photos and video). Without them the raw files wait in `etsy-export/` and the next `--api` run grades them. `--no-videos` and `--no-images` skip either download.
+
+`npm test` runs the API import against fixtures in `scripts/fixtures/etsy-api/`, with no network.
 
 ## Needs Simone's sign-off
 
@@ -128,7 +148,7 @@ src/
   data/site.ts          store settings: shipping, returns, rating, social links
   data/reviews.ts       customer reviews (section hidden while empty)
   assets/               paintings and brand imagery, optimized at build time
-  components/           header, footer, bag drawer, product card, illustrations
+  components/           header, footer, bag drawer, product card
   layouts/              page shells
   lib/bag.ts            the shopping bag (browser side)
   lib/catalog.ts        catalog helpers, category names and copy
@@ -138,7 +158,8 @@ src/
     api/stripe-webhook.ts  records orders and rebuilds the site after a sale
     bag.json.ts         catalog data the bag reads
     feeds/products.xml.ts  Google Merchant and Pinterest feed
-scripts/import-etsy.mjs  Etsy CSV importer
+scripts/import-etsy.mjs  Etsy importer: listings CSV, plus sold listings and videos from the API
+scripts/etsy-api.mjs     Etsy API client and OAuth login
 ```
 
 **Design system.** Colors, type scale and spacing are CSS variables at the top of `src/styles/global.css`: linen and stone grounds, espresso ink, fired clay and brass accents. The type is Cormorant (display) with Instrument Sans (text). Both fonts are self-hosted.
