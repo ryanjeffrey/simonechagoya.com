@@ -84,7 +84,7 @@ The description goes here, in plain paragraphs.
 ```bash
 python3 -m venv .venv-media && .venv-media/bin/pip install -r scripts/media/requirements.txt
 .venv-media/bin/python -I scripts/media/grade.py photo IMG_5010.heic src/assets/products/smoke-necklace/1.jpg
-.venv-media/bin/python -I scripts/media/video.py IMG_4759.mov public/media/products/smoke-necklace/1.mp4 public/media/products/smoke-necklace/1.jpg --start 2 --dur 8
+.venv-media/bin/python -I scripts/media/video.py IMG_5052.mov public/media/products/smoke-necklace/1.mp4 public/media/products/smoke-necklace/1.jpg --start 2 --dur 8
 ```
 
 ```md

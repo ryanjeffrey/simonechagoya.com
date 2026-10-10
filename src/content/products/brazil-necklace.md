@@ -5,6 +5,8 @@ price: 250
 summary: "The Brazil Necklace is for the woman who speaks her truth."
 intention: "Courage · Truth · Harmony"
 images: []
+videos:
+  - { src: "/media/products/brazil-necklace/1.mp4", poster: "/media/products/brazil-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/c66606/7928850160/il_fullxfull.7928850160_o08n.jpg","https://i.etsystatic.com/56491047/r/il/b12a3b/8048983521/il_fullxfull.8048983521_82g2.jpg","https://i.etsystatic.com/56491047/r/il/126df2/7905355720/il_fullxfull.7905355720_cf71.jpg","https://i.etsystatic.com/56491047/r/il/2a4373/7953275305/il_fullxfull.7953275305_4ms0.jpg","https://i.etsystatic.com/56491047/r/il/52cb5d/7923015988/il_fullxfull.7923015988_qx9r.jpg","https://i.etsystatic.com/56491047/r/il/b93134/7929037408/il_fullxfull.7929037408_pso2.jpg","https://i.etsystatic.com/56491047/r/il/979756/7905321134/il_fullxfull.7905321134_fyk4.jpg","https://i.etsystatic.com/56491047/r/il/4d5f6a/8050596612/il_fullxfull.8050596612_c9h4.jpg"]
 art: {"kind":"necklace","ground":"#e2e7e6","metal":"silver","beads":"oval","count":24,"clear":true,"colors":["#a9d4dc","#8cc3cf","#c6e3e8","#7fb6c4"]}
 materials: ["Aquamarine", "Solid 925 Sterling Silver Clasp, rings and beads"]
