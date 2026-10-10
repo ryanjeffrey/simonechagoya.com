@@ -3,9 +3,10 @@ title: "Stardust"
 category: prints
 price: 50
 summary: "Print is hand signed by the artist."
-images: []
+images:
+  - "../../assets/products/stardust/1.jpg"
+  - "../../assets/products/stardust/2.jpg"
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/b77056/7573649769/il_fullxfull.7573649769_mdul.jpg","https://i.etsystatic.com/56491047/r/il/47d14d/7519921122/il_fullxfull.7519921122_586x.jpg"]
-art: {"kind":"print","ground":"#e6e1d8","pattern":"speckle","colors":["#ffffff","#f3e7a6","#a9d18e","#cfe3f2"]}
 materials: ["Archival paper"]
 dimensions: "10 x 10 in."
 stock: 5

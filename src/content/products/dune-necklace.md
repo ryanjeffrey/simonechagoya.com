@@ -4,11 +4,17 @@ category: necklaces
 price: 150
 summary: "The Dune Necklace is for the woman who is empowered, a fearless warrior."
 intention: "Clarity · Courage · Action"
-images: []
+images:
+  - "../../assets/products/dune-necklace/1.jpg"
+  - "../../assets/products/dune-necklace/2.jpg"
+  - "../../assets/products/dune-necklace/3.jpg"
+  - "../../assets/products/dune-necklace/4.jpg"
+  - "../../assets/products/dune-necklace/5.jpg"
+  - "../../assets/products/dune-necklace/6.jpg"
+  - "../../assets/products/dune-necklace/7.jpg"
 videos:
   - { src: "/media/products/dune-necklace/1.mp4", poster: "/media/products/dune-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/257d45/7942925049/il_fullxfull.7942925049_kxa3.jpg","https://i.etsystatic.com/56491047/r/il/1b286f/8061120763/il_fullxfull.8061120763_633i.jpg","https://i.etsystatic.com/56491047/r/il/aa7141/8098469357/il_fullxfull.8098469357_6j2w.jpg","https://i.etsystatic.com/56491047/r/il/66f147/7942919983/il_fullxfull.7942919983_eli2.jpg","https://i.etsystatic.com/56491047/r/il/0fd234/7894842060/il_fullxfull.7894842060_5dnr.jpg","https://i.etsystatic.com/56491047/r/il/bf99ac/7894842054/il_fullxfull.7894842054_avbb.jpg","https://i.etsystatic.com/56491047/r/il/9420db/7894842056/il_fullxfull.7894842056_bioc.jpg","https://i.etsystatic.com/56491047/r/il/7c055d/7929044786/il_fullxfull.7929044786_jk8i.jpg","https://i.etsystatic.com/56491047/r/il/a4b9f2/8061129449/il_fullxfull.8061129449_regk.jpg"]
-art: {"kind":"necklace","ground":"#ebe3d6","metal":"gold","beads":"round","count":34,"clear":false,"colors":["#a8742f","#7a4f1e","#c48f45","#5e3a17","#d4a35a"]}
 materials: ["Tiger’s Eye", "Gold finished brass with 14k gold filled beads"]
 dimensions: "16 in"
 specs:

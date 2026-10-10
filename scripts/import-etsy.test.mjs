@@ -49,6 +49,7 @@ before(async () => {
       return res.writeHead(200, { 'content-type': 'application/json' }).end('{"count":0,"results":[]}');
     }
     if (url.pathname === '/media/il_fullxfull.1.jpg') return send('media/il_fullxfull.1.jpg', 'image/jpeg');
+    if (url.pathname === '/media/mockup.jpg') return send('media/mockup.jpg', 'image/jpeg');
     if (url.pathname === '/media/listing-video.mp4') return send('media/listing-video.mp4', 'video/mp4');
     res.writeHead(404).end('not found');
   });
@@ -112,6 +113,9 @@ test('marks sold listings sold, creates the missing ones and keeps the active pi
   assert.match(cosmos, /\{ label: "Gemstones", value: "Rainbow fluorite" \}/);
   assert.match(cosmos, /^images:\n {2}- "\.\.\/\.\.\/assets\/products\/cosmos-necklace-2\/1\.jpg"$/m, 'photos follow Etsy rank order');
   assert.match(stdout, /image 2 failed \(HTTP 404\)/);
+  // Etsy's designed mock-up card and a repeated image are left out.
+  assert.match(stdout, /image 3 left out \(1080x1350/);
+  assert.match(stdout, /image 4 left out \(the same image appears earlier/);
 
   // Without the media tools the raw videos wait in etsy-export/ and are not listed yet.
   assert.ok(await exists('etsy-export/videos/smoke-necklace/1.mp4'));

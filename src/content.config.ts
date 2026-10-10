@@ -3,7 +3,6 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 export const CATEGORIES = ['necklaces', 'earrings', 'bracelets', 'rings', 'prints', 'cards', 'originals'] as const;
-export const ART_KINDS = ['necklace', 'print', 'cards', 'studs', 'drops', 'hoops', 'pendant', 'chain', 'ring', 'cuff'] as const;
 
 /**
  * One Markdown file per product in src/content/products.
@@ -31,21 +30,6 @@ const products = defineCollection({
       videos: z.array(z.object({ src: z.string(), poster: z.string() })).default([]),
       /** Photo URLs from the Etsy listing, kept so `import:etsy --fetch-images` can download them later. */
       etsyImages: z.array(z.string()).default([]),
-      /** Stand-in illustration used until real photos are added. */
-      art: z
-        .object({
-          kind: z.enum(ART_KINDS),
-          ground: z.string(),
-          stone: z.string().optional(),
-          metal: z.enum(['gold', 'silver']).default('gold'),
-          /** Bead colors for necklaces, or the palette for prints and cards. */
-          colors: z.array(z.string()).default([]),
-          beads: z.enum(['round', 'oval', 'flower', 'tube']).default('round'),
-          count: z.number().int().positive().default(36),
-          clear: z.boolean().default(false),
-          pattern: z.enum(['speckle', 'leaves', 'wash']).default('wash'),
-        })
-        .optional(),
       materials: z.array(z.string()).default([]),
       dimensions: z.string().optional(),
       /** Structured details (gemstones, bead size, clasp, length...). */

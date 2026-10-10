@@ -39,6 +39,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -386,68 +387,6 @@ function keptParagraphs(kept) {
 
 const specValue = (specs, re) => specs.find((s) => re.test(s.label))?.value;
 
-/**
- * Stone colors for the stand-in illustration a product shows until its photos
- * arrive. Matched against the gemstone line, then the title and materials.
- */
-const STONES = [
-  { re: /smoky|smoke/i, colors: ['#8a7868', '#b8aa9a', '#e9ecec', '#6e5f52', '#d9d2c8'], clear: true, ground: '#e8e3dc' },
-  { re: /aquamarine/i, colors: ['#a9d4dc', '#8cc3cf', '#c6e3e8', '#7fb6c4'], clear: true, ground: '#e2e7e6' },
-  { re: /crackle|clear quartz|rock crystal/i, colors: ['#eef3f4', '#e3eaec', '#f6f8f8'], clear: true, ground: '#e5e3de' },
-  { re: /amethyst/i, colors: ['#7b4fa0', '#9065b5', '#5e3a86', '#a77fc6', '#6a4593'], ground: '#e9e4e6' },
-  { re: /fluorite/i, colors: ['#7fb59a', '#5c3f80', '#a9d1c0', '#d9e6e3', '#6aa18f', '#9b7fc0'], ground: '#e4e5df' },
-  { re: /goldstone/i, colors: ['#b5651d', '#c97a2b', '#8f4a14', '#d68b3c'], ground: '#ece4d8' },
-  { re: /tiger/i, colors: ['#a8742f', '#7a4f1e', '#c48f45', '#5e3a17', '#d4a35a'], ground: '#ebe3d6' },
-  { re: /apatite/i, colors: ['#2f8fa6', '#4fb0c4', '#d9823b', '#1f6f86', '#e7a35a'], ground: '#e3e6e4' },
-  { re: /mother of pearl|pearl/i, colors: ['#fbf8f2'], beads: 'flower', ground: '#ebe3d9' },
-  { re: /opal/i, colors: ['#5f6b5d', '#7d8676', '#46514a', '#9aa08f', '#b5b09f'], ground: '#e3e2d9' },
-  { re: /agate|lapis/i, colors: ['#0f5a73', '#167089', '#0c4a60', '#1f7f95'], ground: '#e2e4e0' },
-  { re: /jade/i, colors: ['#2f4a35', '#3d5c40', '#1f3326', '#4a6b4a'], ground: '#e5e3db' },
-  { re: /turquoise/i, colors: ['#1f8a86', '#2ba39b', '#5fbdb2', '#176e6b'], ground: '#e3e6e3' },
-  { re: /coral|carnelian/i, colors: ['#f07a5a', '#f28a6a', '#e86c4e'], ground: '#ece4dc' },
-  { re: /citrine|honey|amber/i, colors: ['#c98a3c', '#b8742c', '#d9a65a', '#e0b674'], ground: '#ece5d9' },
-  { re: /rose quartz/i, colors: ['#f2c9cc', '#eab7bc', '#f7dadd'], ground: '#ece4e2' },
-  { re: /onyx|obsidian|black/i, colors: ['#1c1b1d', '#2a292c', '#121113'], ground: '#e6e2db' },
-];
-
-function inferArt(p, specs, text) {
-  if (p.category === 'prints' || p.category === 'cards') {
-    const night = /star|night|galaxy|cosmos|sky/i.test(text);
-    const leaves = /jungle|leaf|leaves|plant|monstera/i.test(text);
-    return {
-      kind: p.category === 'cards' ? 'cards' : 'print',
-      ground: '#e6e1d8',
-      pattern: night ? 'speckle' : leaves ? 'leaves' : 'wash',
-      colors: night
-        ? ['#ffffff', '#f3e7a6', '#a9d18e', '#cfe3f2']
-        : leaves
-          ? ['#2f7d4a', '#4fae5c', '#1f5f3c', '#7cc46a', '#38966b']
-          : ['#e2554f', '#f39a3c', '#5aa64a', '#2bb3b1', '#9b7fd1', '#24345c'],
-    };
-  }
-  if (!['necklaces', 'bracelets'].includes(p.category)) return undefined;
-  const gem = specValue(specs, /gem|stone/i) ?? '';
-  const stone = STONES.find((s) => s.re.test(gem)) ?? STONES.find((s) => s.re.test(`${p.title} ${p.materials.join(' ')}`));
-  const metalText = `${specValue(specs, /clasp|metal|component/i) ?? ''} ${text}`;
-  const metal = /\bgold/i.test(specValue(specs, /clasp|metal|component/i) ?? '') ? 'gold' : /sterling|silver/i.test(metalText) ? 'silver' : 'gold';
-  const shape = `${specValue(specs, /shape/i) ?? ''} ${specValue(specs, /size/i) ?? ''}`;
-  const sizes = (specValue(specs, /bead size/i) ?? '').match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
-  const length = parseFloat(specValue(specs, /length/i) ?? '') || 16;
-  const along = sizes.length ? (/oval|faceted|multi/i.test(shape) ? Math.max(...sizes) : /x/i.test(shape) ? Math.min(...sizes) : sizes[0]) : 10;
-  const average = /multi/i.test(shape) && sizes.length > 1 ? (sizes[0] + sizes.at(-1)) / 2 : along;
-  const count = Math.round(Math.min(80, Math.max(14, (length * 25.4) / average)));
-  const beads = stone?.beads ?? (/oval|faceted multi/i.test(shape) ? 'oval' : /cube|tube|x/i.test(shape) && sizes.length > 1 ? 'tube' : 'round');
-  return {
-    kind: 'necklace',
-    ground: stone?.ground ?? '#e7e2da',
-    metal,
-    beads,
-    count,
-    clear: Boolean(stone?.clear),
-    colors: stone?.colors ?? ['#b9b1a5', '#8d8478', '#d8d0c4'],
-  };
-}
-
 /** First sentence of the description when it reads like one: capitalized, 4+ words, ends in . ! or ? */
 function firstSentence(paragraphs) {
   const first = paragraphs[0]?.[0] ?? '';
@@ -507,7 +446,6 @@ function buildProduct(get, row, index, taken, originals) {
     specValue(parsed.specs, /length/i) ?? fullTitle.match(/\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*in\.?/i)?.[0];
   const storyStart = paragraphs.findIndex((lines) => /\bis for\b/i.test(lines[0]));
   const summary = firstSentence(storyStart > -1 ? paragraphs.slice(storyStart) : paragraphs);
-  const draft = { title, category, materials: allMaterials };
 
   return {
     slug,
@@ -519,7 +457,6 @@ function buildProduct(get, row, index, taken, originals) {
     specs: parsed.specs,
     care: parsed.care,
     dimensions,
-    art: inferArt(draft, parsed.specs, `${fullTitle} ${description}`),
     materials: allMaterials,
     variants: buildVariants(get, row, slug),
     stock,
@@ -575,7 +512,6 @@ function toFile(p) {
   lines.push(p.images.length ? 'images:' : 'images: []', ...p.images.map((img) => `  - ${q(img)}`));
   if (p.videos?.length) lines.push('videos:', ...p.videos.map(videoLine));
   lines.push(`etsyImages: ${JSON.stringify(p.imageUrls)}`);
-  if (p.art) lines.push(`art: ${JSON.stringify(p.art)}`);
   lines.push(`materials: [${p.materials.map(q).join(', ')}]`);
   if (p.dimensions) lines.push(`dimensions: ${q(p.dimensions)}`);
   if (p.specs?.length) lines.push('specs:', ...p.specs.map((s) => `  - { label: ${q(s.label)}, value: ${q(s.value)} }`));
@@ -636,6 +572,24 @@ async function fetchMedia(url, kind = 'image') {
   throw lastError;
 }
 
+/** Etsy's designed listing cards (photo on a scene, with the name and logo) are exported at exactly this size. */
+const MOCKUP_SIZE = [1080, 1350];
+let sharp;
+
+/**
+ * Why a downloaded listing image is not a product photo, or undefined when it is.
+ * Listings repeat their mock-up card as the last image, so repeats are caught too.
+ */
+async function notAPhoto(bytes, seen) {
+  const hash = createHash('sha1').update(bytes).digest('hex');
+  if (seen.has(hash)) return 'the same image appears earlier in the listing';
+  seen.add(hash);
+  sharp ??= (await import('sharp')).default;
+  const { width, height } = await sharp(bytes).metadata();
+  if (width === MOCKUP_SIZE[0] && height === MOCKUP_SIZE[1]) return `${width}x${height}, the size of Etsy's designed mock-up cards`;
+  return undefined;
+}
+
 /** A previously downloaded, non-empty <n>.<ext> for this slot, if any. */
 async function existingImage(dir, n) {
   for (const ext of IMAGE_EXTS) {
@@ -648,11 +602,13 @@ async function existingImage(dir, n) {
 /**
  * Downloads every product's photos, at most CONCURRENCY at a time, and fills in
  * product.images with the ones that made it. Files keep their Etsy position
- * (IMAGE3 is always 3.jpg), so a re-run finds and skips them.
+ * (IMAGE3 is always 3.jpg), so a re-run finds and skips them. Mock-up cards and
+ * repeated images are left out: the site shows real product photos only.
  */
 async function downloadImages(products, counts) {
   const jobs = products.flatMap((p) => p.imageUrls.map((url, i) => ({ p, url, n: i + 1 })));
   const found = new Map(products.map((p) => [p, []]));
+  const seen = new Map(products.map((p) => [p, new Set()]));
   let next = 0;
 
   async function worker() {
@@ -665,6 +621,12 @@ async function downloadImages(products, counts) {
         else {
           if (!/^https?:$/.test(new URL(url).protocol)) throw new Error('not an http(s) URL');
           const { bytes, ext } = await fetchMedia(url);
+          const skip = await notAPhoto(bytes, seen.get(p));
+          if (skip) {
+            counts.skipped = (counts.skipped ?? 0) + 1;
+            warn(p.slug, `image ${n} left out (${skip}). Check it is not a product photo: ${url}`);
+            continue;
+          }
           file = path.join(dir, `${n}.${ext}`);
           await mkdir(dir, { recursive: true });
           await writeFile(`${file}.part`, bytes);
@@ -958,7 +920,7 @@ async function importFromApi(opts) {
     ['created (sold)', counts.created],
     ['marked sold', counts.markedSold],
     ['files updated', counts.updated],
-    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.failed} failed)`],
+    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.skipped ?? 0} mock-ups left out, ${counts.failed} failed)`],
     [
       'videos',
       opts.noVideos
@@ -1019,7 +981,7 @@ async function fetchMissingImages() {
   }
   printSummary([
     ['products updated', updated],
-    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.failed} failed)`],
+    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.skipped ?? 0} mock-ups left out, ${counts.failed} failed)`],
     ['warnings', warnings.length],
   ]);
 }
@@ -1145,7 +1107,7 @@ async function main() {
     ['updated', counts.updated],
     ['skipped (exists)', skipped('exists')],
     ...(skipped('original') ? [['skipped (original)', skipped('original')]] : []),
-    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.failed} failed)`],
+    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.skipped ?? 0} mock-ups left out, ${counts.failed} failed)`],
     ...(opts.replaceSamples ? [['samples removed', removed.length ? `${removed.length}: ${removed.join(', ')}` : 0]] : []),
     ['warnings', warnings.length],
   ]);

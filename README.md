@@ -26,14 +26,7 @@ Node 22.12 or newer.
    5. **Payment methods** are managed in Stripe > Settings > Payment methods. The code never hardcodes a list, so Apple Pay, Google Pay and Link appear where they fit.
    6. **Sales tax.** On Etsy, Etsy collected and paid sales tax as the marketplace. On her own site, Simone is responsible, starting with Illinois orders. In Stripe Tax, set the head office address (the studio), add an Illinois registration, then set `STRIPE_AUTOMATIC_TAX=true`. Without an active registration, Stripe collects no tax and shows no error. Stripe Tax charges a per-transaction fee; confirm the setup with her accountant.
    - Promotion codes are switched on, so discount codes made in the Stripe dashboard work at checkout.
-3. **Product photos.** The 13 live Etsy listings are imported (titles, prices, stock, descriptions, intentions, specs, care). Their photos are not in the repo yet because the build sandbox could not reach Etsy's image host. On any normal machine, run once and commit the result:
-
-   ```bash
-   npm run import:etsy -- --fetch-images
-   git add src/assets/products src/content/products && git commit -m "Add Etsy product photos"
-   ```
-
-   Until then each piece shows its drawn illustration, and the Google/Pinterest feed leaves it out.
+3. **Product photos.** The 13 live Etsy listings are imported with their real photos (71 of them, graded to the shared finish). Etsy's designed mock-up cards (the photo on a scene with the name and logo) and collages are left out on purpose: the site shows real product photos only. The two print scans are converted to sRGB without grading, so the art's colors stay true.
 
    Sold pieces and listing videos come through the Etsy API, which the sandbox also cannot reach. On a normal machine, follow "Sold listings and videos" under Importing from Etsy, then commit `src/content/products`, `src/assets/products` and `public/media/products`.
 4. **Forms.** In Netlify > Forms, turn on form detection. Add an email notification for the `inquiry` form (commissions and contact) and the `newsletter` form.
@@ -74,7 +67,7 @@ The description goes here, in plain paragraphs.
 - **Relisting a returned piece:** delete its order in Netlify > Blobs > `inventory` (`orders/<checkout session id>`), then trigger a deploy. If a sold piece ever still shows as available after a rebuild, set `status: sold` in its file; checkout refuses it either way.
 - **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. Run them through `scripts/media` first (below) so every photo shares one white balance and finish. The site resizes and compresses them automatically.
 - **Videos** go in `public/media/products/<slug>/` as short muted MP4 loops with a poster frame, listed under `videos:` in the product file. They play second in the gallery, only while on screen, and never on their own for visitors who turn off motion.
-- **Products without photos** draw an illustration from the `art:` block (bead colors, clasp metal and so on). It disappears as soon as `images` has a photo.
+- **Products without photos** show the first frame of their video, or a plain tile when there is no video either. Nothing is drawn or mocked up. The Google/Pinterest feed leaves out any product without a photo.
 - **Original paintings** use `status: inquire`. They show an Inquire button that opens the commissions form with the painting's name filled in.
 
 ### Photos and video
@@ -106,7 +99,7 @@ npm run import:etsy -- ~/Downloads/EtsyListingsDownload.csv --replace-samples  #
 
 The importer creates one file per listing, downloads every listing photo, guesses the category from the title and tags, and prints a list of anything to check by hand. It reads Simone's description format: the intention line, the Details block (into `specs`), the Care block (into `care`), and drops the repeated title and the sign-off. It never overwrites an existing product unless you pass `--force`, and it never touches original paintings.
 
-- `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later.
+- `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later. Either way, an image at Etsy's mock-up card size (1080 x 1350) or a repeat of an earlier image in the same listing is left out with a warning. Check the warnings for collages, which it cannot spot.
 - `--force` rewrites every field from the CSV except `featured`. Make other hand edits after the last import, or redo them.
 - The CSV does not include videos, sold listings or reviews. Sold listings and videos come from the Etsy API (below). Reviews are a separate download (Shop Manager > Settings > Options > Download Data).
 
@@ -155,7 +148,7 @@ src/
   data/site.ts          store settings: shipping, returns, rating, social links
   data/reviews.ts       customer reviews (section hidden while empty)
   assets/               paintings and brand imagery, optimized at build time
-  components/           header, footer, bag drawer, product card, illustrations
+  components/           header, footer, bag drawer, product card
   layouts/              page shells
   lib/bag.ts            the shopping bag (browser side)
   lib/catalog.ts        catalog helpers, category names and copy

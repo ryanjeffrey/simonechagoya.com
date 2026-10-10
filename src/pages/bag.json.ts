@@ -10,6 +10,8 @@ export const GET: APIRoute = async () => {
     products.map(async (p) => {
       const first = p.data.images[0];
       const thumb = first ? await getImage({ src: first, width: 240, format: 'webp', quality: 70 }) : null;
+      // Pieces without photos yet use their video's poster frame.
+      const image = thumb?.src ?? p.data.videos[0]?.poster;
       return [
         p.id,
         {
@@ -17,9 +19,7 @@ export const GET: APIRoute = async () => {
           url: productUrl(p),
           price: p.data.price,
           variants: p.data.variants.map((v) => ({ id: v.id, label: v.label, price: v.price ?? p.data.price })),
-          image: thumb?.src,
-          ground: p.data.art?.ground,
-          beads: p.data.art?.kind === 'necklace' ? p.data.art.colors.slice(0, 6) : undefined,
+          image,
           oneOfAKind: p.data.oneOfAKind,
           stock: p.data.stock,
           available: isPurchasable(p),

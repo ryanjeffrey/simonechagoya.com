@@ -4,11 +4,15 @@ category: necklaces
 price: 60
 summary: "The Solar Necklace is for the woman who ignites every room she enters."
 intention: "Ignite · Energy · Power"
-images: []
+images:
+  - "../../assets/products/solar-necklace/1.jpg"
+  - "../../assets/products/solar-necklace/2.jpg"
+  - "../../assets/products/solar-necklace/3.jpg"
+  - "../../assets/products/solar-necklace/4.jpg"
+  - "../../assets/products/solar-necklace/5.jpg"
 videos:
   - { src: "/media/products/solar-necklace/1.mp4", poster: "/media/products/solar-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/68b757/7895151080/il_fullxfull.7895151080_cb9e.jpg","https://i.etsystatic.com/56491047/r/il/75a41a/8013232598/il_fullxfull.8013232598_vwtp.jpg","https://i.etsystatic.com/56491047/r/il/f8db78/8050568400/il_fullxfull.8050568400_md12.jpg","https://i.etsystatic.com/56491047/r/il/0fb6d2/7895144648/il_fullxfull.7895144648_r12r.jpg","https://i.etsystatic.com/56491047/r/il/f1c6fc/7943106243/il_fullxfull.7943106243_qq4k.jpg","https://i.etsystatic.com/56491047/r/il/eeb8e9/7943101283/il_fullxfull.7943101283_857h.jpg","https://i.etsystatic.com/56491047/r/il/54fb12/8013232600/il_fullxfull.8013232600_pq4s.jpg"]
-art: {"kind":"necklace","ground":"#ece4d8","metal":"gold","beads":"round","count":41,"clear":false,"colors":["#b5651d","#c97a2b","#8f4a14","#d68b3c"]}
 materials: ["Goldstone, made of sand and copper metallic oxide", "Gold finished brass with 14k gold filled beads", "Glass"]
 dimensions: "16 in"
 specs:
