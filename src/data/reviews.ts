@@ -5,20 +5,34 @@
  * Only add real reviews. Etsy reviews can be carried over word for word
  * (Shop Manager > Reviews); keep `source: 'Etsy'` so the attribution stays honest.
  */
+import type { ImageMetadata } from 'astro';
+import kaseEy from '../assets/reviews/kase-ey.jpg';
+
 export type Review = {
   name: string;
   text: string;
-  rating: 1 | 2 | 3 | 4 | 5;
-  date: string; // YYYY-MM-DD
-  source: 'Etsy' | 'Direct';
+  /** Star rating. Leave out for words shared without one (an Instagram post). */
+  rating?: 1 | 2 | 3 | 4 | 5;
+  date?: string; // YYYY-MM-DD
+  source: 'Etsy' | 'Instagram' | 'Direct';
   /** Product slug the review is about, if any. */
   product?: string;
+  /** The customer's own photo, used with their post. */
+  photo?: { src: ImageMetadata; alt: string };
 };
 
 // Imported from the Etsy reviews export (October 2026), strongest first.
 // A review from a family member was left out on purpose: insider reviews
 // erode trust and the FTC review rule requires disclosing the relationship.
 export const reviews: Review[] = [
+  // From @kase_ey's Instagram story, shared by Simone. "My talent friend" is left
+  // out of her caption at Ryan's request (2026-10-10); hashtags dropped.
+  {
+    name: '@kase_ey',
+    text: 'Obsessed with this gorgeous necklace, hand-crafted by @simonechagoya',
+    source: 'Instagram',
+    photo: { src: kaseEy, alt: '@kase_ey wearing her green gemstone necklace by Simone Chagoya' },
+  },
   {
     name: 'Nancy',
     text: 'The recipient of this gift was very pleased. The presentation is elevated because of the glamorous packaging. The handwritten note is another elegant touch. The beads themselves are high quality and the necklace is beautifully made. This made a special gift I was proud to give!',
