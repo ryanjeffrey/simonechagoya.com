@@ -200,6 +200,7 @@ const jsonLd = [
   <section class="band" aria-label="Simone Chagoya Studio" data-pond-band>
     <Image src={water} alt="" widths={[800, 1200, 1600, 2400]} sizes="100vw" format="webp" quality={78} class="band-img" />
     <canvas class="band-canvas" aria-hidden="true" data-pond></canvas>
+    <p class="band-hint" aria-hidden="true" data-pond-hint>Touch the water</p>
     <div class="lockup" data-reveal>
       <Logo variant="lockup" class="lockup-mark" />
     </div>
@@ -759,6 +760,32 @@ const jsonLd = [
 
   .band-canvas:global(.is-live) {
     opacity: 1;
+  }
+
+  /* Shown once by src/lib/pond.ts, where a single drop lands */
+  .band-hint {
+    position: absolute;
+    bottom: clamp(0.9rem, 2.4vw, 1.6rem);
+    left: 50%;
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: #f4efe7;
+    text-shadow: 0 1px 10px rgb(33 28 23 / 0.55), 0 0 2px rgb(33 28 23 / 0.35);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, 0.4rem);
+    transition:
+      opacity 1.4s var(--ease-out),
+      transform 1.4s var(--ease-out);
+  }
+
+  .band-hint:global(.is-shown) {
+    opacity: 0.92;
+    transform: translate(-50%, 0);
   }
 
   .band :global(.band-img) {
