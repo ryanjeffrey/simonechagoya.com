@@ -11,7 +11,9 @@ interface Props {
 
 const { product, fallback = false, limit = 6 } = Astro.props;
 const own = product ? all.filter((r) => r.product === product) : all;
-const matching = own.length ? own : fallback ? all : [];
+// A piece whose only words are unrated (an Instagram post) leads with them, then the shop's reviews.
+const ownRated = own.some((r) => r.rating);
+const matching = ownRated ? own : own.length || fallback ? [...own, ...(fallback ? all.filter((r) => !own.includes(r)) : [])] : [];
 const list = matching.slice(0, limit);
 // The count and average cover every matching star rating, so they agree with the rating shown elsewhere.
 // Words shared without stars (an Instagram post) are shown but not counted.
@@ -28,10 +30,10 @@ const label = `From ${rated.length} ${rated.length === 1 ? 'review' : 'reviews'}
         <div>
           <p class="eyebrow">Kind words</p>
           <h2 id="reviews-title" class="h2">
-            {average.toFixed(1)} <em>out of 5</em>
+            {rated.length ? <>{average.toFixed(1)} <em>out of 5</em></> : <>Worn and <em>loved</em></>}
           </h2>
         </div>
-        <p class="muted">{label}</p>
+        {rated.length > 0 && <p class="muted">{label}</p>}
       </div>
       <ul class="review-list">
         {list.map((r, i) => (

@@ -107,6 +107,8 @@ export function variantPrice(p: Product, variantId?: string) {
 
 export function priceLabel(p: Product) {
   if (p.data.status === 'inquire') return 'Price on request';
+  // Sold pieces stay on the site to show the body of work, without a price.
+  if (p.data.status === 'sold') return 'Sold';
   const prices = p.data.variants.length ? p.data.variants.map((v) => v.price ?? p.data.price) : [p.data.price];
   const min = Math.min(...prices);
   const max = Math.max(...prices);

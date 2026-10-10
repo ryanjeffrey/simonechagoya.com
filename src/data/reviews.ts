@@ -31,7 +31,8 @@ export const reviews: Review[] = [
     name: '@kase_ey',
     text: 'Obsessed with this gorgeous necklace, hand-crafted by @simonechagoya',
     source: 'Instagram',
-    photo: { src: kaseEy, alt: '@kase_ey wearing her green gemstone necklace by Simone Chagoya' },
+    product: 'african-jade-necklace',
+    photo: { src: kaseEy, alt: '@kase_ey wearing her African Jade necklace by Simone Chagoya' },
   },
   {
     name: 'Nancy',

@@ -91,7 +91,7 @@ const structured = isOriginal
       sku: product.id,
       brand: { '@type': 'Brand', name: site.studio },
       material: data.materials.join(', ') || undefined,
-      offers: {
+      offers: data.status === 'sold' ? undefined : {
         '@type': 'Offer',
         url: absolute(productUrl(product)),
         priceCurrency: 'USD',
@@ -173,7 +173,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
         {data.intention && <p class="info-intention">{data.intention}</p>}
         <h1 class="info-title">{data.title}</h1>
         {
-          isOriginal ? (
+          data.status === 'sold' ? null : isOriginal ? (
             <p class="info-sub">{[data.year, data.medium, data.dimensions].filter(Boolean).join(' · ')}</p>
           ) : (
             <p class="info-price">
