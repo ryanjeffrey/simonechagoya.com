@@ -15,7 +15,7 @@ type RequestLine = { slug?: unknown; variant?: unknown; qty?: unknown };
 export const POST: APIRoute = async ({ request, url }) => {
   // Without the webhook no order is ever recorded, so a sold piece would stay on sale.
   if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
-    return json({ error: 'Checkout is not switched on yet. Email hello@simonechagoya.com to buy this piece.' }, 503);
+    return json({ error: `Online checkout is not open yet. Email ${site.email} to buy, and Simone will reply with how to pay.`, email: site.email }, 503);
   }
 
   let lines: RequestLine[];

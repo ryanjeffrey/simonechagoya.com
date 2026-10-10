@@ -238,6 +238,15 @@ export async function checkout(items: Line[], trigger?: HTMLButtonElement | null
       body: JSON.stringify({ items, previous }),
     });
     const data = await res.json().catch(() => ({}));
+    if (!res.ok && typeof data.email === 'string' && errorTarget) {
+      // Checkout is switched off: hand the buyer a ready-to-send email instead of a dead end.
+      showEmailFallback(errorTarget, data.error, data.email, items);
+      if (btn && original) {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+      return;
+    }
     if (!res.ok || !data.url) throw new Error(data.error || 'Checkout is unavailable right now.');
     try {
       localStorage.setItem(LAST_CHECKOUT, JSON.stringify(data.checkout));
@@ -253,6 +262,21 @@ export async function checkout(items: Line[], trigger?: HTMLButtonElement | null
       btn.innerHTML = original;
     }
   }
+}
+
+async function showEmailFallback(target: HTMLElement, message: string, email: string, items: Line[]) {
+  const c = await loadCatalog().catch(() => null);
+  const names = items.map((l) => {
+    const p = c?.products[l.slug];
+    const variant = p?.variants.find((v) => v.id === l.variant)?.label;
+    const title = p ? `${p.title}${variant ? ` (${variant})` : ''}` : l.slug;
+    return `${l.qty > 1 ? `${l.qty} x ` : ''}${title}`;
+  });
+  const subject = `I'd like to buy ${names.length === 1 ? names[0] : `${names.length} pieces`}`;
+  const bodyText = `Hi Simone,\n\nI'd like to buy:\n${names.map((n) => `- ${n}`).join('\n')}\n\nShipping to (city, state):\n\nThank you!`;
+  const href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+  target.innerHTML = `${escapeHtml(message)} <a href="${escapeHtml(href)}">Email Simone</a>`;
+  target.hidden = false;
 }
 
 // Wiring ------------------------------------------------------------------
@@ -311,3 +335,10 @@ if (document.querySelector('[data-bag-clear]')) {
 }
 
 sync();
+
+// Stripe sends buyers who back out of Checkout to /shop?checkout=cancelled. Their bag is
+// intact, so put it back in front of them instead of a plain shop page.
+if (new URLSearchParams(location.search).get('checkout') === 'cancelled' && lines.length) {
+  history.replaceState(null, '', location.pathname);
+  open();
+}
