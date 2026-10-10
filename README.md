@@ -85,6 +85,14 @@ videos:
   - { src: "/media/products/smoke-necklace/1.mp4", poster: "/media/products/smoke-necklace/1.jpg" }
 ```
 
+Cards (home page, shop grids, the bag) show a framed cover when the product has one: `src/assets/products/<slug>/cover.jpg`, made from the first photo by `frame.py`. It finds the piece on its background, scales every piece to the same height (so tops and bottoms line up in a row), centers it in a 4:5 frame and evens the background out to one shared white. The product page keeps the original photos. Run it again whenever a product's first photo changes:
+
+```bash
+.venv-media/bin/python -I scripts/media/frame.py photo src/assets/products/smoke-necklace/1.jpg src/assets/products/smoke-necklace/cover.jpg
+```
+
+It is made for flat lays on a plain light background. Check the result by eye; a busy background or a piece worn on the body will not frame well.
+
 `video.py` tone-maps iPhone HDR, crops to the gallery's 4:5 frame (`--x`/`--y` move the crop), trims (`--start`/`--dur`, 10 seconds by default), drops the sound and writes a small H.264 file. It needs ffmpeg. Keep each loop under about 3 MB: video lives in the git repo, and every visitor who opens the page downloads it.
 
 ### Importing from Etsy
