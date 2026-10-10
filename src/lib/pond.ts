@@ -138,24 +138,24 @@ void main() {
   vec2 uvR = uv + refr / uSize * uCover;
   vec3 col = texture2D(uTex, uvR).rgb;
 
-  // Sunny grade: lift the shadows, warm the whites toward linen.
-  col = pow(col, vec3(0.93));
-  col *= vec3(1.05, 1.01, 0.93);
+  // Sunny grade: a touch of lift, warm the whites toward linen.
+  col = pow(col, vec3(0.97));
+  col *= vec3(1.03, 1.0, 0.96);
 
   // Light: slopes facing the sun brighten, plus warm drifting caustics.
-  vec2 sun = normalize(vec2(-0.5, -0.8));
+  vec2 sun = normalize(vec2(-0.15, -1.0));
   col *= clamp(1.0 + dot(g, sun) * 1.1, 0.88, 1.22);
-  col += SUN * caustic(p + refr * 0.6, t) * 0.16;
+  col += SUN * caustic(p + refr * 0.6, t) * 0.06;
 
-  // Sunlight falling in from the upper left.
+  // Sunlight falling in from above, over the glare in the photograph.
   vec2 sp = p / max(uSize.x, uSize.y);
-  float glow = exp(-length(sp - vec2(0.12, -0.15)) * 2.2);
-  col += SUN * glow * 0.14;
+  float glow = exp(-length(sp - vec2(0.5, -0.08)) * 2.6);
+  col += SUN * glow * 0.08;
 
   // Glints: the sun reflected in the swell and the fine chop.
   vec2 gf = g + chop(p, t);
   vec3 n = normalize(vec3(-gf * 6.0, 1.0));
-  vec3 l = normalize(vec3(-0.35, -0.55, 0.76));
+  vec3 l = normalize(vec3(-0.08, -0.6, 0.8));
   float facet = max(dot(reflect(-l, n), vec3(0.0, 0.0, 1.0)), 0.0);
   col += SUN * pow(facet, 140.0) * (0.35 + glow);
 
@@ -218,7 +218,7 @@ export function initPond(band: HTMLElement) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
   let texReady = false;
-  let imgAspect = 1600 / 840;
+  let imgAspect = 2400 / 960;
   // Non-power-of-two textures cannot repeat in WebGL1, so redraw the photo into a power-of-two canvas.
   const upload = () => {
     const src = document.createElement('canvas');
