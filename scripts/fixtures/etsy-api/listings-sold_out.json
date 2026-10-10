@@ -1,0 +1,46 @@
+{
+  "count": 3,
+  "results": [
+    {
+      "listing_id": 102,
+      "title": "Dune Necklace, Tiger&#39;s Eye Gemstone Necklace",
+      "description": "Dune Necklace\nThe Dune Necklace is for the woman who is empowered, a fearless warrior.",
+      "state": "sold_out",
+      "quantity": 0,
+      "price": { "amount": 15000, "divisor": 100, "currency_code": "USD" },
+      "tags": ["necklace"],
+      "materials": ["Tiger's eye"],
+      "skus": [],
+      "images": [],
+      "videos": [{ "video_id": 9002, "height": 800, "width": 640, "thumbnail_url": "{{BASE}}/media/il_fullxfull.1.jpg", "video_url": "{{BASE}}/media/listing-video.mp4", "video_state": "active" }]
+    },
+    {
+      "listing_id": 103,
+      "title": "Smoke Necklace, Smoky Quartz Gemstone Necklace",
+      "description": "Smoke Necklace\nThe first Smoke Necklace, strung in 2024.",
+      "state": "sold_out",
+      "quantity": 0,
+      "price": { "amount": 13500, "divisor": 100, "currency_code": "USD" },
+      "tags": ["necklace"],
+      "materials": ["Smoky quartz"],
+      "skus": [],
+      "images": [{ "listing_image_id": 2, "rank": 1, "url_fullxfull": "{{BASE}}/media/il_fullxfull.1.jpg" }]
+    },
+    {
+      "listing_id": 104,
+      "title": "COSMOS NECKLACE, Fluorite Gemstone Necklace | Gift for Her",
+      "description": "COSMOS NECKLACE\nCLARITY · FOCUS · CALM\n\nThe Cosmos Necklace is for the woman who looks up.\n\nDetails:\nGemstones: Rainbow fluorite\nBead size: 8mm\nNecklace length: 17 in.",
+      "state": "sold_out",
+      "quantity": 0,
+      "price": { "amount": 16000, "divisor": 100, "currency_code": "USD" },
+      "tags": ["necklace", "fluorite"],
+      "materials": ["Fluorite"],
+      "skus": ["SC-COSMOS"],
+      "images": [
+        { "listing_image_id": 4, "rank": 2, "url_fullxfull": "{{BASE}}/media/missing.jpg" },
+        { "listing_image_id": 3, "rank": 1, "url_fullxfull": "{{BASE}}/media/il_fullxfull.1.jpg" }
+      ],
+      "videos": []
+    }
+  ]
+}

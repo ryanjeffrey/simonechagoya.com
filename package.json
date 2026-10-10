@@ -9,7 +9,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "import:etsy": "node scripts/import-etsy.mjs"
+    "import:etsy": "node scripts/import-etsy.mjs",
+    "test": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/netlify": "^8.2.9",

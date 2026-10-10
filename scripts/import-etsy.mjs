@@ -21,6 +21,16 @@
  *                      for products that have no `images` yet. No CSV needed. Use this
  *                      after an import with --no-images, once the network allows it.
  *
+ *   npm run import:etsy -- --etsy-login
+ *                      Sign in to Etsy once and save an API token (needs ETSY_API_KEY
+ *                      and ETSY_SHARED_SECRET in .env). See scripts/etsy-api.mjs.
+ *
+ *   npm run import:etsy -- --api [--dry-run] [--no-images] [--no-videos]
+ *                      Read the shop through the Etsy API. Sold-out listings become
+ *                      products with status: sold (existing ones are marked sold), and
+ *                      listing videos are downloaded for every listing on the site. The
+ *                      CSV import stays the way to bring in what is for sale.
+ *
  * Each listing becomes src/content/products/<slug>.md and its photos are saved to
  * src/assets/products/<slug>/<n>.<ext>. Re-running is safe: existing files are
  * skipped unless --force, and paintings (category: originals) are never touched.
@@ -28,13 +38,23 @@
  * printed at the end.
  */
 
+import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_SHOP, EtsyError, createClient, login } from './etsy-api.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
+// ETSY_IMPORT_ROOT points the importer at another checkout; the tests use a scratch copy.
+const ROOT = process.env.ETSY_IMPORT_ROOT ? path.resolve(process.env.ETSY_IMPORT_ROOT) : fileURLToPath(new URL('..', import.meta.url));
 const PRODUCTS_DIR = path.join(ROOT, 'src/content/products');
 const ASSETS_DIR = path.join(ROOT, 'src/assets/products');
+const MEDIA_DIR = path.join(ROOT, 'public/media/products');
+/** Raw downloads that are not for the repo. etsy-export/ is gitignored. */
+const EXPORT_DIR = path.join(ROOT, 'etsy-export');
+const TOKEN_FILE = path.join(EXPORT_DIR, 'etsy-token.json');
+const VIDEO_PY = fileURLToPath(new URL('./media/video.py', import.meta.url));
+const MEDIA_PYTHON = path.join(ROOT, '.venv-media/bin/python');
+const MAX_VIDEO_BYTES = 3 * 1024 * 1024;
 
 const MAX_TAGS = 13;
 const MAX_VARIANTS = 30;
@@ -58,9 +78,14 @@ const FLAGS = {
   '--replace-samples': 'replaceSamples',
   '--no-images': 'noImages',
   '--fetch-images': 'fetchImages',
+  '--api': 'api',
+  '--no-videos': 'noVideos',
+  '--etsy-login': 'etsyLogin',
 };
 const USAGE = `Usage: npm run import:etsy -- <EtsyListingsDownload.csv> [--dry-run] [--force] [--replace-samples] [--no-images]
-       npm run import:etsy -- --fetch-images`;
+       npm run import:etsy -- --fetch-images
+       npm run import:etsy -- --etsy-login
+       npm run import:etsy -- --api [--dry-run] [--no-images] [--no-videos]`;
 
 /** Errors that end the run with a short message instead of a stack trace. */
 class Fatal extends Error {}
@@ -521,6 +546,8 @@ async function readProductFlags(file) {
     original: /^category:\s*["']?originals["']?\s*(#.*)?$/m.test(fm),
     sample: /^sample:\s*true\s*(#.*)?$/m.test(fm),
     featured: /^featured:\s*true\s*(#.*)?$/m.test(fm),
+    status: fm.match(/^status:\s*["']?(\w+)/m)?.[1],
+    listingId: fm.match(/^etsyListingId:\s*["']?(\d+)/m)?.[1],
   };
 }
 
@@ -537,12 +564,14 @@ async function scanProducts() {
 
 /** JSON strings are valid YAML double-quoted strings, so every string goes through this. */
 const q = (s) => JSON.stringify(s);
+const videoLine = (v) => `  - { src: ${q(v.src)}, poster: ${q(v.poster)} }`;
 
 function toFile(p) {
   const lines = [`title: ${q(p.title)}`, `category: ${p.category}`, `price: ${p.price}`];
   if (p.summary) lines.push(`summary: ${q(p.summary)}`);
   if (p.intention) lines.push(`intention: ${q(p.intention)}`);
   lines.push(p.images.length ? 'images:' : 'images: []', ...p.images.map((img) => `  - ${q(img)}`));
+  if (p.videos?.length) lines.push('videos:', ...p.videos.map(videoLine));
   lines.push(`etsyImages: ${JSON.stringify(p.imageUrls)}`);
   if (p.art) lines.push(`art: ${JSON.stringify(p.art)}`);
   lines.push(`materials: [${p.materials.map(q).join(', ')}]`);
@@ -554,6 +583,7 @@ function toFile(p) {
   if (p.featured) lines.push('featured: true');
   lines.push(`tags: [${p.tags.map(q).join(', ')}]`, `order: ${p.order}`);
   if (p.etsyId) lines.push(`etsyId: ${q(p.etsyId)}`);
+  if (p.etsyListingId) lines.push(`etsyListingId: ${q(p.etsyListingId)}`);
   return `---\n${lines.join('\n')}\n---\n${p.body ? `\n${p.body}\n` : ''}`;
 }
 
@@ -569,8 +599,8 @@ function extFromUrl(url) {
 const describeError = (err) =>
   err?.name === 'TimeoutError' ? `timed out after ${TIMEOUT_MS / 1000}s` : (err?.cause?.code ?? err?.message ?? String(err));
 
-/** GET an image with a timeout. Network errors, timeouts, 429 and 5xx are retried with backoff. */
-async function fetchImage(url) {
+/** GET an image or a video with a timeout. Network errors, timeouts, 429 and 5xx are retried with backoff. */
+async function fetchMedia(url, kind = 'image') {
   let lastError;
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
     if (attempt) await sleep(1000 * 2 ** (attempt - 1));
@@ -588,9 +618,9 @@ async function fetchImage(url) {
       break; // other 4xx will not get better on retry
     }
     const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
-    if (type && !type.startsWith('image/') && type !== 'application/octet-stream') {
+    if (type && !type.startsWith(`${kind}/`) && type !== 'application/octet-stream') {
       await res.body?.cancel().catch(() => {});
-      lastError = new Error(`not an image (${type})`);
+      lastError = new Error(`not ${kind === 'image' ? 'an image' : `a ${kind}`} (${type})`);
       break;
     }
     try {
@@ -632,7 +662,7 @@ async function downloadImages(products, counts) {
         if (file) counts.reused++;
         else {
           if (!/^https?:$/.test(new URL(url).protocol)) throw new Error('not an http(s) URL');
-          const { bytes, ext } = await fetchImage(url);
+          const { bytes, ext } = await fetchMedia(url);
           file = path.join(dir, `${n}.${ext}`);
           await mkdir(dir, { recursive: true });
           await writeFile(`${file}.part`, bytes);
@@ -678,10 +708,264 @@ function printSummary(lines) {
   }
 }
 
+// Etsy API ----------------------------------------------------------------
+
+/** An API listing as a CSV row, so buildProduct reads both the same way. */
+function listingRow(listing) {
+  const price = listing.price?.amount === undefined ? '' : String(listing.price.amount / (listing.price.divisor || 100));
+  const row = {
+    TITLE: listing.title ?? '',
+    DESCRIPTION: listing.description ?? '',
+    PRICE: price,
+    CURRENCYCODE: listing.price?.currency_code ?? '',
+    QUANTITY: String(listing.quantity ?? ''),
+    TAGS: (listing.tags ?? []).join(','),
+    MATERIALS: (listing.materials ?? []).join(','),
+    SKU: listing.skus?.[0] ?? '',
+  };
+  const images = [...(listing.images ?? [])].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+  images.slice(0, MAX_IMAGES).forEach((img, i) => (row[`IMAGE${i + 1}`] = img.url_fullxfull ?? ''));
+  return row;
+}
+const readRow = (row, name) => (row[headerKey(name)] ?? '').trim();
+
+/** The slug buildProduct would give this title, before any -2 suffix. */
+const titleSlug = (title) => slugify(tidyCase(shortTitle(clean(title ?? '').replace(/\s+/g, ' ').trim())));
+
+/** Sets `key: value` in a product file's frontmatter, adding the line if it is missing. */
+function setField(text, key, value) {
+  const m = text.match(/^(﻿?---\r?\n)([\s\S]*?)(\r?\n---)/);
+  if (!m) return text;
+  const re = new RegExp(`^${key}:.*$`, 'm');
+  const fm = re.test(m[2]) ? m[2].replace(re, () => `${key}: ${value}`) : `${m[2]}\n${key}: ${value}`;
+  return m[1] + fm + text.slice(m[0].length - m[3].length);
+}
+
+/** Adds video entries to a product file, after its photos. Returns the text unchanged when it cannot. */
+function addVideos(text, slug, videos) {
+  const fresh = videos.filter((v) => !text.includes(q(v.src)));
+  if (!fresh.length) return text;
+  const m = text.match(/^(﻿?---\r?\n)([\s\S]*?)(\r?\n---)/);
+  if (!m) return text;
+  const lines = m[2].split(/\r?\n/);
+  const at = lines.findIndex((l) => /^videos:/.test(l));
+  if (at === -1) {
+    const etsyImages = lines.findIndex((l) => /^etsyImages:/.test(l));
+    lines.splice(etsyImages === -1 ? lines.length : etsyImages, 0, 'videos:', ...fresh.map(videoLine));
+  } else if (/^videos:\s*\[\]\s*$/.test(lines[at])) {
+    lines.splice(at, 1, 'videos:', ...fresh.map(videoLine));
+  } else if (/^videos:\s*$/.test(lines[at])) {
+    let end = at + 1;
+    while (end < lines.length && /^\s+-/.test(lines[end])) end++;
+    lines.splice(end, 0, ...fresh.map(videoLine));
+  } else {
+    warn(slug, 'its videos list is not in the "- { src, poster }" form, so the Etsy videos were not added. Add them by hand.');
+    return text;
+  }
+  return m[1] + lines.join('\n') + text.slice(m[0].length - m[3].length);
+}
+
+const exists = async (file) => (await stat(file).catch(() => null))?.size > 0;
+
+/** The media venv's Python when it and ffmpeg are installed, for scripts/media/video.py. */
+function videoProcessor() {
+  const ffmpeg = spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' });
+  const python = spawnSync(MEDIA_PYTHON, ['-I', '-c', 'import numpy, PIL, pillow_heif'], { stdio: 'ignore' });
+  return ffmpeg.status === 0 && python.status === 0 ? MEDIA_PYTHON : undefined;
+}
+
+/**
+ * Downloads a listing's videos to etsy-export/videos/<slug>/ and grades each into the
+ * gallery format (muted 4:5 loop and poster) in public/media/products/<slug>/ with
+ * scripts/media/video.py. Returns the entries for the product's `videos` list.
+ * Raw downloads stay in etsy-export/ until the media tools are set up.
+ */
+async function importVideos(slug, listing, processor, counts) {
+  const entries = [];
+  const videos = (listing.videos ?? []).filter((v) => v.video_url && (v.video_state ?? 'active') === 'active');
+  for (const [i, video] of videos.entries()) {
+    const n = i + 1;
+    const raw = path.join(EXPORT_DIR, 'videos', slug, `${n}.mp4`);
+    const out = path.join(MEDIA_DIR, slug, `etsy-${n}.mp4`);
+    const poster = path.join(MEDIA_DIR, slug, `etsy-${n}.jpg`);
+    const entry = { src: `/media/products/${slug}/etsy-${n}.mp4`, poster: `/media/products/${slug}/etsy-${n}.jpg` };
+    try {
+      if ((await exists(out)) && (await exists(poster))) {
+        counts.videosReused++;
+        entries.push(entry);
+        continue;
+      }
+      if (!(await exists(raw))) {
+        const { bytes } = await fetchMedia(video.video_url, 'video');
+        await mkdir(path.dirname(raw), { recursive: true });
+        await writeFile(`${raw}.part`, bytes);
+        await rename(`${raw}.part`, raw);
+        console.log(`  video  ${path.relative(ROOT, raw)}`);
+      }
+      if (!processor) {
+        counts.videosPending++;
+        continue;
+      }
+      await mkdir(path.dirname(out), { recursive: true });
+      const run = spawnSync(processor, ['-I', VIDEO_PY, raw, out, poster], { encoding: 'utf8' });
+      if (run.status !== 0) throw new Error(`video.py failed: ${(run.stderr || run.stdout || '').trim().split('\n').at(-1)}`);
+      const size = (await stat(out)).size;
+      if (size > MAX_VIDEO_BYTES) warn(slug, `etsy-${n}.mp4 is ${(size / 1024 / 1024).toFixed(1)} MB. Re-run video.py with a shorter --dur.`);
+      console.log(`  video  ${path.relative(ROOT, out)}`);
+      counts.videosGraded++;
+      entries.push(entry);
+    } catch (err) {
+      counts.videosFailed++;
+      warn(slug, `video ${n} failed (${err.message}): ${video.video_url}`);
+    }
+  }
+  return entries;
+}
+
+/**
+ * Reads the shop through the Etsy API. Active listings are matched to product files
+ * (by etsyListingId, else by title) to pick up their videos and record their listing
+ * id. Sold-out listings mark their product sold, or become new products with
+ * status: sold. A sold listing whose title matches an active one is a piece made
+ * again, so it gets its own page instead of marking the one for sale as sold.
+ */
+async function importFromApi(opts) {
+  const client = await createClient(TOKEN_FILE);
+  const shopName = process.env.ETSY_SHOP_NAME ?? DEFAULT_SHOP;
+  const shop = await client.shopId(shopName);
+  const active = await client.listings(shop, 'active');
+  const sold = await client.listings(shop, 'sold_out');
+  console.log(`Etsy shop ${shopName}: ${active.length} active listing${active.length === 1 ? '' : 's'}, ${sold.length} sold out\n`);
+
+  const onDisk = await scanProducts();
+  const originals = new Set([...onDisk].filter(([, f]) => f?.original).map(([slug]) => slug));
+  const byId = new Map([...onDisk].filter(([, f]) => f?.listingId).map(([slug, f]) => [f.listingId, slug]));
+  const claimed = new Set(byId.values());
+  const taken = new Set(onDisk.keys());
+  const plans = [];
+
+  /** The product file this listing already has, if any. Claims it so no other listing matches it by title. */
+  function match(listing) {
+    const id = String(listing.listing_id);
+    let slug = byId.get(id);
+    const base = titleSlug(listing.title);
+    const candidate = onDisk.get(base);
+    if (!slug && candidate && !candidate.original && !candidate.listingId && !claimed.has(base)) slug = base;
+    if (slug) claimed.add(slug);
+    return slug;
+  }
+
+  // Active listings first: they keep the title-matched files.
+  for (const listing of active) {
+    const slug = match(listing);
+    if (!slug) warn(titleSlug(listing.title) || String(listing.listing_id), `listing ${listing.listing_id} is for sale on Etsy but not on the site. Import it with the CSV.`);
+    else plans.push({ listing, slug, sold: false });
+  }
+  sold.forEach((listing, i) => {
+    const slug = match(listing);
+    if (slug) return plans.push({ listing, slug, sold: true });
+    const p = buildProduct(readRow, listingRow(listing), i, taken, originals);
+    if (!p) return;
+    Object.assign(p, { stock: 0, oneOfAKind: false, status: 'sold', order: 1000 + i * 10, etsyListingId: String(listing.listing_id), featured: false, videos: [] });
+    plans.push({ listing, slug: p.slug, sold: true, product: p });
+  });
+
+  for (const plan of plans) {
+    const flags = onDisk.get(plan.slug);
+    const changes = [];
+    if (plan.product) changes.push('create (sold)');
+    else if (flags.original) changes.push('skip (original)');
+    else {
+      if (plan.sold && flags.status !== 'sold') changes.push('mark sold');
+      if (!flags.listingId) changes.push('record listing id');
+    }
+    plan.videoCount = flags?.original ? 0 : (plan.listing.videos ?? []).filter((v) => v.video_url).length;
+    plan.changes = changes;
+  }
+
+  if (opts.dryRun) {
+    printTable(
+      plans.map((p) => ({
+        slug: p.slug,
+        listing: p.listing.listing_id,
+        etsy: p.sold ? 'sold out' : 'active',
+        videos: opts.noVideos ? 0 : p.videoCount,
+        action: p.changes.join(', ') || 'none',
+      })),
+      ['slug', 'listing', 'etsy', 'videos', 'action'],
+    );
+    printSummary([
+      ['would create', plans.filter((p) => p.product).length],
+      ['would mark sold', plans.filter((p) => p.changes.includes('mark sold')).length],
+      ['videos', opts.noVideos ? 'skipped' : plans.reduce((n, p) => n + p.videoCount, 0)],
+      ['warnings', warnings.length],
+    ]);
+    console.log('\nDry run: nothing was written.');
+    return;
+  }
+
+  const counts = { created: 0, markedSold: 0, updated: 0, downloaded: 0, reused: 0, failed: 0, videosGraded: 0, videosReused: 0, videosPending: 0, videosFailed: 0 };
+  const created = plans.filter((p) => p.product).map((p) => p.product);
+  if (!opts.noImages && created.length) {
+    console.log('Downloading photos...');
+    await downloadImages(created, counts);
+  }
+  const processor = opts.noVideos ? undefined : videoProcessor();
+  if (!opts.noVideos && plans.some((p) => p.videoCount)) console.log('Downloading videos...');
+
+  await mkdir(PRODUCTS_DIR, { recursive: true });
+  for (const plan of plans) {
+    const file = path.join(PRODUCTS_DIR, `${plan.slug}.md`);
+    const rel = path.relative(ROOT, file);
+    if (plan.changes.includes('skip (original)')) continue;
+    const videos = opts.noVideos || !plan.videoCount ? [] : await importVideos(plan.slug, plan.listing, processor, counts);
+
+    if (plan.product) {
+      plan.product.videos = videos;
+      await writeFile(file, toFile(plan.product));
+      counts.created++;
+      console.log(`  create ${rel} (sold)`);
+      continue;
+    }
+    const before = await readFile(file, 'utf8');
+    let text = before;
+    if (plan.changes.includes('mark sold')) {
+      text = setField(setField(text, 'status', 'sold'), 'stock', '0');
+      counts.markedSold++;
+    }
+    if (plan.changes.includes('record listing id')) text = setField(text, 'etsyListingId', q(String(plan.listing.listing_id)));
+    text = addVideos(text, plan.slug, videos);
+    if (text === before) continue;
+    await writeFile(file, text);
+    counts.updated++;
+    console.log(`  update ${rel}${plan.changes.includes('mark sold') ? ' (marked sold)' : ''}`);
+  }
+
+  if (counts.videosPending) {
+    console.log(
+      `\n${counts.videosPending} video${counts.videosPending === 1 ? ' is' : 's are'} downloaded to etsy-export/videos/ but not graded:` +
+        ' the media tools are not set up (README > Photos and video). Set them up and run --api again.',
+    );
+  }
+  printSummary([
+    ['created (sold)', counts.created],
+    ['marked sold', counts.markedSold],
+    ['files updated', counts.updated],
+    ['images downloaded', `${counts.downloaded} (${counts.reused} already present, ${counts.failed} failed)`],
+    [
+      'videos',
+      opts.noVideos
+        ? 'skipped'
+        : `${counts.videosGraded} graded (${counts.videosReused} already present, ${counts.videosPending} waiting on media tools, ${counts.videosFailed} failed)`,
+    ],
+    ['warnings', warnings.length],
+  ]);
+}
+
 // Main --------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const opts = { csv: undefined, dryRun: false, force: false, replaceSamples: false, noImages: false, fetchImages: false };
+  const opts = { csv: undefined, dryRun: false, force: false, replaceSamples: false, noImages: false, fetchImages: false, api: false, noVideos: false, etsyLogin: false };
   for (const arg of argv) {
     if (arg === '-h' || arg === '--help') {
       console.log(USAGE);
@@ -691,7 +975,9 @@ function parseArgs(argv) {
     else if (!opts.csv) opts.csv = arg;
     else throw new Fatal(`unexpected argument ${arg}`);
   }
-  if (!opts.csv && !opts.fetchImages) throw new Fatal('missing the path to the Etsy listings CSV');
+  if (opts.api && opts.csv) throw new Fatal('--api reads Etsy directly, so it takes no CSV. Run the CSV import separately.');
+  if (opts.api && (opts.force || opts.replaceSamples)) throw new Fatal('--force and --replace-samples work with the CSV import only');
+  if (!opts.csv && !opts.fetchImages && !opts.api && !opts.etsyLogin) throw new Fatal('missing the path to the Etsy listings CSV');
   return opts;
 }
 
@@ -733,6 +1019,15 @@ async function fetchMissingImages() {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
+  if (opts.etsyLogin || opts.api) {
+    try {
+      process.loadEnvFile(path.join(ROOT, '.env'));
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
+  }
+  if (opts.etsyLogin) return login(TOKEN_FILE);
+  if (opts.api) return importFromApi(opts);
   if (opts.fetchImages) return fetchMissingImages();
   // npm runs scripts from the project root; INIT_CWD is where the command was typed.
   const csvPath = path.resolve(process.env.INIT_CWD ?? process.cwd(), opts.csv);
@@ -850,7 +1145,9 @@ async function main() {
 }
 
 main().catch((err) => {
-  if (err instanceof Fatal) {
+  if (err instanceof EtsyError) {
+    console.error(`ERROR: ${err.message}`);
+  } else if (err instanceof Fatal) {
     console.error(`ERROR: ${err.message}\n${USAGE}`);
   } else {
     console.error(err);

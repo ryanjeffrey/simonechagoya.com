@@ -78,6 +78,8 @@ const products = defineCollection({
       publishedAt: z.coerce.date().optional(),
       seoDescription: z.string().optional(),
       etsyId: z.string().optional(),
+      /** Etsy listing id, recorded by `import:etsy --api` so later runs match listings exactly. */
+      etsyListingId: z.string().optional(),
     }),
 });
 

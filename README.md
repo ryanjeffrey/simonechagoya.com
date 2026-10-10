@@ -33,7 +33,9 @@ Node 22.12 or newer.
    git add src/assets/products src/content/products && git commit -m "Add Etsy product photos"
    ```
 
-   Until then each piece shows its drawn illustration, and the Google/Pinterest feed leaves it out. Listing videos are not imported; the gallery is photo only for now.
+   Until then each piece shows its drawn illustration, and the Google/Pinterest feed leaves it out.
+
+   Sold pieces and listing videos come through the Etsy API, which the sandbox also cannot reach. On a normal machine, follow "Sold listings and videos" under Importing from Etsy, then commit `src/content/products`, `src/assets/products` and `public/media/products`.
 4. **Forms.** In Netlify > Forms, turn on form detection. Add an email notification for the `inquiry` form (commissions and contact) and the `newsletter` form.
 5. **Confirm the policies** listed under "Needs Simone's sign-off" below.
 6. **Free listings.** Submit `https://simonechagoya.com/feeds/products.xml` to Google Merchant Center (free Shopping listings) and as a Pinterest catalog. Only real, available products with photos are included.
@@ -105,7 +107,32 @@ The importer creates one file per listing, downloads every listing photo, guesse
 
 - `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later.
 - `--force` rewrites every field from the CSV except `featured`. Make other hand edits after the last import, or redo them.
-- The CSV does not include videos, sold listings or reviews. Sold listings and videos need the Etsy API (a developer key and OAuth); reviews are a separate download (Shop Manager > Settings > Options > Download Data).
+- The CSV does not include videos, sold listings or reviews. Sold listings and videos come from the Etsy API (below). Reviews are a separate download (Shop Manager > Settings > Options > Download Data).
+
+#### Sold listings and videos
+
+The API import adds what the CSV leaves out: every sold-out listing becomes a product with `status: sold` (the Sold badge, a disabled Sold button, left out of the feed and refused at checkout), and every listing video becomes a gallery loop.
+
+1. Create an app at [etsy.com/developers/your-apps](https://www.etsy.com/developers/your-apps). Add `http://localhost:3003/etsy-callback` as a callback URL.
+2. Put its keystring and shared secret in `.env` as `ETSY_API_KEY` and `ETSY_SHARED_SECRET`.
+3. Sign in once as the shop owner. This saves a token to `etsy-export/etsy-token.json` (gitignored) that refreshes itself for 90 days:
+
+   ```bash
+   npm run import:etsy -- --etsy-login
+   ```
+
+4. Preview, then import:
+
+   ```bash
+   npm run import:etsy -- --api --dry-run
+   npm run import:etsy -- --api
+   ```
+
+How it matches listings to product files: by `etsyListingId` when the file has one (the import records it), otherwise by title. A sold listing whose title matches a product still for sale on Etsy is an earlier piece of the same design, so it gets its own page (`smoke-necklace-2`) instead of marking the one for sale as sold. A product imported from the CSV that has since sold on Etsy is marked sold in place (`status: sold`, `stock: 0`); nothing else in the file changes. Original paintings are never touched.
+
+Videos download to `etsy-export/videos/<slug>/` and are graded with `scripts/media/video.py` into `public/media/products/<slug>/etsy-<n>.mp4` with a poster frame, then added to the product's `videos` list. That needs the media tools (see Photos and video). Without them the raw files wait in `etsy-export/` and the next `--api` run grades them. `--no-videos` and `--no-images` skip either download.
+
+`npm test` runs the API import against fixtures in `scripts/fixtures/etsy-api/`, with no network.
 
 ## Needs Simone's sign-off
 
@@ -137,7 +164,8 @@ src/
     api/stripe-webhook.ts  records orders and rebuilds the site after a sale
     bag.json.ts         catalog data the bag reads
     feeds/products.xml.ts  Google Merchant and Pinterest feed
-scripts/import-etsy.mjs  Etsy CSV importer
+scripts/import-etsy.mjs  Etsy importer: listings CSV, plus sold listings and videos from the API
+scripts/etsy-api.mjs     Etsy API client and OAuth login
 ```
 
 **Design system.** Colors, type scale and spacing are CSS variables at the top of `src/styles/global.css`: linen and stone grounds, espresso ink, fired clay and brass accents. The type is Cormorant (display) with Instrument Sans (text). Both fonts are self-hosted.
