@@ -17,6 +17,7 @@
  * files as they are, and checkout skips the guards.
  */
 import { getStore, type Store } from '@netlify/blobs';
+import { STRIPE_SECRET_KEY } from 'astro:env/server';
 import type { Product } from './catalog';
 
 export type OrderLine = { slug: string; variant?: string; qty: number };
@@ -45,8 +46,11 @@ export const isSinglePiece = (p: Product) => p.data.stock === 1 && p.data.varian
 export async function soldCounts(s = inventoryStore()): Promise<Map<string, number>> {
   const sold = new Map<string, number>();
   if (!s) return sold;
+  // Test orders share the store with real ones; once live keys are in, they stop counting.
+  const live = Boolean(STRIPE_SECRET_KEY?.includes('_live_'));
   const { blobs } = await s.list({ prefix: 'orders/' });
-  const orders = await Promise.all(blobs.map((b) => s.get(b.key, { type: 'json' }) as Promise<Order | null>));
+  const keys = blobs.map((b) => b.key).filter((key) => !(live && key.startsWith('orders/cs_test_')));
+  const orders = await Promise.all(keys.map((key) => s.get(key, { type: 'json' }) as Promise<Order | null>));
   const add = (key: string, qty: number) => sold.set(key, (sold.get(key) ?? 0) + qty);
   for (const order of orders) {
     for (const line of order?.lines ?? []) {
