@@ -122,7 +122,7 @@ void main() {
   // Ripples from the wave simulation ride on the swell.
   vec2 rip = (texture2D(uSim, p / uSimSize).rg - 128.0 / 255.0) * (255.0 / 127.0) * SLOPE_RANGE;
   vec2 g = surface(p, t) + rip;
-  vec2 refr = (g + rip * 0.9) * 26.0;
+  vec2 refr = (g + rip * 0.7) * 26.0;
 
   vec2 uv = p / uSize;
   uv = (uv - 0.5) * uCover + 0.5;
@@ -141,7 +141,7 @@ void main() {
   // Ripple faces tilted toward the sky mirror its light, the far faces fall
   // into shade, which is what draws each ring on real water.
   float tilt = clamp(dot(rip, sun), -0.8, 0.8);
-  col *= 1.0 + tilt * 1.25;
+  col *= 1.0 + tilt * 1.0;
 
   // Sunlight falling in from above, over the glare in the photograph.
   vec2 sp = p / max(uSize.x, uSize.y);
@@ -154,7 +154,7 @@ void main() {
   vec3 l = normalize(vec3(-0.08, -0.6, 0.8));
   float facet = max(dot(reflect(-l, n), vec3(0.0, 0.0, 1.0)), 0.0);
   col += SUN * pow(facet, 140.0) * (0.35 + glow);
-  col += SUN * pow(max(tilt, 0.0), 1.3) * (0.45 + glow);
+  col += SUN * pow(max(tilt, 0.0), 1.4) * (0.32 + glow);
 
   float facing = smoothstep(0.55, 0.95, facet) * (0.6 + glow * 1.6);
   col += SUN * sparkle(p + refr * 0.3, facing, t) * 1.7;
@@ -437,7 +437,7 @@ export function initPond(band: HTMLElement) {
     const k = frameDt > 0 ? Math.min(1, (t + dt) / frameDt) : 1;
     const x = f.x + (f.tx - f.x) * k;
     const y = f.y + (f.ty - f.y) * k;
-    const depth = Math.min(2.6, f.speed / 850) * dt * 60;
+    const depth = Math.min(1.4, f.speed / 1600) * dt * 60;
     if (depth > 0.004) water.press(x, y, depth, 9, false);
   };
 
@@ -474,7 +474,7 @@ export function initPond(band: HTMLElement) {
   band.addEventListener('pointercancel', leave);
   band.addEventListener('pointerdown', (e) => {
     const [x, y] = local(e);
-    water.press(x, y, 38, 16, true);
+    water.press(x, y, 28, 16, true);
     touched = true;
     hideHint();
   });
@@ -523,7 +523,7 @@ export function initPond(band: HTMLElement) {
     const hr = hint?.getBoundingClientRect();
     const x = hr ? hr.left + hr.width / 2 - rect.left : rect.width / 2;
     const y = hr ? hr.top - rect.top - 18 : rect.height * 0.85;
-    water.press(x, y, 38, 16, true);
+    water.press(x, y, 28, 16, true);
     hint?.classList.add('is-shown');
     hintTimer = window.setTimeout(hideHint, 6500);
   };
