@@ -342,7 +342,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
     </div>
   </section>
 
-  <Reviews product={product.id} />
+  <Reviews product={product.id} fallback={data.category === 'necklaces'} limit={3} />
 
   {
     related.length > 0 && (

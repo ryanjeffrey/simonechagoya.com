@@ -3,12 +3,19 @@ import { reviews as all } from '../data/reviews';
 
 interface Props {
   product?: string;
+  /** On a product page with no reviews of its own, show the shop's reviews instead. */
+  fallback?: boolean;
   limit?: number;
 }
 
-const { product, limit = 6 } = Astro.props;
-const list = (product ? all.filter((r) => r.product === product) : all).slice(0, limit);
-const average = list.length ? list.reduce((n, r) => n + r.rating, 0) / list.length : 0;
+const { product, fallback = false, limit = 6 } = Astro.props;
+const own = product ? all.filter((r) => r.product === product) : all;
+const matching = own.length ? own : fallback ? all : [];
+const list = matching.slice(0, limit);
+// The count and average cover every matching review, so they agree with the rating shown elsewhere.
+const average = matching.length ? matching.reduce((n, r) => n + r.rating, 0) / matching.length : 0;
+const allEtsy = matching.every((r) => r.source === 'Etsy');
+const label = `From ${matching.length} ${matching.length === 1 ? 'review' : 'reviews'}${allEtsy ? ' on Etsy' : ''}`;
 ---
 
 {
@@ -21,7 +28,7 @@ const average = list.length ? list.reduce((n, r) => n + r.rating, 0) / list.leng
             {average.toFixed(1)} <em>out of 5</em>
           </h2>
         </div>
-        <p class="muted">From {list.length} recent reviews</p>
+        <p class="muted">{label}</p>
       </div>
       <ul class="review-list">
         {list.map((r, i) => (
@@ -44,14 +51,15 @@ const average = list.length ? list.reduce((n, r) => n + r.rating, 0) / list.leng
 
 <style>
   .review-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
-    gap: 1.25rem;
+    columns: 3 19rem;
+    column-gap: 1.25rem;
     list-style: none;
     padding: 0;
   }
 
   .review {
+    break-inside: avoid;
+    margin-bottom: 1.25rem;
     padding: 1.75rem;
     background: var(--paper-2);
   }

@@ -61,6 +61,11 @@
   margin: 0;
 }
 
+/* Components that set display (like .field) must still hide when [hidden] is on. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
