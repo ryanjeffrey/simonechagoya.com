@@ -37,7 +37,8 @@ const EVENTS = [
   'checkout.session.expired',
 ];
 const ALL_CONTEXTS = ['production', 'deploy-preview', 'branch-deploy', 'dev'];
-const SCOPES = ['builds', 'functions', 'runtime', 'post-processing'];
+// The API's names, which differ from the dashboard's (post_processing, not post-processing).
+const SCOPES = ['builds', 'functions', 'runtime', 'post_processing'];
 const MANAGED = 'setup-stripe';
 
 const step = (n, text) => console.log(`\n${n}. ${text}`);
@@ -86,12 +87,9 @@ function setEnv(account, siteId, key, value, contexts) {
     else values.set(v.context, v.value);
   }
   for (const c of contexts) values.set(c, value);
-  if (existing) api('deleteEnvVar', { account_id: account, site_id: siteId, key });
-  api('createEnvVars', {
-    account_id: account,
-    site_id: siteId,
-    body: [{ key, scopes: SCOPES, values: [...values].map(([context, v]) => ({ context, value: v })) }],
-  });
+  const body = { key, scopes: SCOPES, values: [...values].map(([context, v]) => ({ context, value: v })) };
+  if (existing) api('updateEnvVar', { account_id: account, site_id: siteId, key, body });
+  else api('createEnvVars', { account_id: account, site_id: siteId, body: [body] });
 }
 
 // ---------------------------------------------------------------- Prompts
