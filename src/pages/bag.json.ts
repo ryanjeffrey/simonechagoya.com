@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getImage } from 'astro:assets';
-import { getProducts, isPurchasable, productUrl } from '../lib/catalog';
+import { coverImage, getProducts, isPurchasable, productUrl } from '../lib/catalog';
 import { site } from '../data/site';
 
 /** Compact catalog the bag drawer reads to price and render lines. */
@@ -8,7 +8,7 @@ export const GET: APIRoute = async () => {
   const products = await getProducts((p) => p.data.status !== 'inquire');
   const entries = await Promise.all(
     products.map(async (p) => {
-      const first = p.data.images[0];
+      const first = coverImage(p);
       const thumb = first ? await getImage({ src: first, width: 240, format: 'webp', quality: 70 }) : null;
       // Pieces without photos yet use their video's poster frame.
       const image = thumb?.src ?? p.data.videos[0]?.poster;

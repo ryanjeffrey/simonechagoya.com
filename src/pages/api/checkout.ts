@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { STRIPE_SECRET_KEY, STRIPE_AUTOMATIC_TAX, STRIPE_WEBHOOK_SECRET } from 'astro:env/server';
 import Stripe from 'stripe';
-import { getProducts, isPurchasable, variantPrice } from '../../lib/catalog';
+import { coverImage, getProducts, isPurchasable, variantPrice } from '../../lib/catalog';
 import { HOLD_SECONDS, holdPieces, inventoryStore, isSinglePiece, releasePieces } from '../../lib/inventory';
 import { site } from '../../data/site';
 
@@ -59,7 +59,8 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (isSinglePiece(product)) singles.push({ slug: product.id, title: data.title });
     const unit = variantPrice(product, variant?.id);
     subtotal += unit * qty;
-    const image = data.images[0] ? new URL(data.images[0].src, url.origin).href : undefined;
+    const cover = coverImage(product);
+    const image = cover ? new URL(cover.src, url.origin).href : undefined;
 
     lineItems.push({
       quantity: qty,

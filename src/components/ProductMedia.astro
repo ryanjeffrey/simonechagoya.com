@@ -1,10 +1,10 @@
 ---
 import { Image } from 'astro:assets';
-import type { Product } from '../lib/catalog';
+import { coverImage, type Product } from '../lib/catalog';
 
 interface Props {
   product: Product;
-  /** Which image to show (falls back to the first). */
+  /** Which photo to show (falls back to the first). Without it, the card cover is shown. */
   index?: number;
   sizes?: string;
   widths?: number[];
@@ -16,7 +16,7 @@ interface Props {
 
 const {
   product,
-  index = 0,
+  index,
   sizes = '(min-width: 1100px) 25vw, (min-width: 700px) 33vw, 50vw',
   widths = [360, 540, 720, 960, 1200],
   loading = 'lazy',
@@ -25,7 +25,7 @@ const {
 } = Astro.props;
 
 const { data } = product;
-const img = data.images[index] ?? data.images[0];
+const img = index === undefined ? coverImage(product) : (data.images[index] ?? data.images[0]);
 /** Until a piece has photos, the first frame of its video stands in. Never a drawing. */
 const poster = img ? undefined : data.videos[0]?.poster;
 const isArt = data.category === 'originals' || data.category === 'prints';

@@ -1,6 +1,6 @@
 ---
 import ProductMedia from './ProductMedia.astro';
-import { CATEGORY_META, isPurchasable, priceLabel, productUrl, type Product } from '../lib/catalog';
+import { CATEGORY_META, isPurchasable, priceLabel, productUrl, shortMaterial, type Product } from '../lib/catalog';
 
 interface Props {
   product: Product;
@@ -20,7 +20,7 @@ const meta =
     : data.variants.length > 1 && data.category === 'prints'
       ? `${data.variants.length} sizes`
       : data.materials[0] && data.category === 'necklaces'
-        ? data.materials[0]
+        ? shortMaterial(product)
         : CATEGORY_META[data.category].singular;
 ---
 

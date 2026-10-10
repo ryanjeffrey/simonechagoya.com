@@ -67,6 +67,23 @@ export async function getProducts(filter?: (p: Product) => boolean, options?: { 
   return (filter ? all.filter(filter) : all).sort(sortFeatured);
 }
 
+/**
+ * Studio framings made by scripts/media/frame.py: the first photo with the piece centered at
+ * one shared size, so a grid of pieces lines up. Kept beside the photos as cover.jpg rather
+ * than in frontmatter, so an Etsy re-import never drops them.
+ */
+const covers = import.meta.glob<{ default: ImageMetadata }>('../assets/products/*/cover.jpg', { eager: true });
+
+/** The image a card shows: the framed cover if there is one, else the first photo. */
+export function coverImage(p: Product): ImageMetadata | undefined {
+  return covers[`../assets/products/${p.id}/cover.jpg`]?.default ?? p.data.images[0];
+}
+
+/** The first material, without its explanation ("Goldstone, made of sand..." reads "Goldstone"). */
+export function shortMaterial(p: Product) {
+  return p.data.materials[0]?.split(',')[0].trim();
+}
+
 export function sortFeatured(a: Product, b: Product) {
   const sold = Number(a.data.status === 'sold') - Number(b.data.status === 'sold');
   if (sold !== 0) return sold;
