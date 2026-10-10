@@ -2,7 +2,7 @@
 
 The online studio and store for Simone Chagoya: natural gemstone necklaces, signed prints, watercolor cards and original paintings, made in Chicago.
 
-Built with [Astro](https://astro.build) as a static site, plus one serverless function that opens Stripe Checkout. It is hosted on Netlify and has no monthly platform fee. Payments cost Stripe's standard processing rate.
+Built with [Astro](https://astro.build) as a static site, plus two serverless functions: one opens Stripe Checkout, one receives Stripe's webhook. It is hosted on Netlify and has no monthly platform fee. Payments cost Stripe's standard processing rate.
 
 ## Run it locally
 
@@ -18,10 +18,14 @@ Node 22.12 or newer.
 ## Launch checklist
 
 1. **Netlify.** Create a site from this repo. `netlify.toml` already holds the build settings. Point `simonechagoya.com` at it.
-2. **Stripe.** Create the account, then add `STRIPE_SECRET_KEY` under Netlify > Site configuration > Environment variables. Use an `sk_test_` key first and place a test order with card `4242 4242 4242 4242`. Switch to the live key when the test order works.
-   - Apple Pay and Google Pay appear in Checkout automatically.
+2. **Stripe** (Payments only; Connect is for platforms that pay other sellers, and this shop has one seller). Do this once in a Stripe sandbox, then again in live mode, because live keys and live webhooks have their own secrets.
+   1. **Key.** Create a restricted key (`rk_...`) with write access to Checkout Sessions, and save it as `STRIPE_SECRET_KEY` in Netlify > Site configuration > Environment variables. If a test checkout fails with a permission error, add the permission the error names. A restricted key limits the damage if it ever leaks; avoid the full `sk_` secret key.
+   2. **Build hook.** Netlify > Site configuration > Build & deploy > Build hooks: add one called "Stripe sale" and save its URL as `NETLIFY_BUILD_HOOK_URL`.
+   3. **Webhook.** Stripe > Developers > Webhooks: add `https://simonechagoya.com/api/stripe-webhook` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`. Save its signing secret (`whsec_...`) as `STRIPE_WEBHOOK_SECRET`. This is required, not optional: it is what stops a one-of-one piece from selling twice.
+   4. **Test.** Buy a single piece with card `4242 4242 4242 4242`. Then check: Stripe shows the webhook delivered with a 200, a second checkout for the piece is refused, and after the rebuild (about a minute) the piece shows Sold. Delete the test order afterwards (see "After a sale" below).
+   5. **Payment methods** are managed in Stripe > Settings > Payment methods. The code never hardcodes a list, so Apple Pay, Google Pay and Link appear where they fit.
+   6. **Sales tax.** On Etsy, Etsy collected and paid sales tax as the marketplace. On her own site, Simone is responsible, starting with Illinois orders. In Stripe Tax, set the head office address (the studio), add an Illinois registration, then set `STRIPE_AUTOMATIC_TAX=true`. Without an active registration, Stripe collects no tax and shows no error. Stripe Tax charges a per-transaction fee; confirm the setup with her accountant.
    - Promotion codes are switched on, so discount codes made in the Stripe dashboard work at checkout.
-   - Once Stripe Tax is set up for the states where you are registered, set `STRIPE_AUTOMATIC_TAX=true`.
 3. **Product photos.** The 13 live Etsy listings are imported (titles, prices, stock, descriptions, intentions, specs, care). Their photos are not in the repo yet because the build sandbox could not reach Etsy's image host. On any normal machine, run once and commit the result:
 
    ```bash
@@ -63,7 +67,8 @@ featured: true               # shown first and on the home page
 The description goes here, in plain paragraphs.
 ```
 
-- **After a sale**, set `status: sold`. Sold pieces stay on the site with a Sold badge, which helps show demand. Stripe emails you every order.
+- **After a sale**, single pieces (stock 1) mark themselves: the Stripe webhook records the order and rebuilds the site, and the piece shows Sold. Sold pieces stay on the site, which helps show demand. Stripe emails you every order. For prints and small runs, lower `stock` by hand.
+- **Relisting a returned piece:** delete its order in Netlify > Blobs > `inventory` (`orders/<checkout session id>`), then trigger a deploy. If a sold piece ever still shows as available after a rebuild, set `status: sold` in its file; checkout refuses it either way.
 - **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. The site resizes and compresses them automatically.
 - **Products without photos** draw an illustration from the `art:` block (bead colors, clasp metal and so on). It disappears as soon as `images` has a photo.
 - **Original paintings** use `status: inquire`. They show an Inquire button that opens the commissions form with the painting's name filled in.
@@ -108,8 +113,10 @@ src/
   layouts/              page shells
   lib/bag.ts            the shopping bag (browser side)
   lib/catalog.ts        catalog helpers, category names and copy
+  lib/inventory.ts      holds and recorded orders for single pieces (Netlify Blobs)
   pages/                every route, including:
-    api/checkout.ts     re-prices the bag server side and opens Stripe Checkout
+    api/checkout.ts     re-prices the bag server side, holds single pieces and opens Stripe Checkout
+    api/stripe-webhook.ts  records orders and rebuilds the site after a sale
     bag.json.ts         catalog data the bag reads
     feeds/products.xml.ts  Google Merchant and Pinterest feed
 scripts/import-etsy.mjs  Etsy CSV importer
@@ -119,4 +126,4 @@ scripts/import-etsy.mjs  Etsy CSV importer
 
 **Logo.** Simone's mark lives in `public/brand/` as SVG (wordmark, and the full lockup with STUDIO), vectorized from her logo file, plus a PNG for search engines. The site draws it through `src/components/Logo.astro`, which takes its color from the surrounding text, so the same file works on light and dark backgrounds. To update the logo, replace the SVG files and keep their names.
 
-**Checkout safety.** The browser only sends product slugs and quantities. Prices, stock, sample status and one-of-one limits are all checked again on the server before Stripe sees the order.
+**Checkout safety.** The browser only sends product slugs and quantities. Prices, stock, sample status and one-of-one limits are all checked again on the server before Stripe sees the order. A single piece is held for one buyer while their Checkout is open (31 minutes, then the session expires), and a piece with a recorded order is refused even before the site rebuilds. Holds and orders live in Netlify Blobs (`src/lib/inventory.ts`). Webhook events are verified against the signing secret before anything else runs.

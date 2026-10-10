@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { STRIPE_SECRET_KEY, STRIPE_AUTOMATIC_TAX } from 'astro:env/server';
 import Stripe from 'stripe';
 import { getProducts, isPurchasable, variantPrice } from '../../lib/catalog';
+import { HOLD_SECONDS, holdPieces, inventoryStore, isSinglePiece, releasePieces } from '../../lib/inventory';
 import { site } from '../../data/site';
 
 export const prerender = false;
@@ -17,17 +18,21 @@ export const POST: APIRoute = async ({ request, url }) => {
   }
 
   let lines: RequestLine[];
+  let previous: { session?: unknown; hold?: unknown } | undefined;
   try {
     const body = await request.json();
     lines = Array.isArray(body?.items) ? body.items : [];
+    previous = body?.previous && typeof body.previous === 'object' ? body.previous : undefined;
   } catch {
     return json({ error: 'Invalid request.' }, 400);
   }
   if (!lines.length || lines.length > 25) return json({ error: 'Your bag is empty.' }, 400);
 
-  // Never trust prices from the browser: everything is re-priced from the catalog.
-  const catalog = new Map((await getProducts()).map((p) => [p.id, p]));
+  // Never trust prices from the browser: everything is re-priced from the catalog,
+  // read fresh so a piece sold since the last build is refused.
+  const catalog = new Map((await getProducts(undefined, { fresh: true })).map((p) => [p.id, p]));
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  const singles: { slug: string; title: string }[] = [];
   let subtotal = 0;
 
   for (const line of lines) {
@@ -50,6 +55,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       return json({ error: `Only ${max} of ${data.title} available.` }, 409);
     }
 
+    if (isSinglePiece(product)) singles.push({ slug: product.id, title: data.title });
     const unit = variantPrice(product, variant?.id);
     subtotal += unit * qty;
     const image = data.images[0] ? new URL(data.images[0].src, url.origin).href : undefined;
@@ -91,6 +97,25 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   const stripe = new Stripe(STRIPE_SECRET_KEY);
 
+  // Hold single pieces for as long as the Checkout session stays open, so two
+  // buyers cannot pay for the same necklace. The webhook releases or settles the hold.
+  const store = inventoryStore();
+  const hold = crypto.randomUUID();
+  const held = singles.map((p) => p.slug);
+  if (store && held.length) {
+    // A buyer who left Checkout and came back must not be blocked by their own hold.
+    await closePrevious(stripe, store, previous);
+    // If the store is down, sell anyway: a rare double sale beats a dead checkout.
+    const taken = await holdPieces(store, held, hold).catch((err) => {
+      console.error('Could not hold pieces', err);
+      return [];
+    });
+    if (taken.length) {
+      const title = singles.find((p) => p.slug === taken[0])?.title;
+      return json({ error: `Someone is checking out with ${title} right now. If they do not finish, it comes back within half an hour.` }, 409);
+    }
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -109,13 +134,33 @@ export const POST: APIRoute = async ({ request, url }) => {
           text: { maximum_length: 240 },
         },
       ],
-      metadata: { source: 'simonechagoya.com' },
+      metadata: { source: 'simonechagoya.com', hold, held: held.join(',') },
+      expires_at: Math.floor(Date.now() / 1000) + HOLD_SECONDS - 60,
       success_url: `${url.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${url.origin}/shop?checkout=cancelled`,
     });
-    return json({ url: session.url });
+    return json({ url: session.url, checkout: { session: session.id, hold } });
   } catch (err) {
     console.error('Stripe checkout error', err);
+    if (store) await releasePieces(store, held, hold).catch(() => {});
     return json({ error: 'Checkout could not start. Please try again in a moment.' }, 502);
   }
 };
+
+/**
+ * Expires this browser's previous Checkout session and frees the pieces it held.
+ * The session must carry the same hold token, so nobody can close another
+ * buyer's checkout by guessing a session id.
+ */
+async function closePrevious(stripe: Stripe, store: NonNullable<ReturnType<typeof inventoryStore>>, previous?: { session?: unknown; hold?: unknown }) {
+  const { session: id, hold } = previous ?? {};
+  if (typeof id !== 'string' || !id.startsWith('cs_') || typeof hold !== 'string') return;
+  try {
+    const session = await stripe.checkout.sessions.retrieve(id);
+    if (session.metadata?.hold !== hold) return;
+    if (session.status === 'open') await stripe.checkout.sessions.expire(id);
+    if (session.status !== 'complete') await releasePieces(store, session.metadata.held?.split(',') ?? [], hold);
+  } catch (err) {
+    console.error('Could not close the previous checkout', err);
+  }
+}

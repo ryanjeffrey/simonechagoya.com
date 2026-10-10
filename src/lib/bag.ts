@@ -23,6 +23,8 @@ type CatalogItem = {
 type Catalog = { products: Record<string, CatalogItem>; freeThreshold: number };
 
 const KEY = 'sc-bag-v1';
+/** The last Checkout this browser opened, so a retry can close it and reuse its held pieces. */
+const LAST_CHECKOUT = 'sc-checkout-v1';
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const fmt = (n: number) => money.format(n).replace(/\.00$/, '');
 
@@ -242,13 +244,20 @@ export async function checkout(items: Line[], trigger?: HTMLButtonElement | null
   }
   if (errorTarget) errorTarget.hidden = true;
   try {
+    let previous: unknown;
+    try {
+      previous = JSON.parse(localStorage.getItem(LAST_CHECKOUT) || 'null');
+    } catch {}
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, previous }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.url) throw new Error(data.error || 'Checkout is unavailable right now.');
+    try {
+      localStorage.setItem(LAST_CHECKOUT, JSON.stringify(data.checkout));
+    } catch {}
     window.location.href = data.url;
   } catch (err) {
     if (errorTarget) {
@@ -312,6 +321,9 @@ window.addEventListener('storage', (e) => {
 if (document.querySelector('[data-bag-clear]')) {
   lines = [];
   save();
+  try {
+    localStorage.removeItem(LAST_CHECKOUT);
+  } catch {}
 }
 
 sync();

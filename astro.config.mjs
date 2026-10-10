@@ -18,6 +18,8 @@ export default defineConfig({
     schema: {
       STRIPE_SECRET_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       STRIPE_AUTOMATIC_TAX: envField.boolean({ context: 'server', access: 'public', default: false }),
+      STRIPE_WEBHOOK_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
+      NETLIFY_BUILD_HOOK_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
 });

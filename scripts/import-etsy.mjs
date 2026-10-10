@@ -275,23 +275,6 @@ const BOILERPLATE = /shop polic(?:y|ies)|processing time|feel free to (?:message
 /** Decorative rules like ----- or ***** or ~~~~~ (Markdown would read them as headings or code fences). */
 const SEPARATOR = /^[-=_~*#.+\u2022\u00b7\s]{3,}$/;
 
-/** Description as paragraphs of lines, with boilerplate and decorative rules removed. */
-function descriptionParagraphs(raw) {
-  const paragraphs = [];
-  let current = [];
-  const flush = () => {
-    if (current.length) paragraphs.push(current);
-    current = [];
-  };
-  for (const rawLine of clean(raw).replace(/\r\n?/g, '\n').split('\n')) {
-    const line = rawLine.trim();
-    if (!line || SEPARATOR.test(line)) flush();
-    else if (!BOILERPLATE.test(line)) current.push(line);
-  }
-  flush();
-  return paragraphs;
-}
-
 /** Keep Etsy's plain text from turning into HTML, headings or block quotes. */
 const markdownLine = (line) => line.replace(/</g, '&lt;').replace(/^(#{1,6}\s|>)/, '\\$1');
 

@@ -1,5 +1,6 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { CATEGORIES } from '../content.config';
+import { withInventory } from './inventory';
 
 export type Product = CollectionEntry<'products'>;
 export type Category = (typeof CATEGORIES)[number];
@@ -57,9 +58,13 @@ export const GROUPS = {
 
 export type Group = keyof typeof GROUPS;
 
-export async function getProducts(filter?: (p: Product) => boolean): Promise<Product[]> {
-  const all = await getCollection('products', filter);
-  return all.sort(sortFeatured);
+/**
+ * Every product, with single pieces that sold since the last build marked sold
+ * (see inventory.ts). Pass `fresh` at request time to skip the build cache.
+ */
+export async function getProducts(filter?: (p: Product) => boolean, options?: { fresh?: boolean }): Promise<Product[]> {
+  const all = await withInventory(await getCollection('products'), options);
+  return (filter ? all.filter(filter) : all).sort(sortFeatured);
 }
 
 export function sortFeatured(a: Product, b: Product) {
