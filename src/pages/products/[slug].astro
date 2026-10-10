@@ -39,7 +39,14 @@ const group = groupOf(data.category);
 const isOriginal = data.category === 'originals';
 const isArt = group === 'art';
 const buyable = isPurchasable(product);
-const slides = Math.max(1, data.images.length);
+// Gallery order: cover photo, then the videos, then the rest of the photos.
+// Slide 0 is the cover photo, or the illustration when there are no photos yet.
+const media = [
+  { image: 0 },
+  ...data.videos.map((video) => ({ video })),
+  ...data.images.slice(1).map((_, i) => ({ image: i + 1 })),
+] as ({ image: number } | { video: { src: string; poster: string } })[];
+const slides = media.length;
 const painting = data.painting ? all.find((p) => p.id === data.painting) : undefined;
 const prints = isOriginal ? all.filter((p) => p.data.category === 'prints' && p.data.painting === product.id) : [];
 const related = all
@@ -117,16 +124,31 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
     <div class="gallery" data-gallery>
       <div class="gallery-track" data-gallery-track>
         {
-          Array.from({ length: slides }, (_, i) => (
+          media.map((slide, i) => (
             <figure class="gallery-slide">
-              <ProductMedia
-                product={product}
-                index={i}
-                loading={i === 0 ? 'eager' : 'lazy'}
-                sizes="(min-width: 960px) 55vw, 100vw"
-                widths={[480, 720, 960, 1280, 1600]}
-                mode={isArt ? 'matte' : 'cover'}
-              />
+              {'video' in slide ? (
+                <div class="gallery-video">
+                  <video
+                    src={slide.video.src}
+                    poster={slide.video.poster}
+                    muted
+                    loop
+                    playsinline
+                    preload="none"
+                    aria-label={`${data.title}, video`}
+                    data-autoplay
+                  />
+                </div>
+              ) : (
+                <ProductMedia
+                  product={product}
+                  index={slide.image}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  sizes="(min-width: 960px) 55vw, 100vw"
+                  widths={[480, 720, 960, 1280, 1600]}
+                  mode={isArt ? 'matte' : 'cover'}
+                />
+              )}
             </figure>
           ))
         }
@@ -406,8 +428,21 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
     gap: 0.75rem;
   }
 
-  .gallery-slide :global(.media) {
+  .gallery-slide :global(.media),
+  .gallery-video {
     aspect-ratio: 4 / 5;
+  }
+
+  .gallery-video {
+    overflow: hidden;
+    background: var(--paper-2);
+  }
+
+  .gallery-video video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .gallery-count {
@@ -814,6 +849,26 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
   sticky?.querySelector('[data-sticky-add]')?.addEventListener('click', () => {
     form?.querySelector<HTMLButtonElement>('button[value="add"]')?.click();
   });
+
+  // Videos play only while on screen, and never on their own under reduced motion.
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const videos = document.querySelectorAll<HTMLVideoElement>('video[data-autoplay]');
+  if (calm) videos.forEach((v) => (v.controls = true));
+  else {
+    const watch = new IntersectionObserver(
+      (entries) => {
+        for (const { target, isIntersecting } of entries) {
+          const v = target as HTMLVideoElement;
+          if (isIntersecting) {
+            v.preload = 'auto';
+            v.play().catch(() => (v.controls = true));
+          } else v.pause();
+        }
+      },
+      { threshold: 0.5 },
+    );
+    videos.forEach((v) => watch.observe(v));
+  }
 
   // Gallery counter on mobile
   const track = document.querySelector<HTMLElement>('[data-gallery-track]');

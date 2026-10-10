@@ -69,9 +69,27 @@ The description goes here, in plain paragraphs.
 
 - **After a sale**, single pieces (stock 1) mark themselves: the Stripe webhook records the order and rebuilds the site, and the piece shows Sold. Sold pieces stay on the site, which helps show demand. Stripe emails you every order. For prints and small runs, lower `stock` by hand.
 - **Relisting a returned piece:** delete its order in Netlify > Blobs > `inventory` (`orders/<checkout session id>`), then trigger a deploy. If a sold piece ever still shows as available after a rebuild, set `status: sold` in its file; checkout refuses it either way.
-- **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. The site resizes and compresses them automatically.
+- **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. Run them through `scripts/media` first (below) so every photo shares one white balance and finish. The site resizes and compresses them automatically.
+- **Videos** go in `public/media/products/<slug>/` as short muted MP4 loops with a poster frame, listed under `videos:` in the product file. They play second in the gallery, only while on screen, and never on their own for visitors who turn off motion.
 - **Products without photos** draw an illustration from the `art:` block (bead colors, clasp metal and so on). It disappears as soon as `images` has a photo.
 - **Original paintings** use `status: inquire`. They show an Inquire button that opens the commissions form with the painting's name filled in.
+
+### Photos and video
+
+`scripts/media` grades every photo and video to one white balance, exposure and finish, so pieces shot on different days look like one collection. It measures each photo on its own background and corrects the light, not the stones. It also converts iPhone HEIC and Display P3 to web sRGB and strips all metadata, including GPS location.
+
+```bash
+python3 -m venv .venv-media && .venv-media/bin/pip install -r scripts/media/requirements.txt
+.venv-media/bin/python -I scripts/media/grade.py photo IMG_5010.heic src/assets/products/smoke-necklace/1.jpg
+.venv-media/bin/python -I scripts/media/video.py IMG_4759.mov public/media/products/smoke-necklace/1.mp4 public/media/products/smoke-necklace/1.jpg --start 2 --dur 8
+```
+
+```md
+videos:
+  - { src: "/media/products/smoke-necklace/1.mp4", poster: "/media/products/smoke-necklace/1.jpg" }
+```
+
+`video.py` tone-maps iPhone HDR, crops to the gallery's 4:5 frame (`--x`/`--y` move the crop), trims (`--start`/`--dur`, 10 seconds by default), drops the sound and writes a small H.264 file. It needs ffmpeg. Keep each loop under about 3 MB: video lives in the git repo, and every visitor who opens the page downloads it.
 
 ### Importing from Etsy
 

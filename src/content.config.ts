@@ -24,6 +24,11 @@ const products = defineCollection({
       /** The piece's intention, e.g. "Tranquility · Protection · Clarity". */
       intention: z.string().optional(),
       images: z.array(image()).default([]),
+      /**
+       * Short muted loops, shown second in the gallery. Files live in public/media/products/<slug>/
+       * (Astro does not process video), each with a poster frame. See README > Photos and video.
+       */
+      videos: z.array(z.object({ src: z.string(), poster: z.string() })).default([]),
       /** Photo URLs from the Etsy listing, kept so `import:etsy --fetch-images` can download them later. */
       etsyImages: z.array(z.string()).default([]),
       /** Stand-in illustration used until real photos are added. */

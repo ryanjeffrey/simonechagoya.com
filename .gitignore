@@ -19,3 +19,4 @@ npm-debug.log*
 
 # Etsy exports (raw downloads stay local)
 etsy-export/
+.venv-media/
