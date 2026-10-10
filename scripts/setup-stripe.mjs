@@ -18,9 +18,13 @@
  *
  * Test mode sets the keys for every deploy context. Live mode replaces them for
  * production only, so deploy previews keep test keys and can never charge a card.
- * Running it again is safe: it replaces the webhook it created before.
+ * It also creates the collector code shown by the sign-up popup (site.collector in
+ * src/data/site.ts): a percent-off coupon for a customer's first order.
+ *
+ * Running it again is safe: it replaces the webhook it created before and reuses the code.
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import readline from 'node:readline';
 import Stripe from 'stripe';
 
@@ -171,6 +175,31 @@ const webhook = await stripe.webhookEndpoints.create({
   metadata: { managed_by: MANAGED },
 });
 console.log(`Webhook ${webhook.id} -> ${webhookUrl}`);
+
+// The popup's code. Read from site.ts so the two never drift apart.
+const siteTs = readFileSync(new URL('../src/data/site.ts', import.meta.url), 'utf8');
+const collectorCode = siteTs.match(/collector:\s*{[^}]*code:\s*'([^']+)'/)?.[1];
+const percentOff = Number(siteTs.match(/collector:\s*{[^}]*percentOff:\s*(\d+)/)?.[1]);
+if (collectorCode && percentOff) {
+  const existing = await stripe.promotionCodes.list({ code: collectorCode, limit: 1 });
+  if (existing.data.length) {
+    console.log(`Collector code ${collectorCode} already exists.`);
+  } else {
+    const coupon = await stripe.coupons.create({
+      percent_off: percentOff,
+      duration: 'once',
+      name: `Collector welcome, ${percentOff}% off`,
+      metadata: { managed_by: MANAGED },
+    });
+    await stripe.promotionCodes.create({
+      promotion: { type: 'coupon', coupon: coupon.id },
+      code: collectorCode,
+      restrictions: { first_time_transaction: true },
+      metadata: { managed_by: MANAGED },
+    });
+    console.log(`Collector code ${collectorCode}: ${percentOff}% off a first order.`);
+  }
+}
 
 step(3, 'Build hook');
 const branch = site.build_settings?.repo_branch || 'main';

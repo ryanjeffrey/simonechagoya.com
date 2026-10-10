@@ -1,0 +1,420 @@
+---
+import { Image } from 'astro:assets';
+import { site } from '../data/site';
+import photo from '../assets/products/baja-necklace/2.jpg';
+
+const { code, percentOff, delaySeconds } = site.collector;
+---
+
+<dialog class="collector" aria-labelledby="collector-title" data-collector data-delay={delaySeconds}>
+  <div class="collector-card" tabindex="-1" autofocus>
+    <button class="collector-close" type="button" aria-label="Close" data-collector-close>
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 2l14 14M16 2L2 16" stroke="currentColor" stroke-width="1.2" fill="none" /></svg>
+    </button>
+
+    <div class="collector-photo">
+      <Image src={photo} alt="The Baja necklace, worn" widths={[480, 800, 1100]} sizes="(min-width: 760px) 440px, 100vw" loading="lazy" />
+    </div>
+
+    <div class="collector-body">
+      <h2 class="collector-title" id="collector-title">Become<br />a collector</h2>
+
+      <div class="collector-form-wrap" data-collector-form>
+        <p class="collector-lede">Receive {site.name} updates, early access and {percentOff}% off your first order</p>
+
+        <form
+          class="collector-form"
+          name="collector"
+          method="POST"
+          action="/thanks"
+          data-netlify="true"
+          netlify-honeypot="company"
+          data-ajax-form
+          data-success=""
+        >
+          <input type="hidden" name="form-name" value="collector" />
+          <input type="hidden" name="source" value="popup" data-collector-source />
+          <p class="visually-hidden"><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off" /></label></p>
+
+          <label class="visually-hidden" for="collector-name">Your name</label>
+          <input class="collector-input" id="collector-name" name="name" type="text" autocomplete="given-name" placeholder="Your name" />
+
+          <label class="visually-hidden" for="collector-email">E-mail</label>
+          <input class="collector-input" id="collector-email" name="email" type="email" required autocomplete="email" placeholder="E-mail" />
+
+          <label class="collector-agree">
+            <input type="checkbox" name="consent" value="yes" required />
+            <span>I agree with terms of <a href="/privacy" target="_blank">privacy policy</a></span>
+          </label>
+
+          <button class="collector-btn" type="submit">
+            <svg viewBox="0 0 208 64" aria-hidden="true" focusable="false">
+              <path d="M10 1H198A9 9 0 0 0 207 10V54A9 9 0 0 0 198 63H10A9 9 0 0 0 1 54V10A9 9 0 0 0 10 1Z" />
+            </svg>
+            <span>Join us</span>
+          </button>
+          <p class="collector-status" data-form-status aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div class="collector-done" data-collector-done hidden>
+        <p class="collector-lede">Welcome. Here is {percentOff}% off your first order:</p>
+        <p class="collector-code">{code}</p>
+        <p class="collector-note">Enter it at checkout. It works once, on your first order.</p>
+        <a class="collector-shop" href="/shop" data-collector-close>Shop the collection</a>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const KEY = 'sc-collector';
+  const SKIP = /^\/(checkout|thanks|privacy)(\/|$)/;
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-collector]');
+
+  const read = () => {
+    try {
+      return localStorage.getItem(KEY);
+    } catch {
+      return 'blocked';
+    }
+  };
+  const remember = (value: string) => {
+    try {
+      localStorage.setItem(KEY, value);
+    } catch {
+      /* private mode: the popup may show again next visit */
+    }
+  };
+
+  // Anyone who joins through the footer list is already a collector.
+  document.addEventListener('form:done', (e) => {
+    const form = e.target as HTMLFormElement;
+    if (form.getAttribute('name') === 'newsletter') remember('joined');
+  });
+
+  if (dialog && !read() && !SKIP.test(location.pathname)) {
+    const source = dialog.querySelector<HTMLInputElement>('[data-collector-source]');
+    if (source) source.value = `popup ${location.pathname}`;
+
+    let timer = 0;
+    const open = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('scroll', onScroll);
+      if (read()) return;
+      // Never on top of the bag or another open dialog; try again shortly.
+      if (document.querySelector('dialog[open]')) {
+        timer = window.setTimeout(open, 8000);
+        return;
+      }
+      dialog.showModal();
+      remember('seen');
+    };
+    const onScroll = () => {
+      const depth = window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      if (depth > 0.45) open();
+    };
+
+    timer = window.setTimeout(open, Number(dialog.dataset.delay || 12) * 1000);
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    const close = () => dialog.close();
+    dialog.querySelectorAll('[data-collector-close]').forEach((el) => el.addEventListener('click', close));
+    // A click on the backdrop (outside the card) closes it.
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) close();
+    });
+
+    dialog.addEventListener('form:done', () => {
+      remember('joined');
+      dialog.querySelector<HTMLElement>('[data-collector-form]')!.hidden = true;
+      dialog.querySelector<HTMLElement>('[data-collector-done]')!.hidden = false;
+    });
+  }
+</script>
+
+<style>
+  .collector {
+    width: min(100% - 2rem, 56rem);
+    max-width: none;
+    max-height: calc(100svh - 2rem);
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    overflow: visible;
+  }
+
+  .collector[open] {
+    animation: collector-in 0.7s var(--ease-out);
+  }
+
+  .collector::backdrop {
+    background: rgb(33 28 23 / 0.45);
+    backdrop-filter: blur(3px);
+  }
+
+  .collector[open]::backdrop {
+    animation: collector-fade 0.5s ease;
+  }
+
+  @keyframes collector-in {
+    from {
+      opacity: 0;
+      transform: translateY(1.25rem);
+    }
+  }
+
+  @keyframes collector-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .collector[open],
+    .collector[open]::backdrop {
+      animation: none;
+    }
+  }
+
+  .collector-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    max-height: calc(100svh - 2rem);
+    overflow: auto;
+    background: #fbf8f3;
+    border-radius: 14px;
+    box-shadow: 0 30px 80px -30px rgb(33 28 23 / 0.5);
+    outline: none;
+  }
+
+  .collector-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    color: var(--ink);
+    background: rgb(251 248 243 / 0.85);
+    transition: color 0.3s;
+  }
+
+  .collector-close:hover {
+    color: var(--accent);
+  }
+
+  .collector-photo {
+    min-height: 100%;
+  }
+
+  .collector-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 40%;
+  }
+
+  .collector-body {
+    padding: clamp(2rem, 4vw, 3.25rem) clamp(1.5rem, 3.5vw, 3rem);
+  }
+
+  .collector-title {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 1.7rem + 2vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  .collector-lede {
+    margin-top: 1.4rem;
+    font-size: var(--step--1);
+    font-weight: 400;
+    line-height: 1.75;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .collector-form {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 1.75rem;
+  }
+
+  .collector-input {
+    width: 100%;
+    padding: 0.95rem 0.25rem;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px dashed var(--line-strong);
+    border-radius: 0;
+    outline: none;
+    font-size: 1rem; /* 16px keeps iOS from zooming in */
+    letter-spacing: 0.06em;
+    transition: border-color 0.3s;
+  }
+
+  .collector-input::placeholder {
+    color: var(--ink-3);
+    opacity: 0.7;
+    text-transform: uppercase;
+    font-size: var(--step--1);
+  }
+
+  .collector-input:focus {
+    border-bottom-style: solid;
+    border-color: var(--ink);
+  }
+
+  .collector-agree {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    font-size: var(--step--2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+
+  .collector-agree input {
+    flex-shrink: 0;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+
+  .collector-agree a {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .collector-btn {
+    position: relative;
+    justify-self: center;
+    display: grid;
+    place-items: center;
+    width: 13rem;
+    height: 4rem;
+    margin-top: 1.5rem;
+    color: var(--accent);
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: color 0.4s;
+  }
+
+  .collector-btn svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .collector-btn path {
+    fill: transparent;
+    stroke: currentColor;
+    stroke-width: 1;
+    transition: fill 0.4s;
+  }
+
+  .collector-btn span {
+    position: relative;
+  }
+
+  .collector-btn:hover,
+  .collector-btn:focus-visible {
+    color: #fff;
+  }
+
+  .collector-btn:hover path,
+  .collector-btn:focus-visible path {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+
+  .collector-btn[disabled] {
+    opacity: 0.5;
+  }
+
+  .collector-status:empty {
+    display: none;
+  }
+
+  .collector-status {
+    font-size: var(--step--1);
+    text-align: center;
+    color: var(--accent);
+  }
+
+  .collector-code {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border: 1px dashed var(--gold);
+    font-family: var(--serif);
+    font-size: var(--step-2);
+    letter-spacing: 0.16em;
+    font-variant-numeric: lining-nums;
+    text-align: center;
+    user-select: all;
+  }
+
+  .collector-note {
+    margin-top: 1rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+
+  .collector-shop {
+    display: inline-block;
+    margin-top: 1.5rem;
+    font-size: var(--step--2);
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 0.3rem;
+  }
+
+  @media (max-width: 759px) {
+    .collector {
+      width: calc(100% - 1.5rem);
+    }
+
+    .collector-card {
+      grid-template-columns: 1fr;
+    }
+
+    .collector-photo {
+      aspect-ratio: 16 / 9;
+      min-height: 0;
+    }
+
+    .collector-body {
+      padding: 1.6rem 1.4rem 1.9rem;
+    }
+
+    .collector-lede {
+      margin-top: 1rem;
+    }
+
+    .collector-form {
+      margin-top: 1rem;
+    }
+  }
+</style>
