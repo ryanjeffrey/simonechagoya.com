@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { STRIPE_SECRET_KEY, STRIPE_AUTOMATIC_TAX } from 'astro:env/server';
+import { STRIPE_SECRET_KEY, STRIPE_AUTOMATIC_TAX, STRIPE_WEBHOOK_SECRET } from 'astro:env/server';
 import Stripe from 'stripe';
 import { getProducts, isPurchasable, variantPrice } from '../../lib/catalog';
 import { HOLD_SECONDS, holdPieces, inventoryStore, isSinglePiece, releasePieces } from '../../lib/inventory';
@@ -13,7 +13,8 @@ const json = (body: unknown, status = 200) =>
 type RequestLine = { slug?: unknown; variant?: unknown; qty?: unknown };
 
 export const POST: APIRoute = async ({ request, url }) => {
-  if (!STRIPE_SECRET_KEY) {
+  // Without the webhook no order is ever recorded, so a sold piece would stay on sale.
+  if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
     return json({ error: 'Checkout is not switched on yet. Email hello@simonechagoya.com to buy this piece.' }, 503);
   }
 
@@ -65,6 +66,9 @@ export const POST: APIRoute = async ({ request, url }) => {
       price_data: {
         currency: 'usd',
         unit_amount: Math.round(unit * 100),
+        // Prices on the site exclude sales tax. Stripe Tax refuses a session whose
+        // prices have no tax behavior unless a default is set in the dashboard.
+        tax_behavior: 'exclusive',
         product_data: {
           name: variant ? `${data.title} (${variant.label})` : data.title,
           images: image ? [image] : undefined,
@@ -82,6 +86,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         display_name: freeShipping ? 'Free standard shipping' : 'Standard shipping',
         type: 'fixed_amount',
         fixed_amount: { amount: freeShipping ? 0 : standardRate * 100, currency: 'usd' },
+        tax_behavior: 'exclusive',
         delivery_estimate: { minimum: { unit: 'business_day', value: 4 }, maximum: { unit: 'business_day', value: 8 } },
       },
     },
@@ -90,6 +95,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         display_name: 'Express shipping',
         type: 'fixed_amount',
         fixed_amount: { amount: expressRate * 100, currency: 'usd' },
+        tax_behavior: 'exclusive',
         delivery_estimate: { minimum: { unit: 'business_day', value: 2 }, maximum: { unit: 'business_day', value: 4 } },
       },
     },
