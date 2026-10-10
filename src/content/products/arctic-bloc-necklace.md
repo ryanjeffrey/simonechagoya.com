@@ -5,6 +5,8 @@ price: 60
 summary: "The Arctic Bloc Necklace is for the woman who embraces transformation."
 intention: "Resilience · Transformation · Balance"
 images: []
+videos:
+  - { src: "/media/products/arctic-bloc-necklace/1.mp4", poster: "/media/products/arctic-bloc-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/6c6d64/8050482060/il_fullxfull.8050482060_sv2l.jpg","https://i.etsystatic.com/56491047/r/il/789a60/8048891959/il_fullxfull.8048891959_3dq0.jpg","https://i.etsystatic.com/56491047/r/il/dc332a/8050515980/il_fullxfull.8050515980_noi5.jpg","https://i.etsystatic.com/56491047/r/il/196bcb/7940394043/il_fullxfull.7940394043_2k0e.jpg","https://i.etsystatic.com/56491047/r/il/957174/7940397405/il_fullxfull.7940397405_fv9c.jpg","https://i.etsystatic.com/56491047/r/il/795db2/7940394373/il_fullxfull.7940394373_dohl.jpg","https://i.etsystatic.com/56491047/r/il/462ade/7892438924/il_fullxfull.7892438924_2qjt.jpg","https://i.etsystatic.com/56491047/r/il/d90216/7892441322/il_fullxfull.7892441322_bdd5.jpg","https://i.etsystatic.com/56491047/r/il/e8beaa/8050589040/il_fullxfull.8050589040_px9h.jpg"]
 art: {"kind":"necklace","ground":"#e5e3de","metal":"silver","beads":"round","count":68,"clear":true,"colors":["#eef3f4","#e3eaec","#f6f8f8"]}
 materials: ["Clear Quartz Crackle", "Silver finished brass with sterling silver beads"]

@@ -5,6 +5,8 @@ price: 250
 summary: "The Smoke Necklace is for the woman who is grounded, steady, and clear in her purpose."
 intention: "Grounding · Focus · Protection"
 images: []
+videos:
+  - { src: "/media/products/smoke-necklace/1.mp4", poster: "/media/products/smoke-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/063ca1/8326230146/il_fullxfull.8326230146_tfl3.jpg","https://i.etsystatic.com/56491047/r/il/d244f1/8012841762/il_fullxfull.8012841762_qycn.jpg","https://i.etsystatic.com/56491047/r/il/9cf9ed/7926799798/il_fullxfull.7926799798_hbza.jpg","https://i.etsystatic.com/56491047/r/il/331880/7926406036/il_fullxfull.7926406036_g3ur.jpg","https://i.etsystatic.com/56491047/r/il/c256ea/8098457905/il_fullxfull.8098457905_o3vq.jpg","https://i.etsystatic.com/56491047/r/il/f83390/8098457903/il_fullxfull.8098457903_ko2o.jpg","https://i.etsystatic.com/56491047/r/il/e71431/7926457520/il_fullxfull.7926457520_14zb.jpg","https://i.etsystatic.com/56491047/r/il/ab1c01/7926406008/il_fullxfull.7926406008_9o79.jpg","https://i.etsystatic.com/56491047/r/il/696613/7975284191/il_fullxfull.7975284191_16g3.jpg","https://i.etsystatic.com/56491047/r/il/a77964/7974361219/il_fullxfull.7974361219_6b4v.jpg"]
 art: {"kind":"necklace","ground":"#e8e3dc","metal":"silver","beads":"oval","count":19,"clear":true,"colors":["#8a7868","#b8aa9a","#e9ecec","#6e5f52","#d9d2c8"]}
 materials: ["Smoky and Clear Quartz", "Solid 925 Sterling Silver Clasp, rings, and beads"]
