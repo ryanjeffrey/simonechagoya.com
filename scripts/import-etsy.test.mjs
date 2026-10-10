@@ -148,6 +148,19 @@ test('grades videos into the gallery when the media tools are set up', { skip: !
   assert.equal((await product('smoke-necklace')).match(/etsy-1\.mp4/g).length, 1);
 });
 
+test('keeps hand-added videos and skips the Etsy ones', async () => {
+  const file = path.join(root, 'src/content/products/smoke-necklace.md');
+  const own = '  - { src: "/media/products/smoke-necklace/1.mp4", poster: "/media/products/smoke-necklace/1.jpg" }';
+  await writeFile(file, (await readFile(file, 'utf8')).replace('etsyImages: []', `videos:\n${own}\netsyImages: []`));
+  const { stdout } = await importer(['--api']);
+  const smoke = await product('smoke-necklace');
+  assert.match(smoke, /^videos:\n.*smoke-necklace\/1\.mp4.*\netsyImages:/m);
+  assert.doesNotMatch(smoke, /etsy-1\.mp4/);
+  assert.ok(!(await exists('etsy-export/videos/smoke-necklace')), 'the Etsy video is not even downloaded');
+  assert.match(stdout, /keep +smoke-necklace videos/);
+  assert.ok(await exists('etsy-export/videos/dune-necklace/1.mp4'));
+});
+
 test('a second run changes nothing', async () => {
   await importer(['--api']);
   const dir = path.join(root, 'src/content/products');

@@ -131,7 +131,7 @@ The API import adds what the CSV leaves out: every sold-out listing becomes a pr
 
 How it matches listings to product files: by `etsyListingId` when the file has one (the import records it), otherwise by title. A sold listing whose title matches a product still for sale on Etsy is an earlier piece of the same design, so it gets its own page (`smoke-necklace-2`) instead of marking the one for sale as sold. A product imported from the CSV that has since sold on Etsy is marked sold in place (`status: sold`, `stock: 0`); nothing else in the file changes. Original paintings are never touched.
 
-Videos download to `etsy-export/videos/<slug>/` and are graded with `scripts/media/video.py` into `public/media/products/<slug>/etsy-<n>.mp4` with a poster frame, then added to the product's `videos` list. That needs the media tools (see Photos and video). Without them the raw files wait in `etsy-export/` and the next `--api` run grades them. `--no-videos` and `--no-images` skip either download.
+Videos download to `etsy-export/videos/<slug>/` and are graded with `scripts/media/video.py` into `public/media/products/<slug>/etsy-<n>.mp4` with a poster frame, then added to the product's `videos` list. A product that already has its own videos keeps them and skips the Etsy ones, since they are usually the same footage. That needs the media tools (see Photos and video). Without them the raw files wait in `etsy-export/` and the next `--api` run grades them. `--no-videos` and `--no-images` skip either download.
 
 `npm test` runs the API import against fixtures in `scripts/fixtures/etsy-api/`, with no network.
 

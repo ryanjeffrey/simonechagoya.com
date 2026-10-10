@@ -548,6 +548,8 @@ async function readProductFlags(file) {
     featured: /^featured:\s*true\s*(#.*)?$/m.test(fm),
     status: fm.match(/^status:\s*["']?(\w+)/m)?.[1],
     listingId: fm.match(/^etsyListingId:\s*["']?(\d+)/m)?.[1],
+    /** Videos added by hand (graded from Simone's own footage), as opposed to ones this importer added. */
+    ownVideos: /^\s+- \{ src: "(?![^"]*\/etsy-\d+\.mp4")/m.test(fm.split(/^videos:/m)[1]?.split(/^\S/m)[0] ?? ''),
   };
 }
 
@@ -880,6 +882,11 @@ async function importFromApi(opts) {
       if (!flags.listingId) changes.push('record listing id');
     }
     plan.videoCount = flags?.original ? 0 : (plan.listing.videos ?? []).filter((v) => v.video_url).length;
+    // Simone's own loops are usually the same footage as the Etsy video, so they win.
+    if (plan.videoCount && flags?.ownVideos) {
+      console.log(`  keep   ${plan.slug} videos (it already has its own, so the Etsy video${plan.videoCount === 1 ? ' is' : 's are'} skipped)`);
+      plan.videoCount = 0;
+    }
     plan.changes = changes;
   }
 
