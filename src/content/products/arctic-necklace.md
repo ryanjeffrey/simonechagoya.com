@@ -5,6 +5,8 @@ price: 80
 summary: "The Arctic Necklace is for the woman who embraces transformation."
 intention: "Resilience · Transformation · Balance"
 images: []
+videos:
+  - { src: "/media/products/arctic-necklace/1.mp4", poster: "/media/products/arctic-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/0cf73c/8111582209/il_fullxfull.8111582209_pgfx.jpg","https://i.etsystatic.com/56491047/r/il/3494a5/8000971688/il_fullxfull.8000971688_frrn.jpg","https://i.etsystatic.com/56491047/r/il/6c8d78/8050492124/il_fullxfull.8050492124_he5n.jpg","https://i.etsystatic.com/56491047/r/il/9fa6b6/7891828502/il_fullxfull.7891828502_488p.jpg","https://i.etsystatic.com/56491047/r/il/205c8b/7939789245/il_fullxfull.7939789245_87xb.jpg","https://i.etsystatic.com/56491047/r/il/895801/7939786749/il_fullxfull.7939786749_10oy.jpg","https://i.etsystatic.com/56491047/r/il/c7186e/8050591066/il_fullxfull.8050591066_4rls.jpg"]
 art: {"kind":"necklace","ground":"#e5e3de","metal":"silver","beads":"round","count":41,"clear":true,"colors":["#eef3f4","#e3eaec","#f6f8f8"]}
 materials: ["Clear Quartz Crackle", "Silver finished brass and sterling silver beads"]

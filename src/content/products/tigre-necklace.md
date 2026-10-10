@@ -5,6 +5,8 @@ price: 60
 summary: "The TIGRE Necklace is for the woman who is empowered, a fearless warrior."
 intention: "Clarity · Courage · Action"
 images: []
+videos:
+  - { src: "/media/products/tigre-necklace/1.mp4", poster: "/media/products/tigre-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/07eb30/8061151913/il_fullxfull.8061151913_mkuq.jpg","https://i.etsystatic.com/56491047/r/il/c56172/8136240422/il_fullxfull.8136240422_jmey.jpg","https://i.etsystatic.com/56491047/r/il/38058e/8098483543/il_fullxfull.8098483543_l6ni.jpg","https://i.etsystatic.com/56491047/r/il/2be4c5/8061146069/il_fullxfull.8061146069_kfx6.jpg","https://i.etsystatic.com/56491047/r/il/77ba84/7889105648/il_fullxfull.7889105648_9yq7.jpg","https://i.etsystatic.com/56491047/r/il/fac3a2/8098487665/il_fullxfull.8098487665_l1y5.jpg","https://i.etsystatic.com/56491047/r/il/c586b1/7937063943/il_fullxfull.7937063943_khw0.jpg","https://i.etsystatic.com/56491047/r/il/b9bb27/8184134369/il_fullxfull.8184134369_milk.jpg"]
 art: {"kind":"necklace","ground":"#ebe3d6","metal":"gold","beads":"tube","count":80,"clear":false,"colors":["#a8742f","#7a4f1e","#c48f45","#5e3a17","#d4a35a"]}
 materials: ["Tiger’s Eye", "Gold finished brass with 14k gold filled beads"]

@@ -5,6 +5,8 @@ price: 250
 summary: "The Cosmic Necklace is for the woman who is in balance with the universe around her."
 intention: "Balance · Protection · Clarity"
 images: []
+videos:
+  - { src: "/media/products/cosmic-necklace/1.mp4", poster: "/media/products/cosmic-necklace/1.jpg" }
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/93db6c/8326211104/il_fullxfull.8326211104_kv8y.jpg","https://i.etsystatic.com/56491047/r/il/73ba41/8049098545/il_fullxfull.8049098545_3mgy.jpg","https://i.etsystatic.com/56491047/r/il/5170ba/8431522866/il_fullxfull.8431522866_llsm.jpg","https://i.etsystatic.com/56491047/r/il/942e95/7923230150/il_fullxfull.7923230150_f1o5.jpg","https://i.etsystatic.com/56491047/r/il/55788e/7923230154/il_fullxfull.7923230154_re91.jpg","https://i.etsystatic.com/56491047/r/il/494e76/7923240010/il_fullxfull.7923240010_qw41.jpg","https://i.etsystatic.com/56491047/r/il/621a57/8050532906/il_fullxfull.8050532906_7hh9.jpg","https://i.etsystatic.com/56491047/r/il/fa8b3c/7971186973/il_fullxfull.7971186973_hnua.jpg","https://i.etsystatic.com/56491047/r/il/842ac3/8098444289/il_fullxfull.8098444289_kgav.jpg","https://i.etsystatic.com/56491047/r/il/04324a/8050600368/il_fullxfull.8050600368_hck4.jpg"]
 art: {"kind":"necklace","ground":"#e9e4e6","metal":"silver","beads":"round","count":25,"clear":false,"colors":["#7b4fa0","#9065b5","#5e3a86","#a77fc6","#6a4593"]}
 materials: ["Amethyst", "Solid 925 Sterling Silver Clasp, rings and beads"]
