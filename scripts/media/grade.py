@@ -15,6 +15,7 @@ photos carry GPS). Display P3 sources are converted to sRGB first.
 
   python -I grade.py photo IN OUT [--max 2400]
   python -I grade.py batch JOBS.json         # [{"in": ..., "out": ..., "max": 2400}]
+  python -I grade.py convert IN OUT [--max 2400]   # artwork: sRGB + strip metadata, no grading
   python -I grade.py stats FRAME.png          # prints linear gains + exposure as JSON (for video)
 """
 import io
@@ -30,11 +31,11 @@ pillow_heif.register_heif_opener()
 SRGB = ImageCms.createProfile('sRGB')
 SRGB_BYTES = ImageCms.ImageCmsProfile(SRGB).tobytes()
 
-# Shared targets. The white is a slightly warm neutral that sits with the site's linen.
-TARGET_WHITE = np.array([243, 239, 232]) / 255.0
-TARGET_BG_SRGB_Y = 0.90  # background brightness after grading (sRGB-encoded luminance)
+# Shared targets. Every background lands on this warm off-white: a shade deeper than the
+# site's linen (#f4efe7), so photos sit in their arch frames instead of vanishing into the page.
+TARGET_WHITE = np.array([237, 232, 224]) / 255.0
 CONTRAST = 0.10  # strength of the shared S-curve
-SHOULDER = 0.82  # linear value where highlights start to roll off
+SHOULDER = 0.9  # linear value where highlights roll off; above the target white, so backgrounds land on it exactly
 
 
 def to_linear(a):
@@ -52,7 +53,6 @@ def luminance(lin):
 
 TARGET_LIN = to_linear(TARGET_WHITE)
 TARGET_CHROMA = TARGET_LIN / luminance(TARGET_LIN)
-TARGET_BG_Y = float(to_linear(np.array(TARGET_BG_SRGB_Y)))
 
 
 def load(path):
@@ -75,7 +75,13 @@ def load(path):
 
 
 def measure(img):
-    """Returns (gains, exposure, report) in linear light."""
+    """Returns (gains, exposure, report) in linear light.
+
+    Every product photo is moved so its background lands on TARGET_WHITE:
+      white:   already edited onto (near) pure white; map that white to the target.
+      surface: shot on paper, linen or stone; map the measured surface to the target.
+      scene:   no usable background (worn, dark grounds); gentle gray-world balance only.
+    """
     small = img.copy()
     small.thumbnail((640, 640))
     a = np.asarray(small, dtype=np.float64) / 255.0
@@ -84,37 +90,42 @@ def measure(img):
     mx, mn = a.max(axis=2), a.min(axis=2)
     sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
 
-    bright = y >= np.percentile(y, 55)
-    cand = bright & (sat < 0.15) & (a.max(axis=2) < 0.985)
-    share = cand.mean()
-    if share >= 0.08:
-        mode, strength = 'surface', 1.0
+    white_share = float((mn >= 0.96).mean())
+    cand = (y >= np.percentile(y, 55)) & (sat < 0.15) & (mx < 0.985)
+    surface_share = float(cand.mean())
+    deviation = 0.0
+
+    if white_share >= 0.25:
+        mode, share = 'white', white_share
+        ref = np.median(lin[mn >= 0.96], axis=0)
+        gains = np.clip(TARGET_LIN / np.maximum(ref, 1e-6), 0.6, 1.6)
+        exposure, strength = 1.0, 1.0
+    elif surface_share >= 0.08:
+        mode, share = 'surface', surface_share
         ref = np.median(lin[cand], axis=0)
+        chroma = ref / max(float(luminance(ref)), 1e-6)
+        # A strongly colored surface (wood, cardboard, water) is not a white under tinted light.
+        deviation = float(chroma.max() / max(chroma.min(), 1e-6)) - 1
+        strength = float(np.clip(1 - (deviation - 0.15) / 0.25, 0.3, 1.0))
+        full = TARGET_LIN / np.maximum(ref, 1e-6)
+        wb = full / float(luminance(full))
+        wb = 1 + (np.clip(wb, 0.75, 1.35) - 1) * strength
+        exposure = float(np.clip(float(luminance(TARGET_LIN)) / max(float(luminance(ref * wb)), 1e-6), 0.6, 1.8))
+        gains = wb
     else:
-        mode, strength = 'scene', 0.5
+        mode, share, strength = 'scene', surface_share, 0.5
         mid = (sat < 0.30) & (y > np.percentile(y, 20)) & (y < np.percentile(y, 95))
         ref = np.median(lin[mid], axis=0) if mid.any() else np.median(lin.reshape(-1, 3), axis=0)
-
-    ref_y = float(luminance(ref))
-    chroma = ref / max(ref_y, 1e-6)
-    # A strongly colored reference is more likely a colored surface (water, wood,
-    # fabric) than a white one under tinted light: correct it less.
-    deviation = float(chroma.max() / max(chroma.min(), 1e-6)) - 1
-    strength *= float(np.clip(1 - (deviation - 0.15) / 0.25, 0.3, 1.0))
-    gains = TARGET_CHROMA / np.maximum(chroma, 1e-6)
-    gains = gains / float(luminance(gains))  # white balance only; exposure is separate
-    gains = np.clip(gains, 0.75, 1.35)
-    gains = 1 + (gains - 1) * strength
-
-    if mode == 'surface':
-        exposure = float(np.clip(TARGET_BG_Y / max(ref_y * float(luminance(gains)), 1e-6), 0.6, 1.8))
-    else:
+        chroma = ref / max(float(luminance(ref)), 1e-6)
+        wb = TARGET_CHROMA / np.maximum(chroma, 1e-6)
+        wb = wb / float(luminance(wb))
+        gains = 1 + (np.clip(wb, 0.75, 1.35) - 1) * strength
         med = float(np.median(y))
-        exposure = float(np.clip((0.20 / max(med, 1e-6)) ** 0.5, 0.85, 1.2))
+        exposure = float(np.clip((0.20 / max(med, 1e-6)) ** 0.5, 0.9, 1.2))
 
     report = {
         'mode': mode,
-        'background_share': round(float(share), 3),
+        'share': round(share, 3),
         'reference_srgb': [round(float(v) * 255) for v in to_srgb(ref)],
         'deviation': round(deviation, 3),
         'strength': round(strength, 3),
@@ -165,6 +176,12 @@ def main(argv):
             graded, report = grade(load(job['in']))
             save(graded, job['out'], job.get('max', 2400))
             print(json.dumps({'in': job['in'], 'out': job['out'], **report}), flush=True)
+    elif cmd == 'convert':
+        # Artwork: sRGB and metadata stripping only. Grading would change the painting's color.
+        src, out = argv[2], argv[3]
+        max_edge = int(argv[argv.index('--max') + 1]) if '--max' in argv else 2400
+        save(load(src), out, max_edge)
+        print(json.dumps({'in': src, 'out': out, 'mode': 'convert'}))
     elif cmd == 'stats':
         gains, exposure, report = measure(load(argv[2]))
         print(json.dumps(report))

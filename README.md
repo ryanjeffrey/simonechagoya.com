@@ -104,7 +104,7 @@ npm run import:etsy -- ~/Downloads/EtsyListingsDownload.csv --replace-samples  #
 The importer creates one file per listing, downloads every listing photo, guesses the category from the title and tags, and prints a list of anything to check by hand. It reads Simone's description format: the intention line, the Details block (into `specs`), the Care block (into `care`), and drops the repeated title and the sign-off. It never overwrites an existing product unless you pass `--force`, and it never touches original paintings.
 
 - `--no-images` imports the text only and records the photo URLs in `etsyImages`. `--fetch-images` (no CSV needed) downloads them later.
-- `--force` rewrites every field from the CSV except `featured`. Make other hand edits after the last import, or redo them.
+- `--force` rewrites every field from the CSV except `featured`, including `images`. Do not force-import products whose photos came from somewhere else (Tigre, Mosaic and the two prints use graded photos from Simone's Drive).
 - The CSV does not include videos, sold listings or reviews. Sold listings and videos need the Etsy API (a developer key and OAuth); reviews are a separate download (Shop Manager > Settings > Options > Download Data).
 
 ## Needs Simone's sign-off

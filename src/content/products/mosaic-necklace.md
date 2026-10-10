@@ -4,7 +4,11 @@ category: necklaces
 price: 100
 summary: "The Mosaic Necklace is for the woman who is powerful in her focus and desire to grow."
 intention: "Focus · Clarity · Growth"
-images: []
+images:
+  - "../../assets/products/mosaic-necklace/1.jpg"
+  - "../../assets/products/mosaic-necklace/2.jpg"
+  - "../../assets/products/mosaic-necklace/3.jpg"
+  - "../../assets/products/mosaic-necklace/4.jpg"
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/15c55b/8072121886/il_fullxfull.8072121886_ms7r.jpg","https://i.etsystatic.com/56491047/r/il/86de63/8060562429/il_fullxfull.8060562429_ksdn.jpg","https://i.etsystatic.com/56491047/r/il/aaa7d7/8050542136/il_fullxfull.8050542136_fm9q.jpg","https://i.etsystatic.com/56491047/r/il/ead8ef/7892303152/il_fullxfull.7892303152_684e.jpg","https://i.etsystatic.com/56491047/r/il/3f4edb/7892303144/il_fullxfull.7892303144_lm3v.jpg","https://i.etsystatic.com/56491047/r/il/f9f8af/7940260015/il_fullxfull.7940260015_67bs.jpg","https://i.etsystatic.com/56491047/r/il/65a934/8060564383/il_fullxfull.8060564383_fyni.jpg","https://i.etsystatic.com/56491047/r/il/2a8dd7/8012653990/il_fullxfull.8012653990_h9dc.jpg","https://i.etsystatic.com/56491047/r/il/c8be31/8478890147/il_fullxfull.8478890147_71uw.jpg"]
 art: {"kind":"necklace","ground":"#e4e5df","metal":"silver","beads":"tube","count":58,"clear":false,"colors":["#7fb59a","#5c3f80","#a9d1c0","#d9e6e3","#6aa18f","#9b7fc0"]}
 materials: ["Rainbow Fluorite", "Silver finished brass with sterling silver beads"]

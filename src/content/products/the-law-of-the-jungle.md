@@ -3,7 +3,8 @@ title: "The Law of the Jungle"
 category: prints
 price: 50
 summary: "Print is hand signed by the artist."
-images: []
+images:
+  - "../../assets/products/the-law-of-the-jungle/1.jpg"
 etsyImages: ["https://i.etsystatic.com/56491047/r/il/0ec51c/7498410384/il_fullxfull.7498410384_eplx.jpg","https://i.etsystatic.com/56491047/r/il/59786c/7519930820/il_fullxfull.7519930820_bqic.jpg"]
 art: {"kind":"print","ground":"#e6e1d8","pattern":"leaves","colors":["#2f7d4a","#4fae5c","#1f5f3c","#7cc46a","#38966b"]}
 materials: ["Archival paper"]
