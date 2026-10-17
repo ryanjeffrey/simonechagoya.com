@@ -19,7 +19,7 @@ interface Props {
   bare?: boolean;
 }
 
-const { title, description = site.description, image = '/og.jpg', type = 'website', noindex = false, jsonLd, bare = false } = Astro.props;
+const { title, description = site.description, image = '/og.jpg?v=2', type = 'website', noindex = false, jsonLd, bare = false } = Astro.props;
 
 const fullTitle = title ? `${title} | ${site.name}` : `${site.name} | Jewelry and original art, made in Chicago`;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
