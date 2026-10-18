@@ -252,6 +252,11 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
                       ))}
                       {o.email && <a href={`mailto:${o.email}`}>{o.email}</a>}
                       {o.phone && <a href={`tel:${o.phone}`}>{o.phone}</a>}
+                      {o.shipTo.length > 0 && (
+                        <button class="link small copy" type="button" data-copy={o.shipTo.join('\n')}>
+                          Copy address
+                        </button>
+                      )}
                     </div>
 
                     {o.shipment ? (
@@ -324,6 +329,24 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
       document.addEventListener('submit', (e) => {
         const button = (e.target as HTMLFormElement).querySelector('button[type="submit"]');
         if (button) setTimeout(() => button.setAttribute('disabled', ''), 0);
+      });
+
+      // The address in the lines a label site expects, ready to paste into Pirate Ship.
+      document.addEventListener('click', async (e) => {
+        const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
+        if (!button) return;
+        const text = button.dataset.copy ?? '';
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const area = Object.assign(document.createElement('textarea'), { value: text });
+          document.body.append(area);
+          area.select();
+          document.execCommand('copy');
+          area.remove();
+        }
+        button.textContent = 'Copied';
+        setTimeout(() => (button.textContent = 'Copy address'), 2000);
       });
     </script>
   </body>
@@ -534,6 +557,11 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
 
   .address a {
     color: var(--ink-2);
+  }
+
+  .address .copy {
+    justify-self: start;
+    margin-top: 0.6rem;
   }
 
   .ship {
