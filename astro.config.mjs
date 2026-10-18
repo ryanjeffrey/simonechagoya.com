@@ -10,7 +10,7 @@ export default defineConfig({
   adapter: netlify({ imageCDN: false }),
   integrations: [
     sitemap({
-      filter: (page) => !/\/(checkout|contact\/thanks|api)\b/.test(page),
+      filter: (page) => !/\/(checkout|contact\/thanks|api|studio)\b/.test(page),
     }),
   ],
   prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
@@ -20,6 +20,11 @@ export default defineConfig({
       STRIPE_AUTOMATIC_TAX: envField.boolean({ context: 'server', access: 'public', default: false }),
       STRIPE_WEBHOOK_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       NETLIFY_BUILD_HOOK_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Order emails (src/lib/orders.ts) and the orders page (/studio)
+      RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+      ORDER_EMAIL_FROM: envField.string({ context: 'server', access: 'secret', optional: true }),
+      ORDER_NOTIFY_EMAIL: envField.string({ context: 'server', access: 'secret', optional: true }),
+      STUDIO_PASSWORD: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
 });

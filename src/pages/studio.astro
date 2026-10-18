@@ -1,0 +1,583 @@
+---
+/**
+ * Simone's orders page. Lists paid orders from Stripe, marks them shipped with
+ * a tracking number (which emails the buyer), and resends a missed receipt.
+ * Signed in with STUDIO_PASSWORD; never indexed.
+ */
+import '../styles/global.css';
+import { STRIPE_SECRET_KEY } from 'astro:env/server';
+import Stripe from 'stripe';
+import { site } from '../data/site';
+import { inventoryStore } from '../lib/inventory';
+import { CARRIERS, isCarrier, money, trackingUrl, type Order, type Shipment } from '../lib/order-mail';
+import {
+  clearShipment,
+  emailReady,
+  getShipment,
+  listOrders,
+  saveShipment,
+  sendConfirmation,
+  sendShipped,
+  sentLog,
+  type SentLog,
+} from '../lib/orders';
+import { isSignedIn, signIn, signOut, studioEnabled } from '../lib/studio-auth';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex');
+
+const MESSAGES: Record<string, string> = {
+  shipped: 'Marked shipped. The buyer has their tracking email.',
+  'shipped-quiet': 'Marked shipped. No email was sent.',
+  unshipped: 'Moved back to To ship.',
+  receipt: 'Confirmation sent again.',
+  'bad-password': 'That password is not right.',
+  'mail-failed': 'Saved, but the email did not go out. Try again in a minute.',
+  'no-mail': 'Saved. Email is not set up yet, so nothing was sent.',
+  failed: 'Something went wrong. Try again in a minute.',
+};
+
+const store = inventoryStore();
+const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('action') ?? '');
+  const view = String(form.get('view') ?? '');
+  const back = (msg: string) => Astro.redirect(`/studio?${new URLSearchParams({ ...(view ? { view } : {}), msg })}`, 303);
+
+  if (action === 'login') {
+    return (await signIn(Astro.cookies, String(form.get('password') ?? ''))) ? Astro.redirect('/studio', 303) : back('bad-password');
+  }
+  if (!(await isSignedIn(Astro.cookies))) return Astro.redirect('/studio', 303);
+  if (action === 'logout') {
+    signOut(Astro.cookies);
+    return Astro.redirect('/studio', 303);
+  }
+
+  const id = String(form.get('id') ?? '');
+  if (!stripe || !store || !id.startsWith('cs_')) return back('failed');
+
+  try {
+    if (action === 'ship') {
+      const carrier = form.get('carrier');
+      const shipment: Shipment = {
+        carrier: isCarrier(carrier) ? carrier : 'usps',
+        tracking: String(form.get('tracking') ?? '').replace(/\s+/g, '').slice(0, 60),
+        shippedAt: new Date().toISOString(),
+      };
+      await saveShipment(store, id, shipment);
+      if (form.get('notify') !== 'on') return back('shipped-quiet');
+      if (!emailReady()) return back('no-mail');
+      return (await sendShipped(stripe, store, id, shipment).then(() => true, (err) => (console.error(err), false)))
+        ? back('shipped')
+        : back('mail-failed');
+    }
+    if (action === 'unship') {
+      await clearShipment(store, id);
+      return back('unshipped');
+    }
+    if (action === 'receipt') {
+      if (!emailReady()) return back('no-mail');
+      await sendConfirmation(stripe, store, id);
+      return back('receipt');
+    }
+  } catch (err) {
+    console.error(`Studio ${action} for ${id} failed`, err);
+  }
+  return back('failed');
+}
+
+const signedIn = await isSignedIn(Astro.cookies);
+const view = ['open', 'shipped', 'all'].includes(Astro.url.searchParams.get('view') ?? '') ? Astro.url.searchParams.get('view')! : 'open';
+const message = MESSAGES[Astro.url.searchParams.get('msg') ?? ''];
+
+type Row = Order & { shipment: Shipment | null; sent: SentLog };
+let rows: Row[] = [];
+let loadError = '';
+if (signedIn && stripe && store) {
+  try {
+    const orders = await listOrders(stripe, 40);
+    rows = await Promise.all(
+      orders.map(async (o) => ({ ...o, shipment: await getShipment(store, o.id), sent: await sentLog(store, o.id) })),
+    );
+  } catch (err) {
+    console.error('Studio could not load orders', err);
+    loadError = 'Orders could not be loaded from Stripe. Refresh in a minute.';
+  }
+}
+
+const toShip = rows.filter((r) => r.paid && !r.shipment);
+const shown = view === 'open' ? toShip : view === 'shipped' ? rows.filter((r) => r.shipment) : rows;
+const date = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' });
+const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET_KEY?.includes('_test_') ? 'test/' : ''}checkout/sessions/${id}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f4efe7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Orders | {site.studio}</title>
+  </head>
+  <body>
+    <main class="studio">
+      <header class="top">
+        <a class="mark serif" href="/">{site.name}</a>
+        {
+          signedIn && (
+            <form method="post">
+              <input type="hidden" name="action" value="logout" />
+              <button class="link small" type="submit">Sign out</button>
+            </form>
+          )
+        }
+      </header>
+
+      {message && <p class="flash" role="status">{message}</p>}
+
+      {
+        !studioEnabled() ? (
+          <section class="panel">
+            <h1 class="serif title">Orders</h1>
+            <p class="muted">
+              This page opens once a password is set. In Netlify, add STUDIO_PASSWORD under Site configuration, Environment
+              variables, then redeploy.
+            </p>
+          </section>
+        ) : !signedIn ? (
+          <section class="panel">
+            <h1 class="serif title">Orders</h1>
+            <form method="post" class="login">
+              <input type="hidden" name="action" value="login" />
+              <div class="field">
+                <label for="password">Password</label>
+                <input class="input" id="password" name="password" type="password" autocomplete="current-password" required autofocus />
+              </div>
+              <button class="btn" type="submit">Sign in</button>
+            </form>
+          </section>
+        ) : (
+          <>
+            <section class="head">
+              <h1 class="serif title">
+                {toShip.length ? (
+                  <>
+                    {toShip.length} to <em>ship</em>
+                  </>
+                ) : (
+                  <>
+                    All <em>caught up</em>
+                  </>
+                )}
+              </h1>
+              <nav class="tabs" aria-label="Filter orders">
+                <a href="/studio" aria-current={view === 'open' ? 'page' : undefined}>To ship</a>
+                <a href="/studio?view=shipped" aria-current={view === 'shipped' ? 'page' : undefined}>Shipped</a>
+                <a href="/studio?view=all" aria-current={view === 'all' ? 'page' : undefined}>All</a>
+              </nav>
+            </section>
+
+            {!stripe && <p class="warn">Stripe is not connected, so there are no orders to show.</p>}
+            {!emailReady() && (
+              <p class="warn">Email is not set up yet (RESEND_API_KEY), so buyers get no receipt or tracking email.</p>
+            )}
+            {loadError && <p class="warn">{loadError}</p>}
+            {stripe && !loadError && !shown.length && (
+              <p class="muted empty">{view === 'open' ? 'Nothing waiting to ship.' : 'No orders here yet.'}</p>
+            )}
+
+            <ol class="orders">
+              {shown.map((o) => {
+                const url = o.shipment ? trackingUrl(o.shipment) : null;
+                return (
+                  <li class="order">
+                    <div class="order-top">
+                      <span class="eyebrow">{o.number}</span>
+                      <span class="small muted">{date(o.created)}</span>
+                    </div>
+                    <p class="who serif">
+                      {o.name ?? o.email ?? 'Buyer'} <span class="total">{money(o.total)}</span>
+                    </p>
+                    <div class="tags">
+                      {o.express && <span class="tag tag--accent">Express</span>}
+                      {!o.paid && <span class="tag">Payment pending</span>}
+                      {o.shipment && <span class="tag tag--done">Shipped {date(o.shipment.shippedAt)}</span>}
+                    </div>
+
+                    <ul class="items">
+                      {o.items.map((i) => (
+                        <li>
+                          {i.image && <img src={i.image} alt="" width="48" height="60" loading="lazy" />}
+                          <span>
+                            {i.name}
+                            {i.qty > 1 && <span class="muted"> x{i.qty}</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {o.giftNote && (
+                      <p class="gift">
+                        <span class="small">Gift note</span>
+                        {o.giftNote}
+                      </p>
+                    )}
+
+                    <div class="address">
+                      <span class="small muted">Ship to</span>
+                      {o.shipTo.map((l) => (
+                        <span>{l}</span>
+                      ))}
+                      {o.email && <a href={`mailto:${o.email}`}>{o.email}</a>}
+                      {o.phone && <a href={`tel:${o.phone}`}>{o.phone}</a>}
+                    </div>
+
+                    {o.shipment ? (
+                      <div class="shipped">
+                        <p>
+                          {CARRIERS[o.shipment.carrier].label}
+                          {o.shipment.tracking && (url ? <a href={url}>{o.shipment.tracking}</a> : <span> {o.shipment.tracking}</span>)}
+                        </p>
+                        <form method="post">
+                          <input type="hidden" name="action" value="unship" />
+                          <input type="hidden" name="id" value={o.id} />
+                          <input type="hidden" name="view" value={view} />
+                          <button class="link small" type="submit">Undo shipped</button>
+                        </form>
+                      </div>
+                    ) : (
+                      o.paid && (
+                        <form method="post" class="ship">
+                          <input type="hidden" name="action" value="ship" />
+                          <input type="hidden" name="id" value={o.id} />
+                          <input type="hidden" name="view" value={view} />
+                          <div class="ship-fields">
+                            <div class="field">
+                              <label for={`carrier-${o.id}`}>Carrier</label>
+                              <select class="select" id={`carrier-${o.id}`} name="carrier">
+                                {Object.entries(CARRIERS).map(([key, c]) => (
+                                  <option value={key}>{c.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div class="field">
+                              <label for={`tracking-${o.id}`}>Tracking number</label>
+                              <input class="input" id={`tracking-${o.id}`} name="tracking" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                            </div>
+                          </div>
+                          <label class="check">
+                            <input type="checkbox" name="notify" checked /> Email the buyer their tracking
+                          </label>
+                          <button class="btn btn--accent" type="submit">Mark shipped</button>
+                        </form>
+                      )
+                    )}
+
+                    <div class="foot small">
+                      <span class={o.sent.confirmation ? 'muted' : 'missing'}>
+                        {o.sent.confirmation ? 'Receipt sent' : 'No receipt sent'}
+                      </span>
+                      {o.sent.shipped && <span class="muted">Tracking sent</span>}
+                      {o.email && o.paid && (
+                        <form method="post">
+                          <input type="hidden" name="action" value="receipt" />
+                          <input type="hidden" name="id" value={o.id} />
+                          <input type="hidden" name="view" value={view} />
+                          <button class="link" type="submit">{o.sent.confirmation ? 'Resend receipt' : 'Send receipt'}</button>
+                        </form>
+                      )}
+                      <a class="link" href={stripeLink(o.id)}>Stripe</a>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </>
+        )
+      }
+    </main>
+
+    <script>
+      // One tap is enough: stop double submits while the server sends email.
+      document.addEventListener('submit', (e) => {
+        const button = (e.target as HTMLFormElement).querySelector('button[type="submit"]');
+        if (button) setTimeout(() => button.setAttribute('disabled', ''), 0);
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .studio {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: max(1rem, env(safe-area-inset-top)) 1rem 4rem;
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mark {
+    font-size: 1.4rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .small {
+    font-size: var(--step--1);
+  }
+
+  .title {
+    font-size: var(--step-4);
+    font-weight: 300;
+    line-height: 1;
+    margin: 2rem 0 1.25rem;
+  }
+
+  .title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .panel .muted {
+    max-width: 30em;
+  }
+
+  .login {
+    display: grid;
+    gap: 1.5rem;
+    max-width: 22rem;
+  }
+
+  .flash,
+  .warn {
+    margin: 1.25rem 0 0;
+    padding: 0.85rem 1rem;
+    border-left: 2px solid var(--gold);
+    background: var(--paper-2);
+    font-size: var(--step--1);
+  }
+
+  .warn {
+    border-color: var(--accent);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tabs a {
+    padding: 0.75rem 0;
+    font-size: var(--step--2);
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .tabs a[aria-current='page'] {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .empty {
+    padding: 3rem 0;
+    text-align: center;
+  }
+
+  .orders {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .order {
+    display: grid;
+    gap: 1rem;
+    padding: 1.75rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .order-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .who {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: var(--step-2);
+    line-height: 1.15;
+  }
+
+  .total {
+    font-family: var(--sans);
+    font-size: var(--step-0);
+    white-space: nowrap;
+    padding-top: 0.3rem;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tags:empty {
+    display: none;
+  }
+
+  .tag {
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--line-strong);
+    font-size: var(--step--2);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .tag--accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .tag--done {
+    color: var(--gold-text);
+    border-color: var(--gold);
+  }
+
+  .items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .items li {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .items img {
+    width: 48px;
+    height: 60px;
+    object-fit: cover;
+    background: var(--paper-2);
+  }
+
+  .gift {
+    display: grid;
+    gap: 0.2rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--accent);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: var(--step-1);
+  }
+
+  .gift .small {
+    font-family: var(--sans);
+    font-style: normal;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .address {
+    display: grid;
+    gap: 0.1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .address a {
+    color: var(--ink-2);
+  }
+
+  .ship {
+    display: grid;
+    gap: 1.1rem;
+    padding: 1.25rem;
+    background: var(--paper-2);
+  }
+
+  .ship-fields {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: 1rem;
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: var(--step--1);
+  }
+
+  .check input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--accent);
+  }
+
+  .ship .btn {
+    width: 100%;
+  }
+
+  .shipped {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .shipped a {
+    margin-left: 0.5rem;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1.25rem;
+  }
+
+  .missing {
+    color: var(--accent);
+  }
+
+  button.link {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  button[disabled] {
+    opacity: 0.5;
+  }
+</style>

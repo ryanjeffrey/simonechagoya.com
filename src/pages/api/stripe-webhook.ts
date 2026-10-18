@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { NETLIFY_BUILD_HOOK_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from 'astro:env/server';
 import Stripe from 'stripe';
 import { deleteOrder, inventoryStore, recordOrder, releasePieces, type OrderLine } from '../../lib/inventory';
+import { sendOrderEmails } from '../../lib/orders';
 
 export const prerender = false;
 
@@ -11,8 +12,10 @@ export const prerender = false;
  *   checkout.session.async_payment_failed, checkout.session.expired
  *
  * A completed checkout records its items, which marks single pieces sold, and
- * rebuilds the site so they show Sold. Stripe emails the order to Simone; nothing
- * here replaces that. Any error returns 500 so Stripe retries the event.
+ * rebuilds the site so they show Sold. Once the payment has gone through, it
+ * emails the buyer their confirmation and Simone a sale alert. Any error in
+ * recording returns 500 so Stripe retries the event; a failed email does not,
+ * and can be sent again from the orders page (/studio).
  */
 export const POST: APIRoute = async ({ request }) => {
   if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) return new Response('Webhook not configured', { status: 503 });
@@ -48,6 +51,7 @@ export const POST: APIRoute = async ({ request }) => {
         await recordOrder(store, session.id, await orderLines(stripe, session.id), session.payment_status !== 'unpaid');
         await releasePieces(store, held, hold);
         await rebuild();
+        if (session.payment_status !== 'unpaid') await sendOrderEmails(stripe, store, session.id);
         break;
       }
       case 'checkout.session.async_payment_failed': {
