@@ -26,13 +26,19 @@ Node 22.12 or newer.
    5. **Payment methods** are managed in Stripe > Settings > Payment methods. The code never hardcodes a list, so Apple Pay, Google Pay and Link appear where they fit.
    6. **Sales tax.** On Etsy, Etsy collected and paid sales tax as the marketplace. On her own site, Simone is responsible, starting with Illinois orders. In Stripe Tax, set the head office address (the studio), add an Illinois registration, then set `STRIPE_AUTOMATIC_TAX=true`. Without an active registration, Stripe collects no tax and shows no error. Stripe Tax charges a per-transaction fee; confirm the setup with her accountant.
    - Promotion codes are switched on, so discount codes made in the Stripe dashboard work at checkout.
-3. **Product photos.** The 13 live Etsy listings are imported with their real photos (71 of them, graded to the shared finish). Etsy's designed mock-up cards (the photo on a scene with the name and logo) and collages are left out on purpose: the site shows real product photos only. The two print scans are converted to sRGB without grading, so the art's colors stay true.
+3. **Order emails and the orders page.** The site sends its own emails: a confirmation to the buyer, a sale alert to Simone, and a shipping email with tracking when Simone marks an order shipped at `/studio`. They go through [Resend](https://resend.com) (free up to 3,000 emails a month).
+   1. Create a Resend account, add the domain `simonechagoya.com` under Domains, and add the DNS records it shows wherever the domain's DNS lives. Wait for it to say Verified.
+   2. Create an API key with Sending access.
+   3. In Netlify > Site configuration > Environment variables, add `RESEND_API_KEY` (the key), `ORDER_NOTIFY_EMAIL` (where sale alerts go; comma separated for more than one) and `STUDIO_PASSWORD` (the password for `/studio`). Optional: `ORDER_EMAIL_FROM` to change the sender from `Simone Chagoya Studio <orders@simonechagoya.com>`. Then redeploy.
+   4. Make sure `hello@simonechagoya.com` reaches a real inbox: buyers reply to it.
+   5. Leave Stripe's own "successful payment" receipts off (Stripe > Settings > Customer emails), or buyers get two.
+4. **Product photos.** The 13 live Etsy listings are imported with their real photos (71 of them, graded to the shared finish). Etsy's designed mock-up cards (the photo on a scene with the name and logo) and collages are left out on purpose: the site shows real product photos only. The two print scans are converted to sRGB without grading, so the art's colors stay true.
 
    Sold pieces and listing videos come through the Etsy API, which the sandbox also cannot reach. On a normal machine, follow "Sold listings and videos" under Importing from Etsy, then commit `src/content/products`, `src/assets/products` and `public/media/products`.
-4. **Forms.** In Netlify > Forms, turn on form detection. Add an email notification for the `inquiry` form (commissions and contact) and the `newsletter` form.
-5. **Confirm the policies** listed under "Needs Simone's sign-off" below.
-6. **Free listings.** Submit `https://simonechagoya.com/feeds/products.xml` to Google Merchant Center (free Shopping listings) and as a Pinterest catalog. Only real, available products with photos are included.
-7. **Etsy.** Point the Etsy shop announcement and About section at the new site.
+5. **Forms.** In Netlify > Forms, turn on form detection. Add an email notification for the `inquiry` form (commissions and contact) and the `newsletter` form.
+6. **Confirm the policies** listed under "Needs Simone's sign-off" below.
+7. **Free listings.** Submit `https://simonechagoya.com/feeds/products.xml` to Google Merchant Center (free Shopping listings) and as a Pinterest catalog. Only real, available products with photos are included.
+8. **Etsy.** Point the Etsy shop announcement and About section at the new site.
 
 ## Adding and editing products
 
@@ -62,7 +68,8 @@ featured: true               # shown first and on the home page
 The description goes here, in plain paragraphs.
 ```
 
-- **After a sale**, the site counts it: the Stripe webhook records the order and rebuilds the site, and every recorded order is subtracted from the product's `stock`. When a piece runs out it shows Sold. Sold pieces stay on the site, which helps show demand. Stripe emails you every order.
+- **After a sale**, the site counts it: the Stripe webhook records the order and rebuilds the site, and every recorded order is subtracted from the product's `stock`. When a piece runs out it shows Sold. Sold pieces stay on the site, which helps show demand. The buyer gets a confirmation and Simone gets a sale alert by email.
+- **Shipping an order:** open `simonechagoya.com/studio` (bookmark it on your phone), find the order under To ship, pick the carrier, paste the tracking number and press Mark shipped. The buyer gets an email with a tracking link. Gift notes and express orders are flagged there. If a receipt did not go out, the order says so and has a Send receipt button.
 - **`stock` is how many were ever offered on this site,** not how many are left, so never lower it after a sale. To restock, raise it by the number you made: a necklace at `stock: 2` with two sales goes to `stock: 3` for one more. For the same reason, do not re-run the Etsy importer with `--force` once the site is selling.
 - **Relisting a returned piece:** delete its order in Netlify > Blobs > `inventory` (`orders/<checkout session id>`), then trigger a deploy. If a sold piece ever still shows as available after a rebuild, set `status: sold` in its file; checkout refuses it either way.
 - **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. Run them through `scripts/media` first (below) so every photo shares one white balance and finish. The site resizes and compresses them automatically.
@@ -161,9 +168,12 @@ src/
   lib/bag.ts            the shopping bag (browser side)
   lib/catalog.ts        catalog helpers, category names and copy
   lib/inventory.ts      holds and recorded orders for single pieces (Netlify Blobs)
+  lib/orders.ts         reads orders from Stripe, sends order emails (Resend), records shipments
+  lib/order-mail.ts     the order email templates
   pages/                every route, including:
     api/checkout.ts     re-prices the bag server side, holds single pieces and opens Stripe Checkout
-    api/stripe-webhook.ts  records orders and rebuilds the site after a sale
+    api/stripe-webhook.ts  records orders, rebuilds the site and sends the order emails after a sale
+    studio.astro        the orders page: mark shipped with tracking, resend receipts (password protected)
     bag.json.ts         catalog data the bag reads
     feeds/products.xml.ts  Google Merchant and Pinterest feed
 scripts/import-etsy.mjs  Etsy importer: listings CSV, plus sold listings and videos from the API
