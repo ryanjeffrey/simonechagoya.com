@@ -28,6 +28,8 @@ export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
 Astro.response.headers.set('X-Robots-Tag', 'noindex');
 
+const reason = (err: unknown) => (err instanceof Error ? err.message : String(err)).slice(0, 240);
+
 const MESSAGES: Record<string, string> = {
   shipped: 'Marked shipped. The buyer has their tracking email.',
   'shipped-quiet': 'Marked shipped. No email was sent.',
@@ -46,7 +48,8 @@ if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const action = String(form.get('action') ?? '');
   const view = String(form.get('view') ?? '');
-  const back = (msg: string) => Astro.redirect(`/studio?${new URLSearchParams({ ...(view ? { view } : {}), msg })}`, 303);
+  const back = (msg: string, why?: unknown) =>
+    Astro.redirect(`/studio?${new URLSearchParams({ ...(view ? { view } : {}), msg, ...(why ? { why: reason(why) } : {}) })}`, 303);
 
   if (action === 'login') {
     return (await signIn(Astro.cookies, String(form.get('password') ?? ''))) ? Astro.redirect('/studio', 303) : back('bad-password');
@@ -71,9 +74,10 @@ if (Astro.request.method === 'POST') {
       await saveShipment(store, id, shipment);
       if (form.get('notify') !== 'on') return back('shipped-quiet');
       if (!emailReady()) return back('no-mail');
-      return (await sendShipped(stripe, store, id, shipment).then(() => true, (err) => (console.error(err), false)))
-        ? back('shipped')
-        : back('mail-failed');
+      return sendShipped(stripe, store, id, shipment).then(
+        () => back('shipped'),
+        (err) => (console.error(err), back('mail-failed', err)),
+      );
     }
     if (action === 'unship') {
       await clearShipment(store, id);
@@ -86,6 +90,7 @@ if (Astro.request.method === 'POST') {
     }
   } catch (err) {
     console.error(`Studio ${action} for ${id} failed`, err);
+    return back('failed', err);
   }
   return back('failed');
 }
@@ -93,6 +98,8 @@ if (Astro.request.method === 'POST') {
 const signedIn = await isSignedIn(Astro.cookies);
 const view = ['open', 'shipped', 'all'].includes(Astro.url.searchParams.get('view') ?? '') ? Astro.url.searchParams.get('view')! : 'open';
 const message = MESSAGES[Astro.url.searchParams.get('msg') ?? ''];
+// The error behind a failure, shown only to someone signed in so Simone can tell what to fix.
+const why = signedIn ? Astro.url.searchParams.get('why') : null;
 
 type Row = Order & { shipment: Shipment | null; sent: SentLog };
 let rows: Row[] = [];
@@ -141,7 +148,14 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
         }
       </header>
 
-      {message && <p class="flash" role="status">{message}</p>}
+      {
+        message && (
+          <p class="flash" role="status">
+            {message}
+            {why && <span class="why">{why}</span>}
+          </p>
+        )
+      }
 
       {
         !studioEnabled() ? (
@@ -373,6 +387,13 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
 
   .warn {
     border-color: var(--accent);
+  }
+
+  .why {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
   }
 
   .tabs {
