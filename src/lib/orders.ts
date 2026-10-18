@@ -189,6 +189,14 @@ async function deliver(store: Store, id: string, kind: EmailKind, to: string | s
       text: email.text,
     }),
   });
-  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text().catch(() => '')}`);
+  if (!res.ok) {
+    // Resend explains the problem in `message` (an unverified domain, a bad key), which the orders page shows.
+    const body = await res.text().catch(() => '');
+    let reason = body;
+    try {
+      reason = JSON.parse(body).message ?? body;
+    } catch {}
+    throw new Error(`Resend said: ${reason || res.status}`);
+  }
   await store.set(`emails/${id}/${kind}`, new Date().toISOString());
 }
