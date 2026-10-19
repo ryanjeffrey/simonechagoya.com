@@ -7,16 +7,21 @@
  */
 import type { ImageMetadata } from 'astro';
 import kaseEy from '../assets/reviews/kase-ey.jpg';
+import azul from '../assets/reviews/azul.jpg';
 
 export type Review = {
-  name: string;
-  text: string;
+  /** Leave out when the customer's name or handle is not known. */
+  name?: string;
+  /** The customer's own words. Leave out for a photo sent without any. */
+  text?: string;
   /** Star rating. Leave out for words shared without one (an Instagram post). */
   rating?: 1 | 2 | 3 | 4 | 5;
   date?: string; // YYYY-MM-DD
   source: 'Etsy' | 'Instagram' | 'Direct';
   /** Product slug the review is about, if any. */
   product?: string;
+  /** The piece's name, shown under the review when it has no product page. */
+  piece?: string;
   /** The customer's own photo, used with their post. */
   photo?: { src: ImageMetadata; alt: string };
 };
@@ -33,6 +38,15 @@ export const reviews: Review[] = [
     source: 'Instagram',
     product: 'african-jade-necklace',
     photo: { src: kaseEy, alt: '@kase_ey wearing her African Jade necklace by Simone Chagoya' },
+  },
+  // A customer's photo wearing her Azul necklace, sent to Ryan with five stars
+  // (2026-10-19). No name or words yet; add them here only as the customer gave them.
+  {
+    rating: 5,
+    date: '2026-10-19',
+    source: 'Direct',
+    piece: 'Azul necklace',
+    photo: { src: azul, alt: 'A customer wearing her Azul necklace by Simone Chagoya' },
   },
   {
     name: 'Nancy',
