@@ -39,9 +39,10 @@ export const reviews: Review[] = [
     product: 'african-jade-necklace',
     photo: { src: kaseEy, alt: '@kase_ey wearing her African Jade necklace by Simone Chagoya' },
   },
-  // A customer's photo wearing her Azul necklace, sent to Ryan with five stars
-  // (2026-10-19). No name or words yet; add them here only as the customer gave them.
+  // A customer's photo and words on her Azul necklace, sent to Ryan with five
+  // stars (2026-10-19). No name yet; add one only as the customer gave it.
   {
+    text: 'Absolute perfection! 🌟 The craftsmanship is stunning in person, and it arrived beautifully packaged with a sweet personal touch. Thank you for such a gorgeous, unique piece of art!',
     rating: 5,
     date: '2026-10-19',
     source: 'Direct',
