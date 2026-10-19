@@ -19,8 +19,7 @@ const list = matching.slice(0, limit);
 // Words shared without stars (an Instagram post) are shown but not counted.
 const rated = matching.filter((r) => r.rating);
 const average = rated.length ? rated.reduce((n, r) => n + (r.rating ?? 0), 0) / rated.length : 0;
-const allEtsy = rated.every((r) => r.source === 'Etsy');
-const label = `From ${rated.length} ${rated.length === 1 ? 'review' : 'reviews'}${allEtsy ? ' on Etsy' : ''}`;
+const label = `${rated.length} verified ${rated.length === 1 ? 'review' : 'reviews'}`;
 ---
 
 {
