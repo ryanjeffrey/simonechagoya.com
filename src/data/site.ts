@@ -21,9 +21,9 @@ export const site = {
 
   currency: 'USD',
 
-  // From the Etsy shop. Update as reviews come in; set count to 0 to hide.
-  // Matches src/data/reviews.ts (7 of 8 Etsy reviews; the family review is excluded).
-  rating: { average: 5, count: 7, source: 'Etsy' },
+  // Star ratings in src/data/reviews.ts (7 from Etsy, 1 sent directly; the
+  // family review is excluded). Update as reviews come in; set count to 0 to hide.
+  rating: { average: 5, count: 8 },
 
   // CONFIRM: shipping policy
   shipping: {

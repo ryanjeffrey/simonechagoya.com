@@ -254,7 +254,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
               <li>{isArt ? 'Wrapped and ready to give' : 'Gift boxed with ribbon, ready to give'}</li>
               <li>Ships from Chicago in {site.shipping.processing}</li>
               {site.shipping.freeThreshold > 0 && <li>Complimentary US shipping over {formatPrice(site.shipping.freeThreshold)}</li>}
-              {site.rating.count > 0 && <li>Rated {site.rating.average.toFixed(1)} from {site.rating.count} reviews on {site.rating.source}</li>}
+              {site.rating.count > 0 && <li>Rated {site.rating.average.toFixed(1)} from {site.rating.count} verified reviews</li>}
               <li>{site.returns.days}-day returns</li>
             </ul>
           )
