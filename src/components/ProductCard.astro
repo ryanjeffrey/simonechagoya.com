@@ -14,6 +14,8 @@ const { data } = product;
 const url = productUrl(product);
 const buyable = isPurchasable(product);
 const quickAdd = buyable && data.variants.length === 0;
+// Jewelry with more than one photo shows its detail shot on hover. Paintings stay as they are.
+const alternate = data.category !== 'originals' && data.images.length > 1;
 const meta =
   data.category === 'originals'
     ? [data.year, data.dimensions].filter(Boolean).join(' · ')
@@ -28,6 +30,7 @@ const meta =
   <a href={url} class="card-link">
     <div class="card-media zoom">
       <ProductMedia product={product} loading={loading} sizes={sizes} />
+      {alternate && <ProductMedia product={product} index={1} sizes={sizes} class="card-alt" />}
       <div class="card-badges">
         {data.status === 'sold' && <span class="badge badge--ink">Sold</span>}
         {data.status !== 'sold' && data.oneOfAKind && data.category !== 'originals' && <span class="badge">One of one</span>}
@@ -68,6 +71,21 @@ const meta =
 
   .card-media {
     position: relative;
+  }
+
+  /* The detail shot waits underneath the cover and fades in on hover. */
+  .card-media :global(.card-alt) {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.7s var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .card-link:hover :global(.card-alt),
+    .card-link:focus-visible :global(.card-alt) {
+      opacity: 1;
+    }
   }
 
   .card-badges {
