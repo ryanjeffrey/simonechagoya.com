@@ -75,17 +75,22 @@ const alt =
   }
 
   .media--matte {
-    display: grid;
-    place-items: center;
-    padding: 15%;
     background: linear-gradient(180deg, var(--paper-2) 0%, var(--paper-2) 78%, var(--paper-3) 100%);
   }
 
+  /*
+   * The work hangs centered with an even margin, whatever its proportions. Absolute
+   * positioning gives the percentages a definite box to resolve against: inside an
+   * aspect-ratio box, max-height: 100% does not, and tall paintings overflowed and clipped.
+   */
   .media--matte :global(img) {
+    position: absolute;
+    inset: 0;
+    margin: auto;
     width: auto;
     height: auto;
-    max-width: 100%;
-    max-height: 100%;
+    max-width: 70%;
+    max-height: 76%;
     object-fit: contain;
     box-shadow:
       0 1px 2px rgb(33 28 23 / 0.1),

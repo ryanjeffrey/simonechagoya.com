@@ -44,6 +44,8 @@
 
   --ease-out: cubic-bezier(0.19, 1, 0.22, 1);
   --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  /* Moves from the first frame, then a long soft settle. In-out curves hang at the start of a reveal. */
+  --ease-reveal: cubic-bezier(0.3, 0.1, 0.1, 1);
 
   color-scheme: light;
 }
@@ -510,6 +512,38 @@ h3 em,
   padding-right: 2rem;
 }
 
+/* File picker: the browser's own button, restyled as a quiet outlined button. */
+.input.file {
+  padding: 0.7rem 0;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.input.file::file-selector-button {
+  margin-right: 1.1rem;
+  padding: 0.8rem 1.15rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 500 0.64rem / 1 var(--sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    border-color 0.3s;
+}
+
+.input.file:hover::file-selector-button,
+.input.file:focus-visible::file-selector-button {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
 /* ---------------------------------------------------------------
    Badges
 ---------------------------------------------------------------- */
@@ -546,7 +580,7 @@ h3 em,
    Scroll reveal (only hides content once JS has confirmed it can reveal it)
 ---------------------------------------------------------------- */
 @media (prefers-reduced-motion: no-preference) {
-  .js [data-reveal] {
+  .js [data-reveal]:not([data-reveal='mask']) {
     opacity: 0;
     transform: translateY(24px);
     transition:
@@ -555,20 +589,36 @@ h3 em,
     transition-delay: calc(var(--reveal-delay, 0) * 1ms);
   }
 
-  .js [data-reveal].is-in {
+  .js [data-reveal]:not([data-reveal='mask']).is-in {
     opacity: 1;
     transform: none;
   }
 
+  /*
+   * Mask reveal: the frame slides up while its content slides down by the same
+   * amount, so the image holds still and is unveiled from the bottom. Both are
+   * transforms, which run on the compositor and cannot hitch on a busy main
+   * thread the way clip-path can. The image also settles from a slight zoom.
+   */
   .js [data-reveal='mask'] {
-    opacity: 1;
-    transform: none;
-    clip-path: inset(100% 0 0 0);
-    transition: clip-path 1.6s var(--ease-in-out);
+    overflow: hidden;
+    translate: 0 100%;
+    transition: translate 1.5s var(--ease-reveal);
   }
 
-  .js [data-reveal='mask'].is-in {
-    clip-path: inset(0 0 0 0);
+  .js [data-reveal='mask'] > * {
+    display: block;
+    translate: 0 -100%;
+    scale: 1.06;
+    transition:
+      translate 1.5s var(--ease-reveal),
+      scale 2.4s var(--ease-out);
+  }
+
+  .js [data-reveal='mask'].is-in,
+  .js [data-reveal='mask'].is-in > * {
+    translate: none;
+    scale: none;
   }
 }
 

@@ -60,6 +60,18 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
     <script is:inline>
       document.documentElement.classList.add('js');
+      // Resolves once the page is on screen: after the cross-page fade, when there is one.
+      // Captured here because pagereveal can fire before deferred scripts run.
+      window.__arrived =
+        'onpagereveal' in window
+          ? new Promise((done) =>
+              addEventListener(
+                'pagereveal',
+                (e) => (e.viewTransition ? e.viewTransition.finished.then(done, done) : done()),
+                { once: true },
+              ),
+            )
+          : Promise.resolve();
     </script>
     <slot name="head" />
   </head>

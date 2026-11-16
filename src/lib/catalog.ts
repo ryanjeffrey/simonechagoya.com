@@ -84,10 +84,16 @@ export function shortMaterial(p: Product) {
   return p.data.materials[0]?.split(',')[0].trim();
 }
 
+/** Shelf order across categories: jewelry, then prints and cards, then paintings sold by inquiry. */
+const SHELF: Category[] = ['necklaces', 'earrings', 'bracelets', 'rings', 'prints', 'cards', 'originals'];
+
 export function sortFeatured(a: Product, b: Product) {
   const sold = Number(a.data.status === 'sold') - Number(b.data.status === 'sold');
   if (sold !== 0) return sold;
   if (a.data.featured !== b.data.featured) return a.data.featured ? -1 : 1;
+  // `order` is per category, so compare it only within one; otherwise necklaces and paintings interleave.
+  const shelf = SHELF.indexOf(a.data.category) - SHELF.indexOf(b.data.category);
+  if (shelf !== 0) return shelf;
   if (a.data.order !== b.data.order) return a.data.order - b.data.order;
   return a.data.title.localeCompare(b.data.title);
 }

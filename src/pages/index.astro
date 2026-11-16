@@ -277,8 +277,8 @@ const jsonLd = [
   <section class="promises container" aria-label="Why buy from the studio">
     <div class="promise" data-reveal>
       <span class="promise-n">i.</span>
-      <h3>Natural stones, strung by hand</h3>
-      <p>Every necklace is chosen, strung and finished in Simone’s Chicago studio.</p>
+      <h3>Strung by hand</h3>
+      <p>Natural stones, chosen, strung and finished in Simone’s Chicago studio.</p>
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 110">
       <span class="promise-n">ii.</span>
@@ -287,8 +287,11 @@ const jsonLd = [
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 220">
       <span class="promise-n">iii.</span>
-      <h3>Ships in {site.shipping.processing}</h3>
-      <p>Gift wrapped by hand and tracked to your door. Free US shipping over ${site.shipping.freeThreshold}.</p>
+      <h3>Ready to give</h3>
+      <p>
+        Gift wrapped by hand and shipped in {site.shipping.processing}, tracked to your door. Free US shipping over
+        ${site.shipping.freeThreshold}.
+      </p>
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 330">
       <span class="promise-n">iv.</span>
@@ -533,6 +536,13 @@ const jsonLd = [
 
     .hero-painting figcaption {
       display: none;
+    }
+
+    /* On one column the seal sits on the arch's right shoulder, clear of the page edge. */
+    .hero-seal {
+      left: auto;
+      right: -0.5rem;
+      width: 5.75rem;
     }
   }
 
@@ -912,12 +922,20 @@ const jsonLd = [
   }
 
   /* Promises -------------------------------------------------------- */
+  /* Numeral, heading and text each share a row across the four, so the text always starts level. */
   .promises {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 2.5rem;
+    gap: 0 2.5rem;
     padding-block: clamp(3.5rem, 7vw, 6rem);
     border-top: 1px solid var(--line);
+  }
+
+  .promise {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    align-content: start;
   }
 
   .promise-n {
@@ -943,7 +961,11 @@ const jsonLd = [
   @media (max-width: 900px) {
     .promises {
       grid-template-columns: 1fr 1fr;
-      gap: 2.5rem 1.5rem;
+      gap: 0 1.5rem;
+    }
+
+    .promise {
+      margin-bottom: 2.5rem;
     }
   }
 

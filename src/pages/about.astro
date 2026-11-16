@@ -60,15 +60,17 @@ const jsonLd = {
       </p>
       <p class="credential"><span>BFA</span> School of the Art Institute of Chicago, 2011</p>
     </div>
-    <figure class="about-image" data-reveal="mask">
-      <Picture
-        src={portrait}
-        formats={['avif', 'webp']}
-        widths={[480, 800, 896]}
-        sizes="(min-width: 960px) 46vw, 92vw"
-        alt="Simone Chagoya in her studio, an easel and paint-covered worktable behind her"
-        loading="eager"
-      />
+    <figure class="about-image">
+      <div class="about-mask" data-reveal="mask">
+        <Picture
+          src={portrait}
+          formats={['avif', 'webp']}
+          widths={[480, 800, 896]}
+          sizes="(min-width: 960px) 46vw, 92vw"
+          alt="Simone Chagoya in her studio, an easel and paint-covered worktable behind her"
+          loading="eager"
+        />
+      </div>
       <figcaption>Simone in her Chicago studio</figcaption>
     </figure>
   </section>
