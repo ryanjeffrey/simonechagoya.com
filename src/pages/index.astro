@@ -6,7 +6,7 @@ import ProductMedia from '../components/ProductMedia.astro';
 import Marquee from '../components/Marquee.astro';
 import Reviews from '../components/Reviews.astro';
 import Logo from '../components/Logo.astro';
-import { getProducts, isPurchasable, priceLabel, productUrl, type Category, type Product } from '../lib/catalog';
+import { getProducts, isPurchasable, priceLabel, productUrl, stoneName, type Category, type Product } from '../lib/catalog';
 import { site } from '../data/site';
 import heroPainting from '../assets/art/altered-beliefs.jpg';
 import doorPainting from '../assets/art/regarding-my-wayward-ways.jpg';
@@ -178,11 +178,17 @@ const jsonLd = [
               <li class="pair">
                 <a href={productUrl(piece)}>
                   <div class="pair-piece">
-                    <ProductMedia product={piece} mode="cover" sizes="(min-width: 960px) 32vw, 72vw" />
+                    {/* Narrow strips crop through the middle of a full-necklace photo; the second photo is a close-up. */}
+                    <ProductMedia
+                      product={piece}
+                      index={piece.data.images.length > 1 ? 1 : 0}
+                      mode="cover"
+                      sizes="(min-width: 960px) 32vw, 72vw"
+                    />
                   </div>
                   <div class="pair-caption">
                     <span class="pair-name">{piece.data.title.replace(/ Necklace$/, '')}</span>
-                    <span class="pair-from">{piece.data.materials[0]}</span>
+                    <span class="pair-from">{stoneName(piece)}</span>
                     <span class="pair-link">
                       {priceLabel(piece)} <span aria-hidden="true">→</span>
                     </span>
@@ -208,13 +214,16 @@ const jsonLd = [
   <!-- Art for sale -->
   {
     art.length > 0 && (
-      <section class="section container">
+      <section class:list={['section container art', { 'art--duo': art.length === 2 }]}>
         <div class="section-head">
           <div>
-            <p class="eyebrow">Prints and watercolors</p>
+            <p class="eyebrow">Signed prints</p>
             <h2 class="h2">
               Art to <em>keep</em>
             </h2>
+            <p class="art-note">
+              Archival giclée prints of Simone’s paintings, hand signed and sent with a certificate of authenticity.
+            </p>
           </div>
           <a class="link" href="/shop/art">
             Shop art <span aria-hidden="true">→</span>
@@ -276,8 +285,8 @@ const jsonLd = [
   <section class="promises container" aria-label="Why buy from the studio">
     <div class="promise" data-reveal>
       <span class="promise-n">i.</span>
-      <h3>Natural stones, strung by hand</h3>
-      <p>Every necklace is chosen, strung and finished in Simone’s Chicago studio.</p>
+      <h3>Strung by hand</h3>
+      <p>Natural stones, chosen, strung and finished in Simone’s Chicago studio.</p>
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 110">
       <span class="promise-n">ii.</span>
@@ -286,8 +295,11 @@ const jsonLd = [
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 220">
       <span class="promise-n">iii.</span>
-      <h3>Ships in {site.shipping.processing}</h3>
-      <p>Gift wrapped by hand and tracked to your door. Free US shipping over ${site.shipping.freeThreshold}.</p>
+      <h3>Ready to give</h3>
+      <p>
+        Gift wrapped by hand and shipped in {site.shipping.processing}, tracked to your door. Free US shipping over
+        ${site.shipping.freeThreshold}.
+      </p>
     </div>
     <div class="promise" data-reveal style="--reveal-delay: 330">
       <span class="promise-n">iv.</span>
@@ -533,6 +545,13 @@ const jsonLd = [
     .hero-painting figcaption {
       display: none;
     }
+
+    /* On one column the seal sits on the arch's right shoulder, clear of the page edge. */
+    .hero-seal {
+      left: auto;
+      right: -0.5rem;
+      width: 5.75rem;
+    }
   }
 
   @media (max-width: 520px) {
@@ -567,6 +586,49 @@ const jsonLd = [
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: clamp(3rem, 5vw, 5rem) clamp(1.25rem, 2.5vw, 2.5rem);
+  }
+
+  .art-note {
+    max-width: 24rem;
+    margin-top: 1.5rem;
+    color: var(--ink-2);
+  }
+
+  /* Two prints: heading in the first third, prints in the other two, each card the size of a three-up card. */
+  @media (min-width: 761px) {
+    .art--duo {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      column-gap: clamp(1.25rem, 2.5vw, 2.5rem);
+      align-items: end;
+    }
+
+    .art--duo .section-head {
+      display: grid;
+      align-content: end;
+      gap: 2rem;
+      margin-bottom: 0;
+      padding-bottom: 5.5rem;
+    }
+
+    .art--duo .section-head .link {
+      justify-self: start;
+    }
+
+    .art--duo .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 761px) and (max-width: 1100px) {
+    .art--duo {
+      grid-template-columns: 1fr;
+    }
+
+    .art--duo .section-head {
+      padding-bottom: 0;
+      margin-bottom: clamp(2.5rem, 5vw, 4.5rem);
+    }
   }
 
   @media (max-width: 760px) {
@@ -693,11 +755,13 @@ const jsonLd = [
     aspect-ratio: auto;
   }
 
-  .pair-piece :global(svg) {
+  .pair-piece :global(svg),
+  .pair-piece :global(img) {
     transition: transform 1.8s var(--ease-out);
   }
 
-  .pair:hover .pair-piece :global(svg) {
+  .pair:hover .pair-piece :global(svg),
+  .pair:hover .pair-piece :global(img) {
     transform: scale(1.05);
   }
 
@@ -912,12 +976,20 @@ const jsonLd = [
   }
 
   /* Promises -------------------------------------------------------- */
+  /* Numeral, heading and text each share a row across the four, so the text always starts level. */
   .promises {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 2.5rem;
+    gap: 0 2.5rem;
     padding-block: clamp(3.5rem, 7vw, 6rem);
     border-top: 1px solid var(--line);
+  }
+
+  .promise {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    align-content: start;
   }
 
   .promise-n {
@@ -943,7 +1015,11 @@ const jsonLd = [
   @media (max-width: 900px) {
     .promises {
       grid-template-columns: 1fr 1fr;
-      gap: 2.5rem 1.5rem;
+      gap: 0 1.5rem;
+    }
+
+    .promise {
+      margin-bottom: 2.5rem;
     }
   }
 

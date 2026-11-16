@@ -32,15 +32,17 @@ const statement = [
         watercolor, and works with color the same way across all of it.
       </p>
     </div>
-    <figure class="about-image" data-reveal="mask">
-      <Picture
-        src={studio}
-        formats={['avif', 'webp']}
-        widths={[480, 800, 1200, 1557]}
-        sizes="(min-width: 960px) 46vw, 92vw"
-        alt="The Garage With All Our Shoes, 2009, oil on canvas by Simone Chagoya"
-        loading="eager"
-      />
+    <figure class="about-image">
+      <div class="about-mask" data-reveal="mask">
+        <Picture
+          src={studio}
+          formats={['avif', 'webp']}
+          widths={[480, 800, 1200, 1557]}
+          sizes="(min-width: 960px) 46vw, 92vw"
+          alt="The Garage With All Our Shoes, 2009, oil on canvas by Simone Chagoya"
+          loading="eager"
+        />
+      </div>
       <figcaption>The Garage With All Our Shoes, 2009</figcaption>
     </figure>
   </section>

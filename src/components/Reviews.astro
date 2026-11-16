@@ -1,5 +1,6 @@
 ---
 import { reviews as all } from '../data/reviews';
+import { site } from '../data/site';
 
 interface Props {
   product?: string;
@@ -21,7 +22,9 @@ const average = list.length ? list.reduce((n, r) => n + r.rating, 0) / list.leng
             {average.toFixed(1)} <em>out of 5</em>
           </h2>
         </div>
-        <p class="muted">From {list.length} recent reviews</p>
+        <p class="muted">
+          {product ? `From ${list.length} ${list.length === 1 ? 'review' : 'reviews'}` : `${site.rating.count} reviews on ${site.rating.source}`}
+        </p>
       </div>
       <ul class="review-list">
         {list.map((r, i) => (
@@ -43,17 +46,54 @@ const average = list.length ? list.reduce((n, r) => n + r.rating, 0) / list.leng
 }
 
 <style>
+  /* Three across, so six reviews sit as two full rows. */
   .review-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
     list-style: none;
     padding: 0;
   }
 
+  /* Names sit on one line across each row, however long the review. */
   .review {
+    display: flex;
+    flex-direction: column;
     padding: 1.75rem;
     background: var(--paper-2);
+  }
+
+  .review-by {
+    margin-top: auto;
+  }
+
+  @media (max-width: 1000px) {
+    .review-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Phones: one swipeable row instead of six stacked cards. */
+  @media (max-width: 640px) {
+    .review-list {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: 84%;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scroll-padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .review-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .review {
+      scroll-snap-align: start;
+    }
   }
 
   .review-stars {

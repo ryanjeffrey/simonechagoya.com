@@ -144,7 +144,11 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
                   product={product}
                   index={slide.image}
                   loading={i === 0 ? 'eager' : 'lazy'}
-                  sizes="(min-width: 960px) 55vw, 100vw"
+                  sizes={
+                    i === 0 || (i === media.length - 1 && media.length % 2 === 0)
+                      ? '(min-width: 960px) 55vw, 100vw'
+                      : '(min-width: 960px) 28vw, 100vw'
+                  }
                   widths={[480, 720, 960, 1280, 1600]}
                   mode={isArt ? 'matte' : 'cover'}
                 />
@@ -426,6 +430,18 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
   .gallery-track {
     display: grid;
     gap: 0.75rem;
+  }
+
+  /* Desktop: the lead image full width, details two-up; an odd last detail spans the row. */
+  @media (min-width: 961px) {
+    .gallery-track {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .gallery-slide:first-child,
+    .gallery-slide:last-child:nth-child(even) {
+      grid-column: 1 / -1;
+    }
   }
 
   .gallery-slide :global(.media),

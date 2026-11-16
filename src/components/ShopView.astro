@@ -133,6 +133,19 @@ const chips = [
     padding-left: 0.2rem;
   }
 
+  /* When the row scrolls, fade the edge that has more chips behind it. */
+  .chips.is-more-right {
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  }
+
+  .chips.is-more-left {
+    mask-image: linear-gradient(to left, #000 calc(100% - 3rem), transparent);
+  }
+
+  .chips.is-more-left.is-more-right {
+    mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
+  }
+
   .chip {
     position: relative;
     flex-shrink: 0;
@@ -236,6 +249,19 @@ const chips = [
 </style>
 
 <script>
+  const chipRow = document.querySelector<HTMLElement>('.chips');
+  function edges() {
+    if (!chipRow) return;
+    const max = chipRow.scrollWidth - chipRow.clientWidth;
+    chipRow.classList.toggle('is-more-left', chipRow.scrollLeft > 2);
+    chipRow.classList.toggle('is-more-right', chipRow.scrollLeft < max - 2);
+  }
+  // Keep the current category in view, then mark the faded edges.
+  chipRow?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  chipRow?.addEventListener('scroll', edges, { passive: true });
+  addEventListener('resize', edges);
+  edges();
+
   const grid = document.querySelector<HTMLElement>('[data-grid]');
   const select = document.querySelector<HTMLSelectElement>('[data-sort]');
 

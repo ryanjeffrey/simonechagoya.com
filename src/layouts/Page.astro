@@ -46,6 +46,30 @@ const { title, eyebrow, description, noindex } = Astro.props;
     color: var(--ink-2);
   }
 
+  /* Desktop: the title holds the left column while the text reads at a comfortable measure on the right. */
+  @media (min-width: 960px) {
+    .page {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: clamp(3rem, 6vw, 7rem);
+      align-items: start;
+    }
+
+    .page-head {
+      position: sticky;
+      top: calc(var(--header-h) + 2.5rem);
+      margin-bottom: 0;
+    }
+
+    .page-head :global(.display) {
+      font-size: clamp(3rem, 2rem + 3vw, 5.25rem);
+    }
+
+    .page-body {
+      max-width: 44rem;
+    }
+  }
+
   .page-body :global(h2),
   .page-body :global(h3) {
     color: var(--ink);
