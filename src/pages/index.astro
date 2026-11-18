@@ -29,8 +29,10 @@ const firstIn = (category: Category) =>
   products.find((p) => p.data.category === category && isPurchasable(p)) ?? products.find((p) => p.data.category === category);
 const tiles = [
   { label: 'Necklaces', href: '/shop/necklaces', product: firstIn('necklaces') },
-  { label: 'Prints', href: '/shop/prints', product: firstIn('prints') },
-  { label: 'Watercolor cards', href: '/shop/cards', product: firstIn('cards') },
+  // Stardust's second photo is the artwork edge to edge, so it fills the arch with no paper border.
+  { label: 'Prints', href: '/shop/prints', product: products.find((p) => p.id === 'stardust') ?? firstIn('prints'), image: 1 },
+  // Cards only get a tile while a set is for sale; sold sets live on the cards page.
+  { label: 'Watercolor cards', href: '/shop/cards', product: products.find((p) => p.data.category === 'cards' && isPurchasable(p)) },
   { label: 'Paintings', href: '/art', product: originals.find((p) => p.id === 'plastic-chandelier') ?? originals[0] },
 ].filter((t) => t.product);
 
@@ -62,12 +64,12 @@ const jsonLd = [
           <span class="line"><span>in <em>stone.</em></span></span>
         </h1>
         <p class="lede hero-lede">
-          Natural gemstone necklaces, signed prints and original paintings by Simone Chagoya. A painter’s eye for color,
-          strung by hand in Chicago.
+          Natural gemstone necklaces, original paintings, and signed prints by Simone Chagoya. A painter’s eye for color,
+          line and form, handmade in Chicago.
         </p>
         <div class="hero-ctas">
           <a class="btn" href="/shop/jewelry">Shop jewelry <span class="arrow" aria-hidden="true">→</span></a>
-          <a class="link" href="/art">The art</a>
+          <a class="btn btn--ghost hero-art" href="/art">The art <span class="arrow" aria-hidden="true">→</span></a>
         </div>
         {
           rating.count > 0 && (
@@ -97,14 +99,24 @@ const jsonLd = [
           <figcaption><em>Altered Beliefs</em>, 2010 · Oil on canvas</figcaption>
         </figure>
 
+        {/*
+          Two phrases, each stretched to exactly the same length and centered on its half of the
+          circle, so the two dots between them sit at precisely opposite points with equal space
+          on either side. The path starts at 9 o'clock and runs clockwise.
+        */}
         <svg class="hero-seal" viewBox="0 0 200 200" aria-hidden="true">
           <defs><path id="seal-circle" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"></path></defs>
           <circle class="seal-bg" cx="100" cy="100" r="98"></circle>
           <circle class="seal-ring" cx="100" cy="100" r="54"></circle>
-          <text textLength="448" lengthAdjust="spacing"
-            ><textPath href="#seal-circle">Handmade in Chicago · One of one · </textPath></text
-          >
-          <path class="seal-arch" d="M90 114V99a10 10 0 0 1 20 0v15Z"></path>
+          <text text-anchor="middle">
+            <textPath href="#seal-circle" startOffset="25%" textLength="186" lengthAdjust="spacing">Simone Chagoya Studio</textPath>
+          </text>
+          <text text-anchor="middle">
+            <textPath href="#seal-circle" startOffset="75%" textLength="186" lengthAdjust="spacing">Handmade in Chicago</textPath>
+          </text>
+          <circle class="seal-dot" cx="23.4" cy="100" r="1.7"></circle>
+          <circle class="seal-dot" cx="176.6" cy="100" r="1.7"></circle>
+          <path class="seal-diamond" d="M100 88 112 100 100 112 88 100Z"></path>
         </svg>
 
         {
@@ -138,7 +150,7 @@ const jsonLd = [
         tiles.map((tile, i) => (
           <a class="tile" href={tile.href} data-reveal style={`--reveal-delay: ${i * 110}`}>
             <div class="arch zoom tile-media">
-              <ProductMedia product={tile.product!} mode="cover" sizes="(min-width: 960px) 30vw, 46vw" />
+              <ProductMedia product={tile.product!} index={tile.image} mode="cover" sizes="(min-width: 960px) 30vw, 46vw" />
             </div>
             <span class="tile-label">{tile.label}</span>
             <span class="tile-cta">
@@ -164,8 +176,8 @@ const jsonLd = [
             </div>
             <div data-reveal style="--reveal-delay: 150">
               <p class="lede">
-                Simone chooses stones the way she chooses paint: for color, light and how they sit together. Each necklace
-                is strung by hand, named, and made once.
+                Simone chooses stones the way she chooses paint: for color, light and harmony. Each necklace is strung by
+                her hands, embedded with powerful meanings and natural elements.
               </p>
               <a class="link stones-all" href="/shop/necklaces">
                 All necklaces <span aria-hidden="true">→</span>
@@ -198,7 +210,7 @@ const jsonLd = [
 
   <!-- Brand band -->
   <section class="band" aria-label="Simone Chagoya Studio" data-pond-band>
-    <Image src={water} alt="" widths={[800, 1200, 1600, 2400]} sizes="100vw" format="webp" quality={78} class="band-img" />
+    <Image src={water} alt="" widths={[800, 1200, 1600]} sizes="100vw" format="webp" quality={78} class="band-img" />
     <canvas class="band-canvas" aria-hidden="true" data-pond></canvas>
     <p class="band-hint" aria-hidden="true" data-pond-hint>Touch the water</p>
     <div class="lockup" data-reveal>
@@ -436,14 +448,26 @@ const jsonLd = [
     fill: var(--ink);
   }
 
-  .seal-arch {
+  .seal-dot,
+  .seal-diamond {
     fill: var(--gold);
   }
 
+  /* The secondary call to action sweeps to the same clay as the primary. */
+  .hero-art {
+    --btn-hover: var(--accent);
+  }
+
+  .hero-art:hover,
+  .hero-art:focus-visible {
+    color: #fff;
+  }
+
+  /* Rests on the arch's lower-left corner, clear of the caption beneath the painting. */
   .hero-piece {
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: 7rem;
     display: grid;
     grid-template-columns: 5.5rem auto;
     gap: 1.25rem;
@@ -547,7 +571,13 @@ const jsonLd = [
   }
 
   @media (max-width: 520px) {
+    /* Two full-width buttons stack cleanly instead of one wrapping under the other. */
+    .hero-ctas .btn {
+      flex: 1 1 100%;
+    }
+
     .hero-piece {
+      bottom: 0;
       grid-template-columns: 4rem auto;
       gap: 1rem;
       padding-right: 1.25rem;

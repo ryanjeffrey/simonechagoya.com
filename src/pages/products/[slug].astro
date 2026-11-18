@@ -253,7 +253,8 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
         }
 
         {
-          data.status !== 'inquire' && (
+          // Shipping, returns and gift promises only mean something on a piece that can be bought.
+          data.status === 'available' && (
             <ul class="trust">
               <li>{isArt ? 'Wrapped and ready to give' : 'Gift boxed with ribbon, ready to give'}</li>
               <li>Ships from Chicago in {site.shipping.processing}</li>
