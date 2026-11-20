@@ -24,6 +24,11 @@ const products = defineCollection({
       intention: z.string().optional(),
       images: z.array(image()).default([]),
       /**
+       * Photos shown large on the product page: full width, uncropped. Numbers count from 1 in
+       * `images` order, so `[2]` is the second photo. Landscape photos are shown this way anyway.
+       */
+      largePhotos: z.array(z.number().int().positive()).default([]),
+      /**
        * Short muted loops, shown second in the gallery. Files live in public/media/products/<slug>/
        * (Astro does not process video), each with a poster frame. See README > Photos and video.
        */
