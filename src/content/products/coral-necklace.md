@@ -25,7 +25,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["coral", "gemstone_necklace", "gold_filled", "simone_chagoya"]
-order: 280
+order: 310
 ---
 
 Coral gemstone is an organic gem formed from the hard skeletons of marine invertebrates that build reefs in warm oceans, primarily made of calcium carbonate. Found in vibrant colors like red, pink, white, and black, and prized in jewelry for centuries. Colors may vary in light.
@@ -34,7 +34,7 @@ Meaning: believed to offer protection, courage, vitality, confidence and luck.
 
 Wear: the stones’ softness (3.5 to 4 on the Mohs scale) requires careful wear, due to susceptibility to heat, chemicals, and scratching.
 
-Arrives gift wrapped in a box.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

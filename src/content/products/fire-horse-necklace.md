@@ -14,7 +14,6 @@ specs:
   - { label: "Source", value: "India and South Africa" }
   - { label: "Features", value: "Bronze metal beads" }
   - { label: "Bead size", value: "8 mm" }
-  - { label: "Clasp", value: "Copper, magnetic 8.6 x 7.7 mm barrel, Mag-Lok® made in the U.S.A." }
   - { label: "Necklace length", value: "22 in" }
 care:
   - "Store gemstones out of direct sunlight to preserve color."
@@ -26,7 +25,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["red_aventurine", "african_turquoise", "fire_horse", "gemstone_necklace", "simone_chagoya"]
-order: 230
+order: 240
 publishedAt: 2026-01-01
 ---
 
@@ -38,7 +37,7 @@ Red Aventurine represents the Fire and Earth elements, a vibrant red variety of 
 
 African Turquoise is found across the continent of Africa, with significant deposits in Namibia, South Africa, Egypt, Madagascar, and Zimbabwe. Prized for its earthy greens and blues with dark matrix patterns. A form of jasper, which is a microcrystalline quartz, its distinctive coloring comes from copper and iron compounds. Metaphysically seen as a stone for transformation, growth, and new possibilities. It protects against negative energy and brings balance and positive change.
 
-This necklace has a Mag-Lok® magnetic barrel clasp with heavy magnetic strength. It is not intended for children 14 and under. Swallowed or inhaled magnets can cause serious injury or death, and magnets may affect electronic medical devices such as pacemakers. Natural untreated copper may patina over time.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

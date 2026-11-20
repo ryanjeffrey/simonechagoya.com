@@ -29,7 +29,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["african_turquoise", "faceted", "gemstone_necklace", "gold_filled", "simone_chagoya"]
-order: 300
+order: 290
 ---
 
 A special one-of-a-kind necklace.
@@ -40,7 +40,7 @@ African Turquoise is found across the continent of Africa, with significant depo
 
 Meaning: metaphysically seen as a stone for transformation, growth, and new possibilities. It protects against negative energy and brings balance and positive change.
 
-Arrives gift wrapped in a box.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

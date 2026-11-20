@@ -4,6 +4,8 @@ import { site } from '../data/site';
 import { formatPrice } from '../lib/catalog';
 
 const { shipping, returns } = site;
+// The order-by line drops off once its date has passed: at build time, and in the browser for pages built before then.
+const cutoff = shipping.cutoff && Date.now() < Date.parse(`${shipping.cutoff.until}T23:59:59-06:00`) ? shipping.cutoff : null;
 ---
 
 <Page
@@ -18,8 +20,16 @@ const { shipping, returns } = site;
     <li>Ready-to-ship pieces leave the studio in {shipping.processing}.</li>
     <li>
       Standard US shipping is {formatPrice(shipping.standardRate)}{shipping.freeThreshold > 0 && `, and complimentary on orders over ${formatPrice(shipping.freeThreshold)}`}.
-      It usually arrives 4 to 8 business days after your order.
+      It usually arrives 4 to 8 business days after your order via {shipping.carrier} with tracking. Delivery to Alaska
+      and Hawaii may take longer.
     </li>
+    {
+      cutoff && (
+        <li data-until={cutoff.until}>
+          <strong>{cutoff.note}</strong>
+        </li>
+      )
+    }
     <li>Express shipping is {formatPrice(shipping.expressRate)} and usually arrives in 2 to 4 business days.</li>
     <li>Every order ships with tracking. You will get the number by email as soon as it leaves.</li>
     <li>Made-to-order pieces and commissions have their own timelines, agreed with you before work starts.</li>
@@ -33,18 +43,39 @@ const { shipping, returns } = site;
   </p>
 
   <h2>Returns</h2>
+  <h3>Jewelry</h3>
   <ul>
-    <li>Ready-to-ship necklaces, prints and cards can be returned within {returns.days} days of delivery for a full refund of the item price.</li>
-    <li>Pieces need to come back unworn and in their original packaging.</li>
+    <li>Ready-to-ship jewelry is accepted within {returns.days} days of delivery.</li>
+    <li>Pieces must be unworn and in their original packaging.</li>
+    <li>
+      The buyer pays return shipping and must use a tracked, insured service. We are not responsible for items lost or
+      damaged on the way back.
+    </li>
+    <li>Refunds are issued to your original payment method after we receive and inspect the piece.</li>
     <li>Custom, personalized and made-to-order pieces are final sale.</li>
   </ul>
   <p>
-    To start a return, email <a href={`mailto:${site.email}`}>{site.email}</a> with your order number. Refunds go back to
-    the original payment method within a few days of the piece arriving back at the studio.
+    To start a return, email <a href={`mailto:${site.email}`}>{site.email}</a> with your order number and include a photo
+    of the piece. Refunds go back to the original payment method within a few days of the piece arriving back at the
+    studio.
+  </p>
+
+  <h3>Final sale</h3>
+  <p>
+    All original artwork and art products are final sale and can’t be returned. This includes original paintings, prints,
+    watercolor card sets, commissions and custom pieces.
   </p>
 
   <h2>Something wrong?</h2>
   <p>
-    If anything arrives damaged, email a photo within 7 days and Simone will repair or replace it.
+    If anything arrives damaged, email a photo within 7 days and Simone will repair or replace it. For anything else,{' '}
+    <a href="/commissions">get in touch</a>.
   </p>
 </Page>
+
+<script is:inline>
+  // Hide a seasonal order-by date once it has passed, on pages built before then.
+  document.querySelectorAll('[data-until]').forEach((el) => {
+    if (Date.now() > Date.parse(el.dataset.until + 'T23:59:59-06:00')) el.remove();
+  });
+</script>

@@ -47,7 +47,7 @@ A special one-of-a-kind necklace, handmade in 2026 by Chicago artist Simone Chag
 One available.
 
 Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
-Card includes jewelry intention and care. Includes a sterling silver polishing cloth.
+Card includes jewelry intention and care.  
+Includes a sterling silver polishing cloth.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

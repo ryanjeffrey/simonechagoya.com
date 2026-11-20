@@ -41,11 +41,32 @@ const isArt = group === 'art';
 const buyable = isPurchasable(product);
 // Gallery order: cover photo, then the videos, then the rest of the photos.
 // Slide 0 is the cover photo, or the illustration when there are no photos yet.
-const media = [
+type Slide = ({ image: number } | { video: { src: string; poster: string } }) & { full?: boolean; ratio?: string };
+const raw: Slide[] = [
   { image: 0 },
   ...data.videos.map((video) => ({ video })),
   ...data.images.slice(1).map((_, i) => ({ image: i + 1 })),
-] as ({ image: number } | { video: { src: string; poster: string } })[];
+];
+// Landscape photos (the worn shots) are shown whole, at their own shape, instead of cropped to 4:5.
+const landscape = (s: Slide) => {
+  const img = !isArt && 'image' in s && s.image > 0 ? data.images[s.image] : undefined;
+  return img && img.width / img.height >= 1.2 ? `${img.width} / ${img.height}` : undefined;
+};
+// Desktop rows: the lead full width, landscape photos full width, everything else two-up.
+// A landscape photo that lands between a pair moves ahead of it, and a detail left without
+// a partner at the end spans the row.
+const [lead, ...rest] = raw;
+const media: Slide[] = [{ ...lead, full: true }];
+let waiting: Slide | undefined;
+for (const slide of rest) {
+  const ratio = landscape(slide);
+  if (ratio) media.push({ ...slide, full: true, ratio });
+  else if (waiting) {
+    media.push(waiting, slide);
+    waiting = undefined;
+  } else waiting = slide;
+}
+if (waiting) media.push({ ...waiting, full: true });
 const slides = media.length;
 const painting = data.painting ? all.find((p) => p.id === data.painting) : undefined;
 const prints = isOriginal ? all.filter((p) => p.data.category === 'prints' && p.data.painting === product.id) : [];
@@ -125,7 +146,10 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
       <div class="gallery-track" data-gallery-track>
         {
           media.map((slide, i) => (
-            <figure class="gallery-slide">
+            <figure
+              class:list={['gallery-slide', { 'gallery-slide--full': slide.full, 'gallery-slide--wide': slide.ratio }]}
+              style={slide.ratio ? `--ratio: ${slide.ratio}` : undefined}
+            >
               {'video' in slide ? (
                 <div class="gallery-video">
                   <video
@@ -144,11 +168,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
                   product={product}
                   index={slide.image}
                   loading={i === 0 ? 'eager' : 'lazy'}
-                  sizes={
-                    i === 0 || (i === media.length - 1 && media.length % 2 === 0)
-                      ? '(min-width: 960px) 55vw, 100vw'
-                      : '(min-width: 960px) 28vw, 100vw'
-                  }
+                  sizes={slide.full ? '(min-width: 960px) 55vw, 100vw' : '(min-width: 960px) 28vw, 100vw'}
                   widths={[480, 720, 960, 1280, 1600]}
                   mode={isArt ? 'matte' : 'cover'}
                 />
@@ -260,7 +280,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
               <li>Ships from Chicago in {site.shipping.processing}</li>
               {site.shipping.freeThreshold > 0 && <li>Complimentary US shipping over {formatPrice(site.shipping.freeThreshold)}</li>}
               {site.rating.count > 0 && <li>Rated {site.rating.average.toFixed(1)} from {site.rating.count} verified reviews</li>}
-              <li>{site.returns.days}-day returns</li>
+              {isArt ? <li>Final sale</li> : <li>{site.returns.days}-day returns</li>}
             </ul>
           )
         }
@@ -297,12 +317,17 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
             <summary>Shipping and returns</summary>
             <div class="acc-body prose">
               <p>
-                Ready-to-ship pieces leave the studio in {site.shipping.processing}.
-                {site.shipping.freeThreshold > 0 && ` Standard US shipping is free on orders over ${formatPrice(site.shipping.freeThreshold)}.`}
+                Ready-to-ship pieces leave the studio in {site.shipping.processing}. Standard US shipping is
+                {' '}{formatPrice(site.shipping.standardRate)}{site.shipping.freeThreshold > 0 && `, complimentary on orders over ${formatPrice(site.shipping.freeThreshold)}`}.
                 Express shipping is available at checkout.
               </p>
               <p>
-                Returns are accepted within {site.returns.days} days of delivery. <a href="/shipping-returns">Full policy</a>.
+                {
+                  isArt
+                    ? 'Original artwork and art products are final sale.'
+                    : `Ready-to-ship jewelry can be returned within ${site.returns.days} days of delivery, unworn and in its original packaging.`
+                }{' '}
+                <a href="/shipping-returns">Full policy</a>.
               </p>
             </div>
           </details>
@@ -433,14 +458,13 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
     gap: 0.75rem;
   }
 
-  /* Desktop: the lead image full width, details two-up; an odd last detail spans the row. */
+  /* Desktop: rows worked out in the frontmatter (see `media`). */
   @media (min-width: 961px) {
     .gallery-track {
       grid-template-columns: 1fr 1fr;
     }
 
-    .gallery-slide:first-child,
-    .gallery-slide:last-child:nth-child(even) {
+    .gallery-slide--full {
       grid-column: 1 / -1;
     }
   }
@@ -448,6 +472,10 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
   .gallery-slide :global(.media),
   .gallery-video {
     aspect-ratio: 4 / 5;
+  }
+
+  .gallery-slide--wide :global(.media) {
+    aspect-ratio: var(--ratio);
   }
 
   .gallery-video {
@@ -809,6 +837,16 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
 
     .gallery-slide {
       scroll-snap-align: start;
+    }
+
+    /* A landscape photo sits centered in the swipe frame, whole. */
+    .gallery-slide--wide {
+      display: flex;
+      align-items: center;
+    }
+
+    .gallery-slide--wide :global(.media) {
+      width: 100%;
     }
 
     .gallery-count {

@@ -9,7 +9,7 @@ medium: Oil on canvas
 dimensions: "16 x 16 in."
 images:
   - ../../assets/art/girl-sock-worn-by-a-boy.jpg
-order: 9
+order: 11
 ---
 
 Part of a series of childhood garments, built up in thick oil paint on a single field of color.

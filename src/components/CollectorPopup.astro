@@ -47,12 +47,7 @@ const { code, percentOff, delaySeconds } = site.collector;
             <span>I agree with terms of <a href="/privacy" target="_blank">privacy policy</a></span>
           </label>
 
-          <button class="collector-btn" type="submit">
-            <svg viewBox="0 0 208 64" aria-hidden="true" focusable="false">
-              <path d="M10 1H198A9 9 0 0 0 207 10V54A9 9 0 0 0 198 63H10A9 9 0 0 0 1 54V10A9 9 0 0 0 10 1Z" />
-            </svg>
-            <span>Join us</span>
-          </button>
+          <button class="collector-btn" type="submit">Join us</button>
           <p class="collector-status" data-form-status aria-live="polite"></p>
         </form>
       </div>
@@ -302,50 +297,42 @@ const { code, percentOff, delaySeconds } = site.collector;
     text-underline-offset: 0.2em;
   }
 
+  /* Solid clay with a hairline keyline set just outside it, like the edge of a gift box. */
   .collector-btn {
-    position: relative;
     justify-self: center;
-    display: grid;
-    place-items: center;
-    width: 13rem;
-    height: 4rem;
-    margin-top: 1.5rem;
-    color: var(--accent);
-    font-size: var(--step--1);
-    font-weight: 500;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    transition: color 0.4s;
-  }
-
-  .collector-btn svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-  }
-
-  .collector-btn path {
-    fill: transparent;
-    stroke: currentColor;
-    stroke-width: 1;
-    transition: fill 0.4s;
-  }
-
-  .collector-btn span {
-    position: relative;
-  }
-
-  .collector-btn:hover,
-  .collector-btn:focus-visible {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 13rem;
+    min-height: 3.5rem;
+    margin-top: 1.75rem;
+    padding: 0 2.5rem;
+    border: 0;
+    background: var(--accent);
     color: #fff;
+    outline: 1px solid rgb(142 65 38 / 0.4);
+    outline-offset: 4px;
+    font-family: var(--sans);
+    font-size: 0.74rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background-color 0.5s var(--ease-out),
+      outline-color 0.5s var(--ease-out),
+      outline-offset 0.5s var(--ease-out);
   }
 
-  .collector-btn:hover path,
-  .collector-btn:focus-visible path {
-    fill: var(--accent);
-    stroke: var(--accent);
+  .collector-btn:hover {
+    background: var(--accent-deep);
+    outline-color: var(--accent-deep);
+  }
+
+  .collector-btn:focus-visible {
+    background: var(--accent-deep);
+    outline-color: var(--ink);
+    outline-offset: 6px;
   }
 
   .collector-btn[disabled] {

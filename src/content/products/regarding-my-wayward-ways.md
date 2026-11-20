@@ -2,7 +2,7 @@
 title: "Regarding My Wayward Ways"
 category: originals
 price: 0
-status: inquire
+status: sold
 oneOfAKind: true
 year: 2009
 medium: Oil on canvas

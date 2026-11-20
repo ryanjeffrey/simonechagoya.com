@@ -16,7 +16,6 @@ specs:
   - { label: "Source", value: "Nevada, USA" }
   - { label: "Bead shape", value: "Round" }
   - { label: "Bead size", value: "10 mm" }
-  - { label: "Clasp", value: "Magnetic barrel clasp, copper Mag-Lok® made in the U.S.A." }
   - { label: "Necklace length", value: "16 in" }
 care:
   - "Store the necklace separately in the included cotton muslin bag."
@@ -27,7 +26,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["green_opal", "opal", "gemstone_necklace", "simone_chagoya"]
-order: 240
+order: 300
 ---
 
 The Verde Necklace is for the woman who finds power in renewal and grows boldly toward abundance.
@@ -38,9 +37,7 @@ Natural Green-Brown Opal is a variety of common opal known for its rich earth to
 
 A special one-of-a-kind necklace, handmade by Chicago artist Simone Chagoya.
 
-Jewelry arrives elegantly wrapped in a box with ribbon and a natural cotton muslin bag. Card includes jewelry intention and care.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-This necklace has a Mag-Lok® magnetic barrel clasp with heavy magnetic strength. It is not intended for children 14 and under. Swallowed or inhaled magnets can cause serious injury or death, and magnets may affect electronic medical devices such as pacemakers. Natural untreated copper may patina over time.
-
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

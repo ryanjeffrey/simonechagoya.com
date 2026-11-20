@@ -31,7 +31,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["clear_quartz", "quartz", "gemstone_necklace", "sterling_silver", "simone_chagoya"]
-order: 250
+order: 230
 ---
 
 The Agua Necklace is for the woman who moves through life with clarity and calm, powerful like water. Agua is the Spanish word for water.
@@ -40,7 +40,8 @@ Each large oval quartz bead is clear and luminous, like a drop of pure water cau
 
 A special one-of-a-kind necklace, handmade in 2026 by Chicago artist Simone Chagoya. Only 1 created.
 
-Jewelry is beautifully gift wrapped in a box with ribbon and a natural cotton muslin bag. Includes a sterling silver polishing cloth.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.  
+Includes a sterling silver polishing cloth.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>
