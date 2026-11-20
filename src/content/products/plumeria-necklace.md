@@ -12,6 +12,7 @@ images:
   - "../../assets/products/plumeria-necklace/4.jpg"
   - "../../assets/products/plumeria-necklace/5.jpg"
   - "../../assets/products/plumeria-necklace/6.jpg"
+largePhotos: [6]
 materials: ["Mother-of-Pearl Shell", "Gold finished brass with 14k gold filled beads"]
 dimensions: "17 ½ in"
 specs:

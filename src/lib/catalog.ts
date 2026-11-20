@@ -88,8 +88,11 @@ export function shortMaterial(p: Product) {
 const SHELF: Category[] = ['necklaces', 'earrings', 'bracelets', 'rings', 'prints', 'cards', 'originals'];
 const JEWELRY = new Set<Category>(['necklaces', 'earrings', 'bracelets', 'rings']);
 
+/** Sold jewelry and art products move to the end; paintings keep their hung order, sold or not. */
+const soldOut = (p: Product) => p.data.status === 'sold' && p.data.category !== 'originals';
+
 export function sortFeatured(a: Product, b: Product) {
-  const sold = Number(a.data.status === 'sold') - Number(b.data.status === 'sold');
+  const sold = Number(soldOut(a)) - Number(soldOut(b));
   if (sold !== 0) return sold;
   if (a.data.featured !== b.data.featured) return a.data.featured ? -1 : 1;
   // `order` is per category, so compare it only within one; otherwise necklaces and paintings interleave.

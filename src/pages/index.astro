@@ -372,6 +372,13 @@ const jsonLd = [
     align-items: center;
   }
 
+  /* Wide screens have room to give the arches more width without wrapping the title. */
+  @media (min-width: 1320px) {
+    .hero-grid {
+      grid-template-columns: 1fr 1.15fr;
+    }
+  }
+
   .hero-eyebrow {
     margin-bottom: clamp(1.75rem, 3.5vw, 3rem);
     animation: fade 1.6s 0.1s var(--ease-out) both;
@@ -420,18 +427,29 @@ const jsonLd = [
   }
 
   /*
-    The signature necklace and the painting stand side by side in matching arches, necklace first,
-    the painting stepped down so the pair reads as a hung wall rather than a grid.
+    The painting arch stands larger and higher at the back; the necklace arch comes forward,
+    lower and to the left, overlapping it like two pieces hung close on one wall.
   */
   .hero-visual {
-    --step-down: clamp(3rem, 7vw, 6.5rem);
-    --seal: clamp(6rem, 8.5vw, 8rem);
+    --seal: clamp(5.5rem, 8vw, 7.5rem);
     position: relative;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(1rem, 2vw, 1.75rem);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     align-items: start;
     animation: fade 2s 0.2s var(--ease-out) both;
+  }
+
+  .hero-painting {
+    grid-column: 5 / -1;
+    grid-row: 1;
+    z-index: 1;
+  }
+
+  .hero-piece {
+    grid-column: 1 / 7;
+    grid-row: 1;
+    z-index: 2;
+    margin-top: 31%;
   }
 
   .hero-arch :global(img) {
@@ -441,8 +459,11 @@ const jsonLd = [
     object-fit: cover;
   }
 
-  .hero-painting {
-    margin-top: var(--step-down);
+  /* A paper rim cuts the front arch cleanly out of the painting behind it. */
+  .hero-piece-media {
+    box-shadow:
+      0 0 0 clamp(0.35rem, 0.6vw, 0.55rem) var(--paper),
+      0 40px 70px -35px rgb(33 28 23 / 0.45);
   }
 
   .hero-painting figcaption,
@@ -453,15 +474,17 @@ const jsonLd = [
   .hero-painting figcaption {
     font-size: var(--step--1);
     color: var(--ink-2);
+    text-align: right;
   }
 
-  /* Pinned where the two arches meet, on the painting's shoulder. */
+  /* Stamped on the painting's left shoulder, above the necklace. */
   .hero-seal {
     position: absolute;
-    top: calc(var(--step-down) - var(--seal) * 0.42);
-    left: 50%;
+    z-index: 3;
+    top: 5%;
+    left: calc(100% / 3);
     width: var(--seal);
-    translate: -50% 0;
+    translate: -42% 0;
     animation: spin 60s linear infinite;
   }
 
@@ -587,11 +610,15 @@ const jsonLd = [
     }
 
     .hero-visual {
-      --step-down: clamp(2.5rem, 12vw, 4.5rem);
-      --seal: clamp(4.75rem, 18vw, 6rem);
+      --seal: clamp(4.5rem, 17vw, 6rem);
       max-width: 40rem;
       width: 100%;
       justify-self: center;
+    }
+
+    /* One column: the front arch drops a little further so its caption clears the painting. */
+    .hero-piece {
+      margin-top: 40%;
     }
   }
 
