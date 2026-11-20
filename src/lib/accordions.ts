@@ -23,12 +23,12 @@ document.addEventListener(
     if (!(details instanceof HTMLDetailsElement) || !details.open || !opened.has(details)) return;
     opened.delete(details);
     // Wait a frame so layout that reacts to the new height (a sticky column refitting) has settled.
-    requestAnimationFrame(() => requestAnimationFrame(() => reveal(details)));
+    requestAnimationFrame(() => requestAnimationFrame(() => bringIntoView(details)));
   },
   true,
 );
 
-function reveal(details: HTMLDetailsElement) {
+function bringIntoView(details: HTMLDetailsElement) {
   const rect = details.getBoundingClientRect();
   const header = document.querySelector('.site-header')?.getBoundingClientRect();
   const top = Math.max(0, header?.bottom ?? 0) + GAP;
@@ -45,3 +45,5 @@ function reveal(details: HTMLDetailsElement) {
   const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top: delta, behavior: smooth ? 'smooth' : 'auto' });
 }
+
+export {};
