@@ -26,7 +26,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["agate", "blue_necklace", "gemstone_necklace", "simone_chagoya"]
-order: 220
+order: 200
 ---
 
 The Azul Necklace is for the woman who speaks her truth and uses her voice to elevate others.
@@ -35,7 +35,8 @@ Every agate bead is the color of the blue sky, a moment of peace. Azul is the Sp
 
 One created.
 
-Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag. Includes a sterling silver polishing cloth.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.  
+Includes a sterling silver polishing cloth.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

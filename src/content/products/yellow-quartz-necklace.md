@@ -16,7 +16,6 @@ specs:
   - { label: "Gemstone", value: "Yellow Quartz" }
   - { label: "Source", value: "Utah, USA" }
   - { label: "Bead size", value: "10 mm" }
-  - { label: "Clasp", value: "Magnetic 8.6 x 7.7 mm barrel, brass Mag-Lok® made in the U.S.A." }
   - { label: "Necklace length", value: "16 in" }
 care:
   - "Store gemstones out of direct sunlight to preserve color."
@@ -27,7 +26,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["yellow_quartz", "quartz", "gemstone_necklace", "simone_chagoya"]
-order: 290
+order: 280
 publishedAt: 2025-11-01
 ---
 
@@ -37,7 +36,7 @@ Natural Yellow Quartz represents joy, healing, wisdom, learning and self-confide
 
 Yellow Quartz is found in rocks called pegmatites, metamorphic rocks, igneous rocks, and the inner walls of geodes, which are cavities left by gases present in molten lava. The color is caused by trace amounts of iron. This type of quartz can be found in various parts of the world, and in smaller quantities across the United States and Canada.
 
-Arrives gift wrapped in a box.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

@@ -25,18 +25,22 @@ export const site = {
   // family review is excluded). Update as reviews come in; set count to 0 to hide.
   rating: { average: 5, count: 8 },
 
-  // CONFIRM: shipping policy
+  // Shipping policy, confirmed by Simone (November 2026).
   shipping: {
     countries: ['US'] as const,
     freeThreshold: 75, // dollars; set to 0 to disable free shipping
-    standardRate: 6,
+    standardRate: 7,
     expressRate: 18,
     processing: '2 to 4 business days',
+    carrier: 'USPS Ground Advantage',
+    // A seasonal order-by date. It shows on /shipping-returns until the day after `until`; set to null to remove it.
+    cutoff: { note: 'Order by Dec 12, 2026 for Christmas delivery.', until: '2026-12-12' } as { note: string; until: string } | null,
   },
 
-  // CONFIRM: returns policy
+  // Returns policy, confirmed by Simone (November 2026). Ready-to-ship jewelry
+  // can come back within `days`; original artwork and art products are final sale.
   returns: {
-    days: 30,
+    days: 14,
   },
 
   announcement: 'Complimentary US shipping over $75',

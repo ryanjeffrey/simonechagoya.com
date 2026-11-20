@@ -86,6 +86,7 @@ export function shortMaterial(p: Product) {
 
 /** Shelf order across categories: jewelry, then prints and cards, then paintings sold by inquiry. */
 const SHELF: Category[] = ['necklaces', 'earrings', 'bracelets', 'rings', 'prints', 'cards', 'originals'];
+const JEWELRY = new Set<Category>(['necklaces', 'earrings', 'bracelets', 'rings']);
 
 export function sortFeatured(a: Product, b: Product) {
   const sold = Number(a.data.status === 'sold') - Number(b.data.status === 'sold');
@@ -94,6 +95,10 @@ export function sortFeatured(a: Product, b: Product) {
   // `order` is per category, so compare it only within one; otherwise necklaces and paintings interleave.
   const shelf = SHELF.indexOf(a.data.category) - SHELF.indexOf(b.data.category);
   if (shelf !== 0) return shelf;
+  // Jewelry for sale runs from the highest price down; sold pieces keep their hand-set `order`.
+  if (a.data.status !== 'sold' && JEWELRY.has(a.data.category) && a.data.price !== b.data.price) {
+    return b.data.price - a.data.price;
+  }
   if (a.data.order !== b.data.order) return a.data.order - b.data.order;
   return a.data.title.localeCompare(b.data.title);
 }

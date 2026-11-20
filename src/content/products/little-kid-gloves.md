@@ -9,7 +9,7 @@ medium: Oil on canvas
 dimensions: "12 x 16 in."
 images:
   - ../../assets/art/little-kid-gloves.jpg
-order: 11
+order: 9
 ---
 
 Part of a series of childhood garments, built up in thick oil paint on a single field of color.

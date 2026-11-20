@@ -27,7 +27,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["citrine", "november_birthstone", "gemstone_necklace", "simone_chagoya"]
-order: 270
+order: 260
 publishedAt: 2026-04-01
 ---
 
@@ -37,7 +37,7 @@ The color of honey, every citrine stone bead swirls like liquid gold. A special 
 
 Citrine is the birthstone for November, a meaningful gift for the women in your life born this month.
 
-Jewelry arrives beautifully gift wrapped in a box with ribbon and a natural cotton muslin bag.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

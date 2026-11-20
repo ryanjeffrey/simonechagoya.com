@@ -16,7 +16,6 @@ specs:
   - { label: "Gemstone", value: "Fancy Jasper" }
   - { label: "Source", value: "Arizona, USA" }
   - { label: "Bead size", value: "12 mm" }
-  - { label: "Clasp", value: "Magnetic 8.6 x 7.7 mm barrel, copper Mag-Lok® made in the U.S.A." }
   - { label: "Necklace length", value: "16 in" }
 care:
   - "Clean with a soft cloth and warm soapy water."
@@ -26,7 +25,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["jasper", "fancy_jasper", "gemstone_necklace", "simone_chagoya"]
-order: 310
+order: 270
 ---
 
 A special one-of-a-kind necklace. Each bead is unique, in multi-color earth tones with a variety of green, blue, and brown. Colors may vary in light.
@@ -37,7 +36,7 @@ Jasper is found all over the world, with certain colors or patterns unique to pa
 
 Fancy jasper’s rich colors blend and complement each other creating a sense of tranquility. Jasper represents encouragement and inner strength, calming and grounding energy, a sense of well-being, and focuses the wearer on the present.
 
-This necklace has a Mag-Lok® magnetic barrel clasp with heavy magnetic strength. It is not intended for children 14 and under. Swallowed or inhaled magnets can cause serious injury or death, and magnets may affect electronic medical devices such as pacemakers. Natural untreated copper may patina over time.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

@@ -12,7 +12,6 @@ images:
   - "../../assets/products/plumeria-necklace/4.jpg"
   - "../../assets/products/plumeria-necklace/5.jpg"
   - "../../assets/products/plumeria-necklace/6.jpg"
-  - "../../assets/products/plumeria-necklace/7.jpg"
 materials: ["Mother-of-Pearl Shell", "Gold finished brass with 14k gold filled beads"]
 dimensions: "17 ½ in"
 specs:
@@ -41,7 +40,7 @@ Each bead is a hand carved mother-of-pearl flower. Mother-of-pearl is an organic
 
 A special necklace handmade by Chicago artist Simone Chagoya. Limited edition of 3.
 
-Jewelry arrives elegantly gift wrapped in a box with ribbon, includes a natural cotton muslin bag.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

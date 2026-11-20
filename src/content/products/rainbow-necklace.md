@@ -29,7 +29,7 @@ stock: 1
 oneOfAKind: true
 status: sold
 tags: ["rainbow_fluorite", "fluorite", "gemstone_necklace", "sterling_silver", "simone_chagoya"]
-order: 260
+order: 220
 publishedAt: 2026-04-01
 ---
 
@@ -37,7 +37,8 @@ The Rainbow Necklace is for the woman who finds beauty and balance in every colo
 
 Rainbow Fluorite swirls with bands of violet, green, and yellow, each bead a world of color and light. A special one-of-a-kind necklace, handmade in April 2026.
 
-Jewelry arrives beautifully gift wrapped in a box with ribbon and a natural cotton muslin bag. Includes a sterling silver polishing cloth.
+Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
+Card includes jewelry intention and care.  
+Includes a sterling silver polishing cloth.
 
-**A note on handmade jewelry**  
-Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.
+<p class="handmade-note"><span>A note on handmade jewelry</span> Each necklace is hand-crafted with genuine materials. All imperfections and color variances are nods to their artisanal beauty.</p>

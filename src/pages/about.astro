@@ -17,15 +17,29 @@ const statement = [
   'As I have grown older I want more and more to remember these things and to still have some grasp on them.',
 ];
 
-// Wall-label facts. Sources: Simone's printed bio (2024), her portfolio captions and price list in Drive.
+// Wall-label facts. Sources: Simone's printed bio (2024), her portfolio captions, price list and updates in Drive.
 const facts = [
   { term: 'Education', lines: ['BFA, School of the Art Institute of Chicago, 2011'] },
-  {
-    term: 'Exhibitions',
-    lines: ['Penny Lane Studios, Logan Square, Chicago, 2024', 'BFA Exhibition, School of the Art Institute of Chicago, 2011'],
-  },
   { term: 'Mediums', lines: ['Oil on canvas, watercolor and ink, digital painting, natural gemstones'] },
   { term: 'Lives and works', lines: ['Chicago, Illinois'] },
+];
+
+const exhibitions = [
+  { year: '2024', shows: ['Penny Lane Studios, Logan Square, Chicago'] },
+  {
+    year: '2013',
+    shows: [
+      'Frogman Gallery, Chicago Artists Month Pop Up Gallery, 23 E Madison St., Chicago, IL',
+      'Milwaukee Avenue Arts Festival, Logan Square, Chicago, IL',
+    ],
+  },
+  {
+    year: '2011',
+    shows: [
+      'Amdur Productions Gold Coast Art Fair, School of the Art Institute of Chicago Emerging Artist Group, Chicago, IL',
+      'School of the Art Institute of Chicago Spring Undergraduate Exhibition, Sullivan Galleries, Chicago, IL',
+    ],
+  },
 ];
 
 const jsonLd = {
@@ -80,17 +94,20 @@ const jsonLd = {
       <h2 id="bio-title" class="eyebrow">Background</h2>
       <p class="bio-lead">
         Simone grew up in Illinois, about an hour outside Chicago. Family trips into the city meant museums, neighborhoods,
-        restaurants and festivals, and the city stayed with her.
+        restaurants, and festivals, and the city stayed with her.
       </p>
       <p>
-        She studied painting and art history at the School of the Art Institute of Chicago and earned her BFA in 2011. Two
-        of the paintings on this site, <a href="/products/altered-beliefs"><em>Altered Beliefs</em></a> and{' '}
-        <a href="/products/regarding-my-wayward-ways"><em>Regarding My Wayward Ways</em></a>, hung in her BFA exhibition
+        The natural world shaped her just as much: she spent many days in both of her grandmothers’ gardens and learned
+        about plants and flowers from her mother. Her heritage is Indigenous Mexican and Norwegian, and both are a deep part
+        of who she is.
+      </p>
+      <p>In every way, her background influences her work, passion, and artistry across all mediums.</p>
+      <p>
+        She studied painting and art history at the School of the Art Institute of Chicago and earned her BFA in 2011.
+        Three of the paintings on this site, <a href="/products/altered-beliefs"><em>Altered Beliefs</em></a>,{' '}
+        <a href="/products/regarding-my-wayward-ways"><em>Regarding My Wayward Ways</em></a> and{' '}
+        <a href="/products/transcendence-into-white"><em>Transcendence Into White</em></a>, hung in her BFA exhibition
         that May.
-      </p>
-      <p>
-        Memory has run through the work ever since. The paintings come from rooms, places and objects she remembers from
-        childhood. The necklaces follow the same method: color first, then light, then how the stones sit together.
       </p>
     </div>
     <dl class="wall-label" data-reveal style="--reveal-delay: 120">
@@ -104,6 +121,25 @@ const jsonLd = {
           </div>
         ))
       }
+      <div class="wall-label-row">
+        <dt>Exhibitions</dt>
+        <dd>
+          <ol class="exhibitions">
+            {
+              exhibitions.map((e) => (
+                <li>
+                  <span class="exhibition-year">{e.year}</span>
+                  <ul>
+                    {e.shows.map((show) => (
+                      <li>{show}</li>
+                    ))}
+                  </ul>
+                </li>
+              ))
+            }
+          </ol>
+        </dd>
+      </div>
     </dl>
   </section>
 
@@ -164,7 +200,7 @@ const jsonLd = {
     grid-template-columns: 1fr 1fr;
     gap: clamp(2rem, 6vw, 6rem);
     align-items: center;
-    padding-block: clamp(2.5rem, 6vw, 5.5rem) var(--section);
+    padding-block: clamp(2.5rem, 6vw, 5.5rem) 0;
   }
 
   .about-copy .eyebrow {
@@ -195,7 +231,9 @@ const jsonLd = {
     color: var(--gold);
   }
 
+  /* Sits close under the portrait instead of a full section gap below it. */
   .bio {
+    padding-top: clamp(3rem, 2rem + 4vw, 5.5rem);
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
     gap: clamp(2rem, 6vw, 6rem);
@@ -264,6 +302,40 @@ const jsonLd = {
 
   .wall-label dd + dd {
     margin-top: 0.3rem;
+  }
+
+  /* Exhibitions read like a CV: small type, the year hung in its own column. */
+  .exhibitions,
+  .exhibitions ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .exhibitions > li {
+    display: grid;
+    grid-template-columns: 3.25rem 1fr;
+    gap: 0 0.5rem;
+    font-family: var(--sans);
+    font-size: var(--step--1);
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  .exhibitions > li + li {
+    margin-top: 0.75rem;
+  }
+
+  .exhibitions ul li + li {
+    margin-top: 0.4rem;
+  }
+
+  .exhibition-year {
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.35;
+    color: var(--gold-text);
   }
 
   .about-image :global(img) {
