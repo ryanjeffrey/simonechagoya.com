@@ -224,9 +224,16 @@ const jsonLd = [
 
   <!-- Brand band -->
   <section class="band" aria-label="Simone Chagoya Studio" data-pond-band>
-    <Image src={water} alt="" widths={[800, 1200, 1600]} sizes="100vw" format="webp" quality={78} class="band-img" />
+    <Image src={water} alt="" widths={[800, 1200, 1600, 2400, 3200]} sizes="100vw" format="webp" quality={76} class="band-img" />
     <canvas class="band-canvas" aria-hidden="true" data-pond></canvas>
     <p class="band-hint" aria-hidden="true" data-pond-hint>Touch the water</p>
+    {/* The photograph is CC BY-SA 4.0, so it carries its credit, and our graded crop shares its license. */}
+    <p class="band-credit">
+      Water:{' '}
+      <a href="https://commons.wikimedia.org/wiki/File:Ripples_and_sunlight_pattern_in_Brofjorden.jpg" rel="noopener" target="_blank">W.carter</a>,
+      adapted,{' '}
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener license" target="_blank">CC BY-SA 4.0</a>
+    </p>
     <div class="lockup" data-reveal>
       <Logo variant="lockup" class="lockup-mark" />
     </div>
@@ -848,6 +855,31 @@ const jsonLd = [
   }
 
   /* Shown once by src/lib/pond.ts, where a single drop lands */
+  .band-credit {
+    position: absolute;
+    right: var(--gutter);
+    bottom: 0.6rem;
+    margin: 0;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+    color: rgb(33 28 23 / 0.62);
+  }
+
+  .band-credit a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: rgb(33 28 23 / 0.3);
+    text-underline-offset: 0.18em;
+  }
+
+  /* On phones the bottom edge belongs to "Touch the water"; the credit moves to the top corner. */
+  @media (max-width: 600px) {
+    .band-credit {
+      top: 0.6rem;
+      bottom: auto;
+    }
+  }
+
   .band-hint {
     position: absolute;
     bottom: clamp(0.9rem, 2.4vw, 1.6rem);

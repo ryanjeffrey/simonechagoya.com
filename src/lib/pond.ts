@@ -387,7 +387,8 @@ export function initPond(band: HTMLElement) {
   // sized to what the screen can show (up to 4096 wide) so large and retina screens stay sharp.
   const maxTex = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
   const upload = () => {
-    const need = Math.min(img.naturalWidth, canvas.clientWidth * Math.min(window.devicePixelRatio || 1, 2));
+    // naturalWidth is scaled by the srcset density, so size from the band's screen width instead.
+    const need = canvas.clientWidth * Math.min(window.devicePixelRatio || 1, 2);
     const texW = Math.min(maxTex, 2 ** Math.ceil(Math.log2(Math.max(need, 1024))));
     const src = document.createElement('canvas');
     src.width = texW;
