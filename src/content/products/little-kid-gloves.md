@@ -1,7 +1,7 @@
 ---
 title: "Little Kid Gloves"
 category: originals
-price: 0
+price: 700
 status: inquire
 oneOfAKind: true
 year: 2011

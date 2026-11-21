@@ -1,7 +1,7 @@
 ---
 title: "Playing Army Guys in the Woods, Camo Hat"
 category: originals
-price: 0
+price: 750
 status: inquire
 oneOfAKind: true
 year: 2011
