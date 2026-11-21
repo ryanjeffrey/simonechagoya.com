@@ -1,7 +1,7 @@
 ---
 title: "The Attic Where We Played Chefs on TV"
 category: originals
-price: 1500
+price: 0
 status: inquire
 oneOfAKind: true
 year: 2009

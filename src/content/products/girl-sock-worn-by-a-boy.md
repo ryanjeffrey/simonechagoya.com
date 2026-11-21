@@ -1,7 +1,7 @@
 ---
 title: "Girl Sock, Worn by a Boy"
 category: originals
-price: 800
+price: 0
 status: inquire
 oneOfAKind: true
 year: 2011

@@ -1,7 +1,7 @@
 ---
 title: "Favorite Color At Age Nine"
 category: originals
-price: 850
+price: 0
 status: inquire
 oneOfAKind: true
 year: 2011
