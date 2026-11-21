@@ -1,14 +1,14 @@
 ---
-title: "Favorite Color At Age Nine"
+title: "Favorite Color"
 category: originals
-price: 0
+price: 850
 status: inquire
 oneOfAKind: true
 year: 2011
 medium: Oil on canvas
 dimensions: "16 x 18 in."
 images:
-  - ../../assets/art/favorite-color-at-age-nine.jpg
+  - ../../assets/art/favorite-color.jpg
 order: 12
 ---
 

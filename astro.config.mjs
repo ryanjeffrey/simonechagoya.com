@@ -6,6 +6,10 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://simonechagoya.com',
   trailingSlash: 'ignore',
+  // Old links keep working after a piece is renamed.
+  redirects: {
+    '/products/favorite-color-at-age-nine': '/products/favorite-color',
+  },
   // Images are optimized at build time so the site works the same on any host.
   adapter: netlify({ imageCDN: false }),
   integrations: [

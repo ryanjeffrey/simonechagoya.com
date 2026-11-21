@@ -1,7 +1,7 @@
 ---
 title: "Altered Beliefs"
 category: originals
-price: 0
+price: 900
 status: inquire
 oneOfAKind: true
 year: 2010

@@ -21,15 +21,21 @@ const prints = products.filter((p) => p.data.category === 'prints' || p.data.cat
         Simone combines memories of places, times and objects into each painting. The result is part real and part
         recollection: a room, a sock, a view from a car window, a little off from how it actually was.
       </p>
-      <div class="art-notes">
-        <p class="muted">
-          Originals are oil on canvas and sold directly by Simone. <a href="/shop/prints">Signed prints</a> are in the shop.
-        </p>
-        <p class="muted">
-          Simone earned her Bachelor of Fine Arts at the School of the Art Institute of Chicago in 2011, where she held the
-          Distinguished Scholars Annual Merit Scholarship. <a href="/about">About Simone</a>
-        </p>
-      </div>
+      <dl class="art-notes">
+        <div class="art-note">
+          <dt>The originals</dt>
+          <dd>
+            Oil on canvas, sold directly by Simone. <a href="/shop/prints">Signed prints</a> are in the shop.
+          </dd>
+        </div>
+        <div class="art-note">
+          <dt>Education</dt>
+          <dd>
+            Bachelor of Fine Arts, the School of the Art Institute of Chicago, 2011. The Distinguished Scholars Annual Merit
+            Scholarship. <a href="/about">About Simone</a>
+          </dd>
+        </div>
+      </dl>
     </div>
   </section>
 
@@ -101,14 +107,48 @@ const prints = products.filter((p) => p.data.category === 'prints' || p.data.cat
   .art-intro {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
-    gap: 2rem 4rem;
-    align-items: end;
-    margin-top: clamp(1.5rem, 3vw, 2.5rem);
+    gap: 2rem clamp(2.5rem, 6vw, 6rem);
+    align-items: start;
+    margin-top: clamp(1.25rem, 2.5vw, 2rem);
   }
 
+  /* Two wall-label notes, each under a hairline: a small tracked label, then serif text. */
   .art-notes {
-    display: grid;
-    gap: 0.75rem;
+    margin: 0.35rem 0 0;
+  }
+
+  .art-note {
+    padding: 1.1rem 0 1.2rem;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .art-note:last-child {
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .art-note dt {
+    margin-bottom: 0.45rem;
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-text);
+  }
+
+  .art-note dd {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.12rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  .art-note a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--gold);
+    text-underline-offset: 0.2em;
+    white-space: nowrap;
   }
 
   .salon {
