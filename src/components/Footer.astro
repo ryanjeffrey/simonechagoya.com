@@ -52,10 +52,16 @@ const social = [
     </div>
 
     <div class="footer-legal">
-      <span>© {year} {site.studio}</span>
+      <span>© {year} {site.name}. All Rights Reserved.</span>
       <span>Made by hand in {site.city}</span>
       <span>Secure checkout by Stripe</span>
     </div>
+
+    <p class="footer-rights">
+      All jewelry designs, artwork, photography, and written content featured in this shop are the original and exclusive
+      work of Simone Chagoya and are protected by copyright law. Unauthorized reproduction, distribution, or use of any
+      content without prior written permission from the artist is strictly prohibited.
+    </p>
 
     <div class="footer-mark" aria-hidden="true"><Logo /></div>
   </div>
@@ -130,6 +136,19 @@ const social = [
 
   .footer-cols a:hover {
     color: var(--paper);
+  }
+
+  .footer-rights {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding-bottom: 1.75rem;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    font-style: italic;
+    line-height: 1.5;
+    text-align: center;
+    text-wrap: balance;
+    color: rgb(244 239 231 / 0.6);
   }
 
   .footer-legal {
