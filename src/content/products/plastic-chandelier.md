@@ -1,7 +1,7 @@
 ---
 title: "Plastic Chandelier"
 category: originals
-price: 0
+price: 1100
 status: inquire
 oneOfAKind: true
 year: 2008

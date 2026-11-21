@@ -1,8 +1,8 @@
 ---
 title: "Transcendence Into White"
 category: originals
-price: 0
-status: sold
+price: 1300
+status: inquire
 oneOfAKind: true
 year: 2010
 medium: Oil on canvas

@@ -19,9 +19,64 @@ const statement = [
 
 // Wall-label facts. Sources: Simone's printed bio (2024), her portfolio captions, price list and updates in Drive.
 const facts = [
-  { term: 'Education', lines: ['BFA, School of the Art Institute of Chicago, 2011'] },
   { term: 'Mediums', lines: ['Oil on canvas, watercolor and ink, digital painting, natural gemstones'] },
   { term: 'Lives and works', lines: ['Chicago, Illinois'] },
+];
+
+const education = [
+  {
+    year: '2011',
+    shows: ['Bachelor of Fine Arts, the School of the Art Institute of Chicago', 'The Distinguished Scholars Annual Merit Scholarship'],
+  },
+];
+
+// Simone's giving, in her own words (updates doc, November 2026).
+const giving = [
+  {
+    when: 'February 2026',
+    cause: 'Supporting Immigrant Rights',
+    gift: '20% of every sale went to organizations supporting immigrant children, families, and refugees:',
+    orgs: [
+      {
+        name: 'The Young Center for Immigrant Children’s Rights',
+        does: 'works on behalf of unaccompanied immigrant children, making sure their safety and wishes count in every decision about their future.',
+        site: 'theyoungcenter.org',
+        href: 'https://www.theyoungcenter.org/',
+      },
+      {
+        name: 'Illinois Coalition for Immigrant and Refugee Rights (ICIRR)',
+        does: 'is a statewide coalition working so immigrants and refugees can take full and equal part in public life.',
+        site: 'icirr.org',
+        href: 'https://www.icirr.org/',
+      },
+    ],
+  },
+  {
+    when: 'March 2026',
+    cause: 'Women’s History Month',
+    gift: '10% of shop profits went to organizations supporting women’s rights:',
+    orgs: [
+      {
+        name: 'Chicago Foundation for Women (CFW)',
+        does: 'funds community organizers and neighborhood groups that break down barriers for women, girls, and gender-expansive people.',
+        site: 'cfw.org',
+        href: 'https://cfw.org/',
+      },
+      {
+        name: 'National Organization for Women (NOW)',
+        does: 'is a national organization working for equality and justice for women.',
+        site: 'now.org',
+        href: 'https://now.org/',
+      },
+    ],
+  },
+  {
+    when: 'April 2026',
+    cause: 'National Donate Life Month',
+    gift: '10% of shop profits went to Donate Life America, a national nonprofit that encourages people to register as organ, eye, and tissue donors.',
+    link: { site: 'donatelife.net', href: 'https://donatelife.net/' },
+    orgs: [],
+  },
 ];
 
 const exhibitions = [
@@ -121,25 +176,30 @@ const jsonLd = {
           </div>
         ))
       }
-      <div class="wall-label-row">
-        <dt>Exhibitions</dt>
-        <dd>
-          <ol class="exhibitions">
-            {
-              exhibitions.map((e) => (
-                <li>
-                  <span class="exhibition-year">{e.year}</span>
-                  <ul>
-                    {e.shows.map((show) => (
-                      <li>{show}</li>
-                    ))}
-                  </ul>
-                </li>
-              ))
-            }
-          </ol>
-        </dd>
-      </div>
+      {
+        [
+          { term: 'Education', rows: education },
+          { term: 'Exhibitions', rows: exhibitions },
+        ].map((block) => (
+          <div class="wall-label-row">
+            <dt>{block.term}</dt>
+            <dd>
+              <ol class="exhibitions">
+                {block.rows.map((e) => (
+                  <li>
+                    <span class="exhibition-year">{e.year}</span>
+                    <ul>
+                      {e.shows.map((show) => (
+                        <li>{show}</li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            </dd>
+          </div>
+        ))
+      }
     </dl>
   </section>
 
@@ -180,6 +240,66 @@ const jsonLd = {
         alt="Plastic Chandelier, 2008, oil on canvas by Simone Chagoya"
       />
     </figure>
+  </section>
+
+  <section class="section container giving" id="giving-back" aria-labelledby="giving-title">
+    <div class="giving-head" data-reveal>
+      <p class="eyebrow">Beyond the studio</p>
+      <h2 id="giving-title" class="h2">Giving <em>Back</em></h2>
+      <p class="lede">
+        Handmade with love, and shared beyond the studio. A few times a year, part of my shop’s sales goes to causes
+        close to my heart.
+      </p>
+    </div>
+    <div class="giving-grid">
+      {
+        giving.map((g, i) => (
+          <article class="gift" data-reveal style={`--reveal-delay: ${i * 110}`}>
+            <p class="gift-when">{g.when}</p>
+            <h3 class="h3">{g.cause}</h3>
+            <p class="gift-share">
+              {g.gift}
+              {g.link && (
+                <>
+                  {' '}
+                  <a href={g.link.href} target="_blank" rel="noopener">
+                    {g.link.site}
+                  </a>
+                </>
+              )}
+            </p>
+            {g.orgs.length > 0 && (
+              <ul class="gift-orgs">
+                {g.orgs.map((o) => (
+                  <li>
+                    <strong>{o.name}</strong> {o.does}{' '}
+                    <a href={o.href} target="_blank" rel="noopener">
+                      {o.site}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {g.when === 'April 2026' && (
+              <p class="gift-note">
+                I gave in memory of a family member who needed a lifesaving organ donor. I’m a registered donor myself,
+                and if you haven’t registered yet, I hope you’ll consider it. It’s a powerful gift. Illinois residents
+                can register at{' '}
+                <a href="https://www.lifegoeson.com/" target="_blank" rel="noopener">
+                  LifeGoesOn.com
+                </a>
+                , and anyone can learn more at{' '}
+                <a href="https://donatelife.net/" target="_blank" rel="noopener">
+                  donatelife.net
+                </a>
+                .
+              </p>
+            )}
+          </article>
+        ))
+      }
+    </div>
+    <p class="giving-thanks" data-reveal>Thank you to everyone whose purchase was part of this impact.</p>
   </section>
 
   <section class="about-cta">
@@ -448,6 +568,86 @@ const jsonLd = {
     object-fit: cover;
   }
 
+  .giving {
+    border-top: 1px solid var(--line);
+  }
+
+  .giving-head {
+    max-width: 44rem;
+  }
+
+  .giving-head .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .giving-head .lede {
+    margin-top: 1.5rem;
+  }
+
+  .giving-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(2rem, 4vw, 4rem);
+    align-items: start;
+    margin-top: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .gift {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .gift-when {
+    margin-bottom: 0.75rem;
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--gold-text);
+  }
+
+  .gift-share {
+    margin-top: 1rem;
+    color: var(--ink);
+  }
+
+  .gift-orgs {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+    font-size: 0.95rem;
+    color: var(--ink-2);
+  }
+
+  .gift-orgs strong {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .gift-note {
+    margin-top: 1.25rem;
+    font-size: 0.95rem;
+    color: var(--ink-2);
+  }
+
+  .giving a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--gold);
+    text-underline-offset: 0.2em;
+    white-space: nowrap;
+  }
+
+  .giving-thanks {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    font-family: var(--serif);
+    font-size: var(--step-2);
+    font-style: italic;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
   .about-cta {
     background: var(--paper-2);
     padding-block: var(--section);
@@ -472,7 +672,8 @@ const jsonLd = {
   @media (max-width: 900px) {
     .about-hero,
     .bio,
-    .practices {
+    .practices,
+    .giving-grid {
       grid-template-columns: 1fr;
     }
 

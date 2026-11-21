@@ -2,7 +2,7 @@
 title: "Big Boy Briefs"
 category: originals
 price: 0
-status: inquire
+status: sold
 oneOfAKind: true
 year: 2011
 medium: Oil on canvas
