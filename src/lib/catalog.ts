@@ -79,9 +79,12 @@ export function coverImage(p: Product): ImageMetadata | undefined {
   return covers[`../assets/products/${p.id}/cover.jpg`]?.default ?? p.data.images[0];
 }
 
-/** The first material, without its explanation ("Goldstone, made of sand..." reads "Goldstone"). */
+/**
+ * The first material, without its explanation: "Goldstone, made of sand..." reads "Goldstone",
+ * and "African Jade (Dendritic Jade, Grossular Garnet)" reads "African Jade".
+ */
 export function shortMaterial(p: Product) {
-  return p.data.materials[0]?.split(',')[0].trim();
+  return p.data.materials[0]?.replace(/\s*\(.*$/, '').split(',')[0].trim();
 }
 
 /** Shelf order across categories: jewelry, then prints and cards, then paintings sold by inquiry. */
@@ -120,7 +123,8 @@ export function variantPrice(p: Product, variantId?: string) {
 }
 
 export function priceLabel(p: Product) {
-  if (p.data.status === 'inquire') return 'Price on request';
+  // Originals are sold by inquiry. Simone lists a price on most; the rest are priced on request.
+  if (p.data.status === 'inquire') return p.data.price > 0 ? formatPrice(p.data.price) : 'Price on request';
   // Sold pieces stay on the site to show the body of work, without a price.
   if (p.data.status === 'sold') return 'Sold';
   const prices = p.data.variants.length ? p.data.variants.map((v) => v.price ?? p.data.price) : [p.data.price];

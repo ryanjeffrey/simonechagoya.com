@@ -65,7 +65,7 @@ const chips = [
           {products.map((p, i) => (
             <div
               class="grid-item"
-              data-price={p.data.status === 'inquire' ? 1e9 : p.data.price}
+              data-price={p.data.status === 'inquire' && !p.data.price ? 1e9 : p.data.price}
               data-order={i}
               data-title={p.data.title}
             >

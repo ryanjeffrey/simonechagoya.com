@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import ProductCard from '../components/ProductCard.astro';
-import { getProducts, productUrl } from '../lib/catalog';
+import { formatPrice, getProducts, productUrl } from '../lib/catalog';
 
 const products = await getProducts();
 const originals = products.filter((p) => p.data.category === 'originals' && p.data.images[0]);
@@ -21,9 +21,15 @@ const prints = products.filter((p) => p.data.category === 'prints' || p.data.cat
         Simone combines memories of places, times and objects into each painting. The result is part real and part
         recollection: a room, a sock, a view from a car window, a little off from how it actually was.
       </p>
-      <p class="muted">
-        Originals are oil on canvas and sold directly by Simone. <a href="/shop/prints">Signed prints</a> are in the shop.
-      </p>
+      <div class="art-notes">
+        <p class="muted">
+          Originals are oil on canvas and sold directly by Simone. <a href="/shop/prints">Signed prints</a> are in the shop.
+        </p>
+        <p class="muted">
+          Simone earned her Bachelor of Fine Arts at the School of the Art Institute of Chicago in 2011, where she held the
+          Distinguished Scholars Annual Merit Scholarship. <a href="/about">About Simone</a>
+        </p>
+      </div>
     </div>
   </section>
 
@@ -46,7 +52,7 @@ const prints = products.filter((p) => p.data.category === 'prints' || p.data.cat
             <span class="work-meta">
               {p.data.year} · {p.data.dimensions}
             </span>
-            <span class="work-status">{p.data.status === 'sold' ? 'Sold' : 'Inquire'}</span>
+            <span class="work-status">{p.data.status === 'sold' ? 'Sold' : p.data.price > 0 ? formatPrice(p.data.price) : 'Inquire'}</span>
           </div>
         </a>
       ))
@@ -98,6 +104,11 @@ const prints = products.filter((p) => p.data.category === 'prints' || p.data.cat
     gap: 2rem 4rem;
     align-items: end;
     margin-top: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .art-notes {
+    display: grid;
+    gap: 0.75rem;
   }
 
   .salon {

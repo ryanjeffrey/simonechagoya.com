@@ -41,7 +41,7 @@ const meta =
       <h3 class="card-title">{data.title}</h3>
       <p class="card-price">
         {data.compareAt && data.compareAt > data.price && <s class="muted">${data.compareAt}</s>}
-        {data.status === 'inquire' ? 'Inquire' : priceLabel(product)}
+        {data.status === 'inquire' && !data.price ? 'Inquire' : priceLabel(product)}
       </p>
     </div>
     <p class="card-meta">{meta}</p>

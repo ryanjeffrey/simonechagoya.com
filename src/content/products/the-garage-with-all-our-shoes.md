@@ -1,7 +1,7 @@
 ---
 title: "The Garage With All Our Shoes"
 category: originals
-price: 0
+price: 1200
 status: inquire
 oneOfAKind: true
 year: 2009

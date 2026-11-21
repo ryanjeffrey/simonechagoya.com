@@ -115,6 +115,10 @@ const structured = isOriginal
       size: data.dimensions,
       creator: { '@type': 'Person', name: site.name },
       url: absolute(productUrl(product)),
+      offers:
+        data.status === 'inquire' && data.price > 0
+          ? { '@type': 'Offer', url: absolute(productUrl(product)), priceCurrency: 'USD', price: data.price, availability: 'https://schema.org/InStock' }
+          : undefined,
     }
   : {
       '@context': 'https://schema.org',
@@ -211,7 +215,10 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
         <h1 class="info-title">{data.title}</h1>
         {
           data.status === 'sold' ? null : isOriginal ? (
-            <p class="info-sub">{[data.year, data.medium, data.dimensions].filter(Boolean).join(' · ')}</p>
+            <>
+              <p class="info-sub">{[data.year, data.medium, data.dimensions].filter(Boolean).join(' · ')}</p>
+              {data.price > 0 && <p class="info-price">{formatPrice(data.price)}</p>}
+            </>
           ) : (
             <p class="info-price">
               {data.compareAt && data.compareAt > data.price && <s class="muted">{formatPrice(data.compareAt)}</s>}
@@ -232,7 +239,9 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
                   Prints from {formatPrice(Math.min(...prints[0].data.variants.map((v) => v.price ?? prints[0].data.price), prints[0].data.price))}
                 </a>
               )}
-              <p class="actions-note">Originals are sold directly by Simone. Ask about availability, pricing, shipping and payment plans.</p>
+              <p class="actions-note">
+                Originals are sold directly by Simone. Ask about availability, {data.price > 0 ? '' : 'pricing, '}shipping and payment plans.
+              </p>
             </div>
           )
         }
