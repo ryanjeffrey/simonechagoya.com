@@ -1057,6 +1057,22 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
 </style>
 
 <script>
+  // The info column is sticky beside the gallery. When it is taller than the screen (a long
+  // description, an open accordion), stick it by its bottom instead of its top, so it scrolls
+  // with the page until its last line is on screen and nothing in it is ever out of reach.
+  const info = document.querySelector<HTMLElement>('.info');
+  if (info) {
+    const fit = () => {
+      info.style.top = '';
+      if (getComputedStyle(info).position !== 'sticky') return;
+      const header = document.querySelector<HTMLElement>('.site-header')?.offsetHeight ?? 0;
+      const gap = 24;
+      info.style.top = `${Math.min(header + gap, innerHeight - info.offsetHeight - gap)}px`;
+    };
+    new ResizeObserver(fit).observe(info);
+    addEventListener('resize', fit);
+  }
+
   // Variant price
   const form = document.querySelector<HTMLFormElement>('[data-main-form]');
   form?.addEventListener('change', (e) => {

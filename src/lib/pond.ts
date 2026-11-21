@@ -383,11 +383,16 @@ export function initPond(band: HTMLElement) {
 
   let texReady = false;
   let imgAspect = 2400 / 960;
-  // Non-power-of-two textures cannot repeat in WebGL1, so redraw the photo into a power-of-two canvas.
+  // Non-power-of-two textures cannot repeat in WebGL1, so redraw the photo into a power-of-two canvas,
+  // sized to what the screen can show (up to 4096 wide) so large and retina screens stay sharp.
+  const maxTex = Math.min(4096, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
   const upload = () => {
+    // naturalWidth is scaled by the srcset density, so size from the band's screen width instead.
+    const need = canvas.clientWidth * Math.min(window.devicePixelRatio || 1, 2);
+    const texW = Math.min(maxTex, 2 ** Math.ceil(Math.log2(Math.max(need, 1024))));
     const src = document.createElement('canvas');
-    src.width = 2048;
-    src.height = 1024;
+    src.width = texW;
+    src.height = texW / 2;
     src.getContext('2d')!.drawImage(img, 0, 0, src.width, src.height);
     gl.activeTexture(gl.TEXTURE0);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src);
