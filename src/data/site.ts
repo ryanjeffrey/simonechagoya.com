@@ -41,10 +41,11 @@ export const site = {
     } as { note: string; detail?: string; until: string } | null,
   },
 
-  // Returns policy, confirmed by Simone (November 2026). Ready-to-ship jewelry
-  // can come back within `days`; original artwork and art products are final sale.
+  // Returns policy, set by Simone (November 22, 2026): every purchase is final sale.
+  // A piece that arrives damaged is repaired or replaced if a photo is sent within `damageDays`.
   returns: {
-    days: 14,
+    policy: 'All purchases are final sale. No returns.',
+    damageDays: 3,
   },
 
   announcement: 'Complimentary US shipping over $75',
@@ -71,7 +72,7 @@ export const site = {
       'Free US shipping over $75 after the discount.',
       'Order by Dec 11, 2026 for Christmas delivery (Dec 10 for Alaska and Hawaii). Delivery dates are estimates and aren’t guaranteed by USPS.',
     ],
-    returns: 'Jewelry has 14 days, and prints and card sets are final sale.',
+    returns: 'All purchases are final sale. No returns.',
   } as {
     name: string;
     percentOff: number;
