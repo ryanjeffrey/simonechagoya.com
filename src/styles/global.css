@@ -18,6 +18,7 @@
   --line-strong: rgb(33 28 23 / 0.28);
 
   --accent: #8e4126; /* fired clay */
+  --sale: #7a1d1b; /* deep warm red, for the sale banner and announcement */
   --accent-deep: #6f311c;
   --gold: #a9844e; /* brass, decorative on light grounds */
   --gold-light: #c9a46a; /* brass on espresso */
@@ -658,6 +659,40 @@ h3 em,
   a:hover .zoom svg {
     transform: scale(1.035);
   }
+}
+
+/* Sale prices (components/Price.astro): shown only while the sale is on. */
+.price {
+  /* Contains the screen-reader labels, so they cannot widen the page from inside a swipe row. */
+  position: relative;
+}
+
+.price-sale,
+.sale-only {
+  display: none;
+}
+
+html[data-sale='on'] .has-sale .price-regular {
+  display: none;
+}
+
+html[data-sale='on'] .has-sale .price-sale {
+  display: inline;
+}
+
+html[data-sale='on'] .sale-only {
+  display: revert;
+}
+
+.price-sale s {
+  margin-right: 0.15em;
+  font-weight: 400;
+  color: var(--ink-2);
+  text-decoration-thickness: 1px;
+}
+
+.price-now {
+  color: var(--accent);
 }
 
 /* Section heading row */

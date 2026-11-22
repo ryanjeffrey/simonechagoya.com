@@ -7,6 +7,7 @@ import Footer from '../components/Footer.astro';
 import BagDrawer from '../components/BagDrawer.astro';
 import CollectorPopup from '../components/CollectorPopup.astro';
 import { site } from '../data/site';
+import { salePhase, saleWindow } from '../lib/sale';
 
 interface Props {
   title?: string;
@@ -25,6 +26,10 @@ const fullTitle = title ? `${title} | ${site.name}` : `${site.name} | Jewelry an
 const canonical = new URL(Astro.url.pathname, Astro.site ?? site.url).href;
 const ogImage = new URL(image, Astro.site ?? site.url).href;
 const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+
+// The sale banner and prices are switched on in the browser, by the clock, because the site is static.
+const sale = salePhase() !== null && site.sale ? site.sale : null;
+const [bannerLead, ...bannerRest] = sale ? sale.banner.split(': ') : [''];
 ---
 
 <!doctype html>
@@ -58,6 +63,14 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
     {ld.map((block) => <script type="application/ld+json" set:html={JSON.stringify(block)} />)}
 
+    {
+      sale && saleWindow && (
+        <script is:inline define:vars={{ starts: saleWindow.starts, ends: saleWindow.ends }}>
+          // 'soon' shows the sale banner; 'on' also shows sale prices. After the sale, nothing is set.
+          var now = Date.now(); if (now < ends) document.documentElement.dataset.sale = now >= starts ? 'on' : 'soon';
+        </script>
+      )
+    }
     <script is:inline>
       document.documentElement.classList.add('js');
       // Resolves once the page is on screen: after the cross-page fade, when there is one.
@@ -79,9 +92,17 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     <a class="skip-link" href="#main">Skip to content</a>
     {
       !bare && site.announcement && (
-        <div class="announcement">
+        <div class="announcement announcement--default">
           <p>{site.announcement}</p>
         </div>
+      )
+    }
+    {
+      !bare && sale && (
+        <a class="announcement--sale" href="/#sale">
+          <span class="sale-lead">{bannerLead}</span>
+          <span class="sale-rest">{bannerRest.join(': ')}</span>
+        </a>
       )
     }
     <Header />
@@ -111,5 +132,43 @@ const ld = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     letter-spacing: 0.22em;
     text-transform: uppercase;
     padding: 0.7rem var(--gutter);
+  }
+
+  /* The sale banner replaces the usual line from its announcement until the sale ends. */
+  .announcement--sale {
+    display: none;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.15rem 0.9rem;
+    padding: 0.6rem var(--gutter) 0.65rem;
+    background: var(--sale);
+    color: #fbf3ea;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  :global(html[data-sale]) .announcement--sale {
+    display: flex;
+  }
+
+  :global(html[data-sale]) .announcement--default {
+    display: none;
+  }
+
+  .sale-lead {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
+
+  .sale-rest {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
   }
 </style>

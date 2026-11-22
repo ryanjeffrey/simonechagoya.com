@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { STRIPE_SECRET_KEY, STRIPE_AUTOMATIC_TAX, STRIPE_WEBHOOK_SECRET } from 'astro:env/server';
 import Stripe from 'stripe';
-import { coverImage, getProducts, isPurchasable, variantPrice } from '../../lib/catalog';
+import { coverImage, formatPrice, getProducts, isPurchasable, variantPrice } from '../../lib/catalog';
+import { checkoutPrice, saleActive } from '../../lib/sale';
 import { HOLD_SECONDS, holdPieces, inventoryStore, isSinglePiece, releasePieces } from '../../lib/inventory';
 import { site } from '../../data/site';
 
@@ -35,6 +36,10 @@ export const POST: APIRoute = async ({ request, url }) => {
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
   const singles: { slug: string; title: string }[] = [];
   let subtotal = 0;
+  // The sale is automatic: decided here, by the server's clock, never by the browser.
+  const now = Date.now();
+  const sale = saleActive(now) ? site.sale : null;
+  let discounted = false;
 
   for (const line of lines) {
     const product = typeof line.slug === 'string' ? catalog.get(line.slug) : undefined;
@@ -57,7 +62,10 @@ export const POST: APIRoute = async ({ request, url }) => {
     }
 
     if (isSinglePiece(product)) singles.push({ slug: product.id, title: data.title });
-    const unit = variantPrice(product, variant?.id);
+    const regular = variantPrice(product, variant?.id);
+    const { unit, reduced } = checkoutPrice(data, regular, now);
+    if (reduced) discounted = true;
+    // Free shipping is judged on what the buyer actually pays, after the discount.
     subtotal += unit * qty;
     const cover = coverImage(product);
     const image = cover ? new URL(cover.src, url.origin).href : undefined;
@@ -72,6 +80,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         tax_behavior: 'exclusive',
         product_data: {
           name: variant ? `${data.title} (${variant.label})` : data.title,
+          description: reduced && sale ? `${sale.name}: ${sale.percentOff}% off, regularly ${formatPrice(regular)}` : undefined,
           images: image ? [image] : undefined,
           metadata: { slug: product.id, variant: variant?.id ?? '' },
         },
@@ -129,7 +138,8 @@ export const POST: APIRoute = async ({ request, url }) => {
       line_items: lineItems,
       shipping_address_collection: { allowed_countries: [...site.shipping.countries] },
       shipping_options: shippingOptions,
-      allow_promotion_codes: true,
+      // The sale cannot be combined with other offers, so codes are off whenever it applied.
+      allow_promotion_codes: !discounted,
       automatic_tax: { enabled: STRIPE_AUTOMATIC_TAX },
       consent_collection: { promotions: 'auto' },
       custom_fields: [
@@ -141,7 +151,7 @@ export const POST: APIRoute = async ({ request, url }) => {
           text: { maximum_length: 240 },
         },
       ],
-      metadata: { source: 'simonechagoya.com', hold, held: held.join(',') },
+      metadata: { source: 'simonechagoya.com', hold, held: held.join(','), sale: discounted && sale ? sale.name : '' },
       expires_at: Math.floor(Date.now() / 1000) + HOLD_SECONDS - 60,
       success_url: `${url.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${url.origin}/shop?checkout=cancelled`,

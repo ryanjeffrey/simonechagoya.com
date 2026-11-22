@@ -3,10 +3,12 @@ import { Image, Picture } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import ProductCard from '../components/ProductCard.astro';
 import ProductMedia from '../components/ProductMedia.astro';
+import Price from '../components/Price.astro';
+import SaleNote from '../components/SaleNote.astro';
 import Marquee from '../components/Marquee.astro';
 import Reviews from '../components/Reviews.astro';
 import Logo from '../components/Logo.astro';
-import { getProducts, isPurchasable, priceLabel, productUrl, shortMaterial, type Category, type Product } from '../lib/catalog';
+import { getProducts, isPurchasable, productUrl, shortMaterial, type Category, type Product } from '../lib/catalog';
 import { site } from '../data/site';
 import heroPainting from '../assets/art/altered-beliefs.jpg';
 import doorPainting from '../assets/art/regarding-my-wayward-ways.jpg';
@@ -107,7 +109,7 @@ const jsonLd = [
               <span class="hero-piece-info">
                 <span class="hero-piece-label">Signature piece</span>
                 <span class="hero-piece-title">{heroPiece.data.title}</span>
-                <span class="hero-piece-price">{priceLabel(heroPiece)}</span>
+                <span class="hero-piece-price"><Price product={heroPiece} /></span>
               </span>
             </a>
           )
@@ -150,6 +152,8 @@ const jsonLd = [
       </div>
     </div>
   </section>
+
+  <SaleNote />
 
   <Marquee items={['Natural gemstones', 'Strung by hand in Chicago', 'One of one', 'Love, beauty, new beginnings', 'Memory, in stone']} />
 
@@ -210,7 +214,7 @@ const jsonLd = [
                     <span class="pair-name">{piece.data.title.replace(/ Necklace$/, '')}</span>
                     <span class="pair-from">{shortMaterial(piece)}</span>
                     <span class="pair-link">
-                      {priceLabel(piece)} <span aria-hidden="true">→</span>
+                      <Price product={piece} /> <span aria-hidden="true">→</span>
                     </span>
                   </div>
                 </a>

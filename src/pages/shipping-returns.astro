@@ -26,7 +26,7 @@ const cutoff = shipping.cutoff && Date.now() < Date.parse(`${shipping.cutoff.unt
     {
       cutoff && (
         <li data-until={cutoff.until}>
-          <strong>{cutoff.note}</strong>
+          <strong>{cutoff.note}</strong> {cutoff.detail}
         </li>
       )
     }

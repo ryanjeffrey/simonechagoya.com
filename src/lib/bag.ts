@@ -16,9 +16,15 @@ type CatalogItem = {
   stock: number;
   available: boolean;
   sample: boolean;
+  /** Covered by the timed sale (see src/lib/sale.ts). */
+  sale?: boolean;
 };
 
-type Catalog = { products: Record<string, CatalogItem>; freeThreshold: number };
+type Catalog = {
+  products: Record<string, CatalogItem>;
+  freeThreshold: number;
+  sale?: { starts: number; ends: number; percentOff: number; name: string } | null;
+};
 
 const KEY = 'sc-bag-v1';
 /** The last Checkout this browser opened, so a retry can close it and reuse its held pieces. */
@@ -74,6 +80,12 @@ const keyOf = (l: Pick<Line, 'slug' | 'variant'>) => `${l.slug}::${l.variant ?? 
 const maxQty = (item: CatalogItem) => (item.oneOfAKind ? 1 : Math.max(1, Math.min(item.stock, 10)));
 const priceOf = (item: CatalogItem, variant?: string) =>
   item.variants.find((v) => v.id === variant)?.price ?? item.price;
+/** The sale, if it is on right now. Checkout decides for real; this only mirrors it. */
+const liveSale = () => {
+  const s = catalog?.sale;
+  const now = Date.now();
+  return s && now >= s.starts && now < s.ends ? s : null;
+};
 const count = () => lines.reduce((n, l) => n + l.qty, 0);
 
 function escapeHtml(s: string) {
@@ -144,11 +156,16 @@ function render() {
   }
 
   let subtotal = 0;
+  let saved = 0;
   let blocked = false;
+  const sale = liveSale();
   body.innerHTML = lines
     .map((l) => {
       const p = products[l.slug];
-      const unit = priceOf(p, l.variant);
+      const regular = priceOf(p, l.variant);
+      const reduced = Boolean(sale && p.sale && p.available);
+      const unit = reduced ? Math.round(regular * (100 - sale!.percentOff)) / 100 : regular;
+      if (reduced) saved += (regular - unit) * l.qty;
       const variant = p.variants.find((v) => v.id === l.variant);
       const max = maxQty(p);
       subtotal += unit * l.qty;
@@ -180,7 +197,7 @@ function render() {
               <button type="button" class="bag-remove" data-remove="${key}">Remove</button>
             </div>
           </div>
-          <span class="bag-line-price">${fmt(unit * l.qty)}</span>
+          <span class="bag-line-price">${reduced ? `<s>${fmt(regular * l.qty)}</s> ` : ''}${fmt(unit * l.qty)}</span>
         </div>`;
     })
     .join('');
@@ -188,6 +205,11 @@ function render() {
   foot.hidden = false;
   const sub = foot.querySelector('[data-bag-subtotal]');
   if (sub) sub.textContent = fmt(subtotal);
+  const saleNote = foot.querySelector<HTMLElement>('[data-bag-sale]');
+  if (saleNote) {
+    saleNote.hidden = !(sale && saved > 0);
+    if (sale && saved > 0) saleNote.textContent = `${sale.name}: ${sale.percentOff}% off applied. You save ${fmt(saved)}. Other codes cannot be added.`;
+  }
   if (checkoutBtn) checkoutBtn.disabled = blocked;
   updateShipping(subtotal);
 }

@@ -34,7 +34,11 @@ export const site = {
     processing: '2 to 4 business days',
     carrier: 'USPS Ground Advantage',
     // A seasonal order-by date. It shows on /shipping-returns until the day after `until`; set to null to remove it.
-    cutoff: { note: 'Order by Dec 12, 2026 for Christmas delivery.', until: '2026-12-12' } as { note: string; until: string } | null,
+    cutoff: {
+      note: 'Order by Dec 11, 2026 for Christmas delivery (Dec 10 for Alaska and Hawaii).',
+      detail: 'Delivery dates are estimates and aren’t guaranteed by USPS.',
+      until: '2026-12-11',
+    } as { note: string; detail?: string; until: string } | null,
   },
 
   // Returns policy, confirmed by Simone (November 2026). Ready-to-ship jewelry
@@ -44,6 +48,41 @@ export const site = {
   },
 
   announcement: 'Complimentary US shipping over $75',
+
+  // A timed sale, applied automatically at checkout: no code. Set to null when there is none.
+  // The banner shows from now until `ends`; prices drop between `starts` and `ends`.
+  // Times carry the Chicago offset (-06:00 in winter, -05:00 in summer). See src/lib/sale.ts.
+  sale: {
+    name: 'Black Friday Sale',
+    percentOff: 20,
+    // Jewelry and prints. Card sets, original paintings and commissions are not included.
+    categories: ['necklaces', 'earrings', 'bracelets', 'rings', 'prints'],
+    starts: '2026-11-27T00:00:00-06:00',
+    ends: '2026-12-01T00:00:00-06:00', // through Monday, November 30
+    banner: 'Black Friday Sale: 20% off jewelry & prints, Nov 27–30. Free US shipping over $75.',
+    // The announcement on the home page.
+    headline: 'Black Friday at the studio',
+    dates: 'Friday, November 27 through Monday, November 30',
+    body: 'For four days, every handmade gemstone necklace and signed print is 20% off. Each piece ships gift-wrapped and tracked, with free US shipping on orders over $75.',
+    finePrint: [
+      'The discount is applied automatically at checkout. No code needed.',
+      'Original paintings and commissions excluded. Can’t be combined with other offers.',
+      'Free US shipping applies to orders over $75 after the discount.',
+      'Order by Dec 11, 2026 for Christmas delivery (Dec 10 for Alaska and Hawaii). Delivery dates are estimates and aren’t guaranteed by USPS.',
+      'Returns follow the normal policy: jewelry within 14 days; prints and card sets are final sale.',
+    ],
+  } as {
+    name: string;
+    percentOff: number;
+    categories: string[];
+    starts: string;
+    ends: string;
+    banner: string;
+    headline: string;
+    dates: string;
+    body: string;
+    finePrint: string[];
+  } | null,
 
   // "Become a collector" popup. Shows once per visitor, after a short delay.
   // The code is created in Stripe by `npm run setup:stripe` (10% off, first order only).
