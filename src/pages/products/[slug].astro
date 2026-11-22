@@ -306,7 +306,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
               <li>Ships from Chicago in {site.shipping.processing}</li>
               {site.shipping.freeThreshold > 0 && <li>Complimentary US shipping over {formatPrice(site.shipping.freeThreshold)}</li>}
               {site.rating.count > 0 && <li>Rated {site.rating.average.toFixed(1)} from {site.rating.count} verified reviews</li>}
-              {isArt ? <li>Final sale</li> : <li>{site.returns.days}-day returns</li>}
+              <li>Final sale</li>
             </ul>
           )
         }
@@ -348,11 +348,8 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
                 Express shipping is available at checkout.
               </p>
               <p>
-                {
-                  isArt
-                    ? 'Original artwork and art products are final sale.'
-                    : `Ready-to-ship jewelry can be returned within ${site.returns.days} days of delivery, unworn and in its original packaging.`
-                }{' '}
+                {site.returns.policy} If a piece arrives damaged, email a photo within {site.returns.damageDays} days of
+                delivery and Simone will repair or replace it.{' '}
                 <a href="/shipping-returns">Full policy</a>.
               </p>
             </div>

@@ -11,7 +11,7 @@ const cutoff = shipping.cutoff && Date.now() < Date.parse(`${shipping.cutoff.unt
 <Page
   title="Shipping and returns"
   eyebrow="Help"
-  description={`How Simone Chagoya Studio ships orders from ${site.city}, and how returns work.`}
+  description={`How Simone Chagoya Studio ships orders from ${site.city}. All purchases are final sale.`}
 >
   <p class="lede" slot="lede">Everything ships from the studio in {site.city}.</p>
 
@@ -43,32 +43,15 @@ const cutoff = shipping.cutoff && Date.now() < Date.parse(`${shipping.cutoff.unt
   </p>
 
   <h2>Returns</h2>
-  <h3>Jewelry</h3>
-  <ul>
-    <li>Ready-to-ship jewelry is accepted within {returns.days} days of delivery.</li>
-    <li>Pieces must be unworn and in their original packaging.</li>
-    <li>
-      The buyer pays return shipping and must use a tracked, insured service. We are not responsible for items lost or
-      damaged on the way back.
-    </li>
-    <li>Refunds are issued to your original payment method after we receive and inspect the piece.</li>
-    <li>Custom, personalized and made-to-order pieces are final sale.</li>
-  </ul>
   <p>
-    To start a return, email <a href={`mailto:${site.email}`}>{site.email}</a> with your order number and include a photo
-    of the piece. Refunds go back to the original payment method within a few days of the piece arriving back at the
-    studio.
-  </p>
-
-  <h3>Final sale</h3>
-  <p>
-    All original artwork and art products are final sale and can’t be returned. This includes original paintings, prints,
-    watercolor card sets, commissions and custom pieces.
+    <strong>{returns.policy}</strong> This covers jewelry, prints, watercolor card sets, original paintings, commissions
+    and custom pieces.
   </p>
 
   <h2>Something wrong?</h2>
   <p>
-    If anything arrives damaged, email a photo within 7 days and Simone will repair or replace it. For anything else,{' '}
+    If anything arrives damaged, email a photo to <a href={`mailto:${site.email}`}>{site.email}</a> within{' '}
+    {returns.damageDays} days of delivery and Simone will repair or replace it. For anything else,{' '}
     <a href="/commissions">get in touch</a>.
   </p>
 </Page>

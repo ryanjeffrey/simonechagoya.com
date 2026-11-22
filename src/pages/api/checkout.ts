@@ -142,6 +142,8 @@ export const POST: APIRoute = async ({ request, url }) => {
       allow_promotion_codes: !discounted,
       automatic_tax: { enabled: STRIPE_AUTOMATIC_TAX },
       consent_collection: { promotions: 'auto' },
+      // Shown beside the Pay button, so the policy is in front of the buyer when they pay.
+      custom_text: { submit: { message: site.returns.policy } },
       custom_fields: [
         {
           key: 'gift_note',

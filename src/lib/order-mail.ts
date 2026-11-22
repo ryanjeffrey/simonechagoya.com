@@ -163,7 +163,7 @@ export function shippedEmail(order: Order, shipment: Shipment): Email {
         itemsTable(order, false),
         shipToBlock(order),
         paragraph(
-          `Wear it, keep it, and if anything is not right, reply to this email. Ready-to-ship jewelry can be returned within ${site.returns.days} days of delivery: ${site.url}/shipping-returns`,
+          `All purchases are final sale. If anything arrives damaged, reply to this email with a photo within ${site.returns.damageDays} days of delivery and Simone will repair or replace it.`,
           true,
         ),
       ].join(''),
@@ -180,7 +180,7 @@ export function shippedEmail(order: Order, shipment: Shipment): Email {
       'Shipping to',
       ...order.shipTo,
       '',
-      `If anything is not right, reply to this email. Ready-to-ship jewelry can be returned within ${site.returns.days} days of delivery: ${site.url}/shipping-returns`,
+      `All purchases are final sale. If anything arrives damaged, reply to this email with a photo within ${site.returns.damageDays} days of delivery and Simone will repair or replace it.`,
       signoff(),
     ].join('\n'),
   };
