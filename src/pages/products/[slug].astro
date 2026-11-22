@@ -5,6 +5,7 @@ import { getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import ProductMedia from '../../components/ProductMedia.astro';
 import ProductCard from '../../components/ProductCard.astro';
+import Price from '../../components/Price.astro';
 import Newsletter from '../../components/Newsletter.astro';
 import Reviews from '../../components/Reviews.astro';
 import {
@@ -21,6 +22,7 @@ import {
   type Product,
 } from '../../lib/catalog';
 import { site } from '../../data/site';
+import { saleCovers, salePhase, salePrice } from '../../lib/sale';
 
 export const getStaticPaths = (async () => {
   const products = await getProducts();
@@ -40,6 +42,7 @@ const group = groupOf(data.category);
 const isOriginal = data.category === 'originals';
 const isArt = group === 'art';
 const buyable = isPurchasable(product);
+const inSale = salePhase() !== null && saleCovers(data);
 // Gallery order: cover photo, then the videos, then the rest of the photos.
 // Slide 0 is the cover photo, or the illustration when there are no photos yet.
 type Slide = ({ image: number } | { video: { src: string; poster: string } }) & { full?: boolean; ratio?: string };
@@ -222,7 +225,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
           ) : (
             <p class="info-price">
               {data.compareAt && data.compareAt > data.price && <s class="muted">{formatPrice(data.compareAt)}</s>}
-              <span data-price>{priceLabel(product)}</span>
+              <Price product={product} live />
             </p>
           )
         }
@@ -263,6 +266,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
                           required
                           checked={i === 0}
                           data-variant-price={formatPrice(v.price ?? data.price)}
+                          data-variant-sale-price={inSale ? formatPrice(salePrice(v.price ?? data.price)) : undefined}
                         />
                         <span>{v.label}</span>
                       </label>
@@ -410,7 +414,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
             <span class="next-label">{nextLabel}</span>
             <span class="next-title">{next.data.title}</span>
             {brief(next) && <span class="next-brief">{brief(next)}</span>}
-            <span class="next-price">{priceLabel(next)}</span>
+            <span class="next-price"><Price product={next} /></span>
           </span>
           <span class="next-go">→</span>
         </span>
@@ -448,8 +452,8 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
       <div class="sticky-buy" data-sticky-buy aria-hidden="true">
         <div>
           <p class="sticky-title">{data.title}</p>
-          <p class="sticky-price" data-price>
-            {priceLabel(product)}
+          <p class="sticky-price">
+            <Price product={product} live />
           </p>
         </div>
         <button class="btn btn--accent" type="button" tabindex="-1" data-sticky-add>
@@ -1086,14 +1090,15 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
   const form = document.querySelector<HTMLFormElement>('[data-main-form]');
   form?.addEventListener('change', (e) => {
     const input = e.target as HTMLInputElement;
-    if (input.name === 'variant' && input.dataset.variantPrice) {
-      document.querySelectorAll('[data-price]').forEach((el) => (el.textContent = input.dataset.variantPrice!));
-    }
+    if (input.name === 'variant') showVariantPrice(input);
   });
-  const checked = form?.querySelector<HTMLInputElement>('input[name="variant"]:checked');
-  if (checked?.dataset.variantPrice) {
-    document.querySelectorAll('[data-price]').forEach((el) => (el.textContent = checked.dataset.variantPrice!));
+  function showVariantPrice(input: HTMLInputElement) {
+    const { variantPrice, variantSalePrice } = input.dataset;
+    if (variantPrice) document.querySelectorAll('[data-price]').forEach((el) => (el.textContent = variantPrice));
+    if (variantSalePrice) document.querySelectorAll('[data-sale-price]').forEach((el) => (el.textContent = variantSalePrice));
   }
+  const checked = form?.querySelector<HTMLInputElement>('input[name="variant"]:checked');
+  if (checked) showVariantPrice(checked);
 
   // Mobile sticky add-to-bag appears once the main button scrolls away
   const sticky = document.querySelector<HTMLElement>('[data-sticky-buy]');

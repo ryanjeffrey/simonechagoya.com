@@ -1,0 +1,42 @@
+---
+/**
+ * A piece's price. When the timed sale covers the piece, the page carries both prices and
+ * shows the struck-through regular price beside the sale price only while the sale is on
+ * (`html[data-sale='on']`, set by the inline script in Base.astro). Styles are in global.css.
+ */
+import { formatPrice, priceLabel, type Product } from '../lib/catalog';
+import { saleCovers, salePhase, salePrice } from '../lib/sale';
+
+interface Props {
+  product: Product;
+  /** On the product page, choosing a size rewrites the price: mark the numbers so the script can find them. */
+  live?: boolean;
+}
+
+const { product, live = false } = Astro.props;
+const { data } = product;
+const regular = priceLabel(product);
+// A page built after the sale has ended carries no sale markup at all.
+const onSale = salePhase() !== null && saleCovers(data);
+const prices = data.variants.length ? data.variants.map((v) => v.price ?? data.price) : [data.price];
+const low = salePrice(Math.min(...prices));
+const reduced = Math.min(...prices) === Math.max(...prices) ? formatPrice(low) : `From ${formatPrice(low)}`;
+---
+
+<span class:list={['price', { 'has-sale': onSale }]}>
+  <span class="price-regular" data-price={live && !onSale ? '' : undefined}>{regular}</span>
+  {
+    onSale && (
+      <span class="price-sale">
+        <s>
+          <span class="visually-hidden">Regular price </span>
+          <span data-price={live ? '' : undefined}>{regular}</span>
+        </s>{' '}
+        <span class="price-now">
+          <span class="visually-hidden">Sale price </span>
+          <span data-sale-price={live ? '' : undefined}>{reduced}</span>
+        </span>
+      </span>
+    )
+  }
+</span>

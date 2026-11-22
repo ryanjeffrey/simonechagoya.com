@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getImage } from 'astro:assets';
 import { coverImage, getProducts, isPurchasable, productUrl } from '../lib/catalog';
 import { site } from '../data/site';
+import { saleCovers, saleWindow } from '../lib/sale';
 
 /** Compact catalog the bag drawer reads to price and render lines. */
 export const GET: APIRoute = async () => {
@@ -24,12 +25,17 @@ export const GET: APIRoute = async () => {
           stock: p.data.stock,
           available: isPurchasable(p),
           sample: p.data.sample,
+          sale: saleCovers(p.data),
         },
       ] as const;
     }),
   );
 
-  return new Response(JSON.stringify({ products: Object.fromEntries(entries), freeThreshold: site.shipping.freeThreshold }), {
+  return new Response(JSON.stringify({
+      products: Object.fromEntries(entries),
+      freeThreshold: site.shipping.freeThreshold,
+      sale: saleWindow && site.sale ? { ...saleWindow, name: site.sale.name } : null,
+    }), {
     headers: { 'Content-Type': 'application/json' },
   });
 };

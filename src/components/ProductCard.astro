@@ -1,6 +1,9 @@
 ---
 import ProductMedia from './ProductMedia.astro';
-import { CATEGORY_META, isPurchasable, priceLabel, productUrl, shortMaterial, type Product } from '../lib/catalog';
+import Price from './Price.astro';
+import { CATEGORY_META, isPurchasable, productUrl, shortMaterial, type Product } from '../lib/catalog';
+import { saleCovers, salePhase } from '../lib/sale';
+import { site } from '../data/site';
 
 interface Props {
   product: Product;
@@ -14,6 +17,7 @@ const { data } = product;
 const url = productUrl(product);
 const buyable = isPurchasable(product);
 const quickAdd = buyable && data.variants.length === 0;
+const inSale = salePhase() !== null && saleCovers(data);
 // Jewelry with more than one photo shows its detail shot on hover. Paintings stay as they are.
 const alternate = data.category !== 'originals' && data.images.length > 1;
 const meta =
@@ -35,13 +39,14 @@ const meta =
         {data.status === 'sold' && <span class="badge badge--ink">Sold</span>}
         {data.status !== 'sold' && data.oneOfAKind && data.category !== 'originals' && <span class="badge">One of one</span>}
         {data.compareAt && data.compareAt > data.price && <span class="badge badge--accent">Sale</span>}
+        {inSale && <span class="badge badge--accent sale-only">{site.sale?.percentOff}% off</span>}
       </div>
     </div>
     <div class="card-info">
       <h3 class="card-title">{data.title}</h3>
       <p class="card-price">
         {data.compareAt && data.compareAt > data.price && <s class="muted">${data.compareAt}</s>}
-        {data.status === 'inquire' && !data.price ? 'Inquire' : priceLabel(product)}
+        {data.status === 'inquire' && !data.price ? 'Inquire' : <Price product={product} />}
       </p>
     </div>
     <p class="card-meta">{meta}</p>

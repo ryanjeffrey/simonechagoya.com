@@ -1,0 +1,131 @@
+---
+/**
+ * The sale announcement on the home page. Shown from the day the sale is announced until it
+ * ends (`html[data-sale]`, set by the inline script in Base.astro). Copy lives in site.sale.
+ */
+import { site } from '../data/site';
+import { salePhase } from '../lib/sale';
+
+const sale = salePhase() !== null ? site.sale : null;
+const words = sale ? sale.headline.split(' ') : [];
+---
+
+{
+  sale && (
+    <section class="sale-note" id="sale" aria-labelledby="sale-title">
+      <div class="container sale-note-inner">
+        <p class="sale-note-dates">{sale.dates}</p>
+        <h2 id="sale-title" class="sale-note-title">
+          {words.slice(0, -1).join(' ')} <em>{words.at(-1)}</em>
+        </h2>
+        <p class="sale-note-offer">
+          <span>{sale.percentOff}% off</span> jewelry and signed prints
+        </p>
+        <p class="sale-note-body">{sale.body}</p>
+        <div class="sale-note-actions">
+          <a class="btn sale-note-btn" href="/shop/jewelry">
+            Shop jewelry <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="link" href="/shop/prints">
+            Shop prints <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <ul class="sale-note-fine">
+          {sale.finePrint.map((line) => (
+            <li>{line}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .sale-note {
+    display: none;
+    padding-block: clamp(3.5rem, 7vw, 6rem);
+    background: var(--paper-2);
+    border-block: 1px solid var(--sale);
+    scroll-margin-top: var(--header-h);
+  }
+
+  :global(html[data-sale]) .sale-note {
+    display: block;
+  }
+
+  .sale-note-inner {
+    display: grid;
+    justify-items: center;
+    max-width: 52rem;
+    text-align: center;
+  }
+
+  .sale-note-dates {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--sale);
+  }
+
+  .sale-note-title {
+    margin-top: 1.1rem;
+    font-family: var(--serif);
+    font-size: var(--step-4);
+    font-weight: 350;
+    line-height: 1;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .sale-note-offer {
+    margin-top: 1.25rem;
+    font-family: var(--serif);
+    font-size: var(--step-2);
+    font-style: italic;
+    line-height: 1.2;
+    color: var(--sale);
+  }
+
+  .sale-note-offer span {
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  .sale-note-body {
+    max-width: 44rem;
+    margin-top: 1.5rem;
+    color: var(--ink-2);
+    text-wrap: pretty;
+  }
+
+  .sale-note-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem 2rem;
+    margin-top: 2rem;
+  }
+
+  .sale-note-btn {
+    --btn-bg: var(--sale);
+    --btn-fg: #fbf3ea;
+    --btn-hover: var(--ink);
+  }
+
+  .sale-note-fine {
+    list-style: none;
+    max-width: 44rem;
+    margin: 2.5rem 0 0;
+    padding: 1.5rem 0 0;
+    border-top: 1px solid var(--line-strong);
+    display: grid;
+    gap: 0.35rem;
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--ink-2);
+  }
+</style>

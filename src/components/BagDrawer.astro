@@ -29,6 +29,7 @@ import { site } from '../data/site';
         <span>Subtotal</span>
         <span data-bag-subtotal>$0</span>
       </div>
+      <p class="bag-sale" data-bag-sale hidden></p>
       <p class="bag-note">Shipping and tax are calculated at checkout.</p>
       <p class="bag-error" data-bag-error role="alert" hidden></p>
       <button type="button" class="btn btn--accent btn--block" data-bag-checkout>
@@ -180,6 +181,12 @@ import { site } from '../data/site';
     font-weight: 450;
   }
 
+  .bag-sale {
+    margin: 0.35rem 0 0;
+    font-size: var(--step--1);
+    color: var(--accent);
+  }
+
   .bag-note {
     margin: 0.25rem 0 1rem;
     font-size: var(--step--1);
@@ -285,6 +292,13 @@ import { site } from '../data/site';
   .bag :global(.bag-line-price) {
     font-size: 0.95rem;
     font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .bag :global(.bag-line-price s) {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--ink-2);
   }
 
   .bag :global(.bag-flag) {
