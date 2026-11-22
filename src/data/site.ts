@@ -64,13 +64,14 @@ export const site = {
     headline: 'Black Friday at the studio',
     dates: 'Friday, November 27 through Monday, November 30',
     body: 'For four days, every handmade gemstone necklace and signed print is 20% off. Each piece ships gift-wrapped and tracked, with free US shipping on orders over $75.',
+    // Set as one short paragraph under the announcement, followed by a linked return policy line.
     finePrint: [
-      'The discount is applied automatically at checkout. No code needed.',
+      'Applied automatically at checkout, no code needed.',
       'Original paintings and commissions excluded. Can’t be combined with other offers.',
-      'Free US shipping applies to orders over $75 after the discount.',
+      'Free US shipping over $75 after the discount.',
       'Order by Dec 11, 2026 for Christmas delivery (Dec 10 for Alaska and Hawaii). Delivery dates are estimates and aren’t guaranteed by USPS.',
-      'Returns follow the normal policy: jewelry within 14 days; prints and card sets are final sale.',
     ],
+    returns: 'Jewelry has 14 days, and prints and card sets are final sale.',
   } as {
     name: string;
     percentOff: number;
@@ -82,6 +83,7 @@ export const site = {
     dates: string;
     body: string;
     finePrint: string[];
+    returns: string;
   } | null,
 
   // "Become a collector" popup. Shows once per visitor, after a short delay.
