@@ -328,6 +328,17 @@ const jsonLd = {
         ))
       }
     </div>
+    <aside class="foundation" data-reveal aria-labelledby="foundation-title">
+      <p class="eyebrow">Our foundation</p>
+      <div>
+        <h3 id="foundation-title" class="h3">The Simone M. Chagoya and Ryan J. Smith Foundation</h3>
+        <p class="foundation-text">
+          Ryan and I started a foundation together. It’s working to make Chicago the next technology hub, beginning
+          with a book for every student in the city’s public high schools.{' '}
+          <a href="https://chagoyasmith.org" target="_blank" rel="noopener">chagoyasmith.org</a>
+        </p>
+      </div>
+    </aside>
     <p class="giving-thanks" data-reveal>Thank you to everyone whose purchase was part of this impact.</p>
   </section>
 
@@ -711,6 +722,27 @@ const jsonLd = {
     text-decoration-color: var(--gold);
     text-underline-offset: 0.2em;
     white-space: nowrap;
+  }
+
+  .foundation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: clamp(1rem, 4vw, 4rem);
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .foundation-text {
+    margin-top: 1rem;
+    max-width: 40rem;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 760px) {
+    .foundation {
+      grid-template-columns: 1fr;
+    }
   }
 
   .giving-thanks {
