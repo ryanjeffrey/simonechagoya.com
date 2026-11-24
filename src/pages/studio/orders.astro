@@ -1,15 +1,15 @@
 ---
 /**
  * Simone's orders page. Lists paid orders from Stripe, marks them shipped with
- * a tracking number (which emails the buyer), and resends a missed receipt.
- * Signed in with STUDIO_PASSWORD; never indexed.
+ * a tracking number (which emails the buyer), records what the label cost, and
+ * resends a missed receipt. Signed in with STUDIO_PASSWORD; never indexed.
  */
-import '../styles/global.css';
 import { STRIPE_SECRET_KEY } from 'astro:env/server';
 import Stripe from 'stripe';
-import { site } from '../data/site';
-import { inventoryStore } from '../lib/inventory';
-import { CARRIERS, isCarrier, money, trackingUrl, type Order, type Shipment } from '../lib/order-mail';
+import Studio from '../../layouts/Studio.astro';
+import { parseMoney } from '../../lib/finance';
+import { inventoryStore } from '../../lib/inventory';
+import { CARRIERS, isCarrier, money, trackingUrl, type Order, type Shipment } from '../../lib/order-mail';
 import {
   clearShipment,
   emailReady,
@@ -20,48 +20,40 @@ import {
   sendShipped,
   sentLog,
   type SentLog,
-} from '../lib/orders';
-import { isSignedIn, signIn, signOut, studioEnabled } from '../lib/studio-auth';
+} from '../../lib/orders';
+import { studioRequest } from '../../lib/studio-page';
 
 export const prerender = false;
-
-Astro.response.headers.set('Cache-Control', 'no-store');
-Astro.response.headers.set('X-Robots-Tag', 'noindex');
-
-const reason = (err: unknown) => (err instanceof Error ? err.message : String(err)).slice(0, 240);
 
 const MESSAGES: Record<string, string> = {
   shipped: 'Marked shipped. The buyer has their tracking email.',
   'shipped-quiet': 'Marked shipped. No email was sent.',
   unshipped: 'Moved back to To ship.',
   receipt: 'Confirmation sent again.',
-  'bad-password': 'That password is not right.',
+  label: 'Label cost saved.',
   'mail-failed': 'Saved, but the email did not go out. Try again in a minute.',
   'no-mail': 'Saved. Email is not set up yet, so nothing was sent.',
-  failed: 'Something went wrong. Try again in a minute.',
 };
 
 const store = inventoryStore();
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const action = String(form.get('action') ?? '');
-  const view = String(form.get('view') ?? '');
-  const back = (msg: string, why?: unknown) =>
-    Astro.redirect(`/studio?${new URLSearchParams({ ...(view ? { view } : {}), msg, ...(why ? { why: reason(why) } : {}) })}`, 303);
+const req = await studioRequest(Astro, '/studio/orders');
+if (req.response) return req.response;
 
-  if (action === 'login') {
-    return (await signIn(Astro.cookies, String(form.get('password') ?? ''))) ? Astro.redirect('/studio', 303) : back('bad-password');
-  }
-  if (!(await isSignedIn(Astro.cookies))) return Astro.redirect('/studio', 303);
-  if (action === 'logout') {
-    signOut(Astro.cookies);
-    return Astro.redirect('/studio', 303);
-  }
+if (req.form) {
+  const form = req.form;
+  const action = req.action;
+  const view = String(form.get('view') ?? '');
+  const back = (msg: string, why?: unknown) => req.back(msg, { view }, why);
 
   const id = String(form.get('id') ?? '');
   if (!stripe || !store || !id.startsWith('cs_')) return back('failed');
+
+  const labelCost = () => {
+    const raw = String(form.get('labelCost') ?? '').trim();
+    return raw ? parseMoney(raw) : undefined;
+  };
 
   try {
     if (action === 'ship') {
@@ -70,6 +62,7 @@ if (Astro.request.method === 'POST') {
         carrier: isCarrier(carrier) ? carrier : 'usps',
         tracking: String(form.get('tracking') ?? '').replace(/\s+/g, '').slice(0, 60),
         shippedAt: new Date().toISOString(),
+        labelCost: labelCost(),
       };
       await saveShipment(store, id, shipment);
       if (form.get('notify') !== 'on') return back('shipped-quiet');
@@ -78,6 +71,12 @@ if (Astro.request.method === 'POST') {
         () => back('shipped'),
         (err) => (console.error(err), back('mail-failed', err)),
       );
+    }
+    if (action === 'label') {
+      const shipment = await getShipment(store, id);
+      if (!shipment) return back('failed');
+      await saveShipment(store, id, { ...shipment, labelCost: labelCost() });
+      return back('label');
     }
     if (action === 'unship') {
       await clearShipment(store, id);
@@ -95,11 +94,8 @@ if (Astro.request.method === 'POST') {
   return back('failed');
 }
 
-const signedIn = await isSignedIn(Astro.cookies);
+const signedIn = req.signedIn;
 const view = ['open', 'shipped', 'all'].includes(Astro.url.searchParams.get('view') ?? '') ? Astro.url.searchParams.get('view')! : 'open';
-const message = MESSAGES[Astro.url.searchParams.get('msg') ?? ''];
-// The error behind a failure, shown only to someone signed in so Simone can tell what to fix.
-const why = signedIn ? Astro.url.searchParams.get('why') : null;
 
 type Row = Order & { shipment: Shipment | null; sent: SentLog };
 let rows: Row[] = [];
@@ -123,63 +119,7 @@ const date = (iso: string) =>
 const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET_KEY?.includes('_test_') ? 'test/' : ''}checkout/sessions/${id}`;
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="theme-color" content="#f4efe7" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>Orders | {site.studio}</title>
-  </head>
-  <body>
-    <main class="studio">
-      <header class="top">
-        <a class="mark serif" href="/">{site.name}</a>
-        {
-          signedIn && (
-            <form method="post">
-              <input type="hidden" name="action" value="logout" />
-              <button class="link small" type="submit">Sign out</button>
-            </form>
-          )
-        }
-      </header>
-
-      {
-        message && (
-          <p class="flash" role="status">
-            {message}
-            {why && <span class="why">{why}</span>}
-          </p>
-        )
-      }
-
-      {
-        !studioEnabled() ? (
-          <section class="panel">
-            <h1 class="serif title">Orders</h1>
-            <p class="muted">
-              This page opens once a password is set. In Netlify, add STUDIO_PASSWORD under Site configuration, Environment
-              variables, then redeploy.
-            </p>
-          </section>
-        ) : !signedIn ? (
-          <section class="panel">
-            <h1 class="serif title">Orders</h1>
-            <form method="post" class="login">
-              <input type="hidden" name="action" value="login" />
-              <div class="field">
-                <label for="password">Password</label>
-                <input class="input" id="password" name="password" type="password" autocomplete="current-password" required autofocus />
-              </div>
-              <button class="btn" type="submit">Sign in</button>
-            </form>
-          </section>
-        ) : (
-          <>
+<Studio title="Orders" active="orders" signedIn={signedIn} messages={MESSAGES}>
             <section class="head">
               <h1 class="serif title">
                 {toShip.length ? (
@@ -193,9 +133,9 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
                 )}
               </h1>
               <nav class="tabs" aria-label="Filter orders">
-                <a href="/studio" aria-current={view === 'open' ? 'page' : undefined}>To ship</a>
-                <a href="/studio?view=shipped" aria-current={view === 'shipped' ? 'page' : undefined}>Shipped</a>
-                <a href="/studio?view=all" aria-current={view === 'all' ? 'page' : undefined}>All</a>
+                <a href="/studio/orders" aria-current={view === 'open' ? 'page' : undefined}>To ship</a>
+                <a href="/studio/orders?view=shipped" aria-current={view === 'shipped' ? 'page' : undefined}>Shipped</a>
+                <a href="/studio/orders?view=all" aria-current={view === 'all' ? 'page' : undefined}>All</a>
               </nav>
             </section>
 
@@ -271,6 +211,24 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
                           <input type="hidden" name="view" value={view} />
                           <button class="link small" type="submit">Undo shipped</button>
                         </form>
+                        <form method="post" class="label-cost">
+                          <input type="hidden" name="action" value="label" />
+                          <input type="hidden" name="id" value={o.id} />
+                          <input type="hidden" name="view" value={view} />
+                          <label class="small" for={`label-${o.id}`}>
+                            Label cost
+                            {!o.shipment.labelCost && <span class="missing"> not entered</span>}
+                          </label>
+                          <input
+                            class="input"
+                            id={`label-${o.id}`}
+                            name="labelCost"
+                            inputmode="decimal"
+                            placeholder="$0.00"
+                            value={o.shipment.labelCost ? o.shipment.labelCost.toFixed(2) : ''}
+                          />
+                          <button class="link small" type="submit">Save</button>
+                        </form>
                       </div>
                     ) : (
                       o.paid && (
@@ -290,6 +248,10 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
                             <div class="field">
                               <label for={`tracking-${o.id}`}>Tracking number</label>
                               <input class="input" id={`tracking-${o.id}`} name="tracking" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+                            </div>
+                            <div class="field">
+                              <label for={`label-${o.id}`}>Label cost</label>
+                              <input class="input" id={`label-${o.id}`} name="labelCost" inputmode="decimal" placeholder="$0.00" autocomplete="off" />
                             </div>
                           </div>
                           <label class="check">
@@ -319,106 +281,29 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
                 );
               })}
             </ol>
-          </>
-        )
-      }
-    </main>
+</Studio>
 
-    <script>
-      // One tap is enough: stop double submits while the server sends email.
-      document.addEventListener('submit', (e) => {
-        const button = (e.target as HTMLFormElement).querySelector('button[type="submit"]');
-        if (button) setTimeout(() => button.setAttribute('disabled', ''), 0);
-      });
-
-      // The address in the lines a label site expects, ready to paste into Pirate Ship.
-      document.addEventListener('click', async (e) => {
-        const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
-        if (!button) return;
-        const text = button.dataset.copy ?? '';
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch {
-          const area = Object.assign(document.createElement('textarea'), { value: text });
-          document.body.append(area);
-          area.select();
-          document.execCommand('copy');
-          area.remove();
-        }
-        button.textContent = 'Copied';
-        setTimeout(() => (button.textContent = 'Copy address'), 2000);
-      });
-    </script>
-  </body>
-</html>
+<script>
+  // The address in the lines a label site expects, ready to paste into Pirate Ship.
+  document.addEventListener('click', async (e) => {
+    const button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
+    if (!button) return;
+    const text = button.dataset.copy ?? '';
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const area = Object.assign(document.createElement('textarea'), { value: text });
+      document.body.append(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    }
+    button.textContent = 'Copied';
+    setTimeout(() => (button.textContent = 'Copy address'), 2000);
+  });
+</script>
 
 <style>
-  .studio {
-    max-width: 44rem;
-    margin: 0 auto;
-    padding: max(1rem, env(safe-area-inset-top)) 1rem 4rem;
-  }
-
-  .top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0 1.5rem;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .mark {
-    font-size: 1.4rem;
-    text-decoration: none;
-    color: var(--ink);
-  }
-
-  .small {
-    font-size: var(--step--1);
-  }
-
-  .title {
-    font-size: var(--step-4);
-    font-weight: 300;
-    line-height: 1;
-    margin: 2rem 0 1.25rem;
-  }
-
-  .title em {
-    font-style: italic;
-    color: var(--accent);
-  }
-
-  .panel .muted {
-    max-width: 30em;
-  }
-
-  .login {
-    display: grid;
-    gap: 1.5rem;
-    max-width: 22rem;
-  }
-
-  .flash,
-  .warn {
-    margin: 1.25rem 0 0;
-    padding: 0.85rem 1rem;
-    border-left: 2px solid var(--gold);
-    background: var(--paper-2);
-    font-size: var(--step--1);
-  }
-
-  .warn {
-    border-color: var(--accent);
-  }
-
-  .why {
-    display: block;
-    margin-top: 0.35rem;
-    color: var(--ink-2);
-    overflow-wrap: anywhere;
-  }
-
   .tabs {
     display: flex;
     gap: 1.5rem;
@@ -440,11 +325,6 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
   .tabs a[aria-current='page'] {
     color: var(--ink);
     border-color: var(--ink);
-  }
-
-  .empty {
-    padding: 3rem 0;
-    text-align: center;
   }
 
   .orders {
@@ -489,25 +369,6 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
 
   .tags:empty {
     display: none;
-  }
-
-  .tag {
-    padding: 0.3rem 0.65rem;
-    border: 1px solid var(--line-strong);
-    font-size: var(--step--2);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  .tag--accent {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-
-  .tag--done {
-    color: var(--gold-text);
-    border-color: var(--gold);
   }
 
   .items {
@@ -573,21 +434,19 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
 
   .ship-fields {
     display: grid;
-    grid-template-columns: 7rem 1fr;
+    grid-template-columns: 7rem 1fr 6.5rem;
     gap: 1rem;
   }
 
-  .check {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: var(--step--1);
-  }
+  @media (max-width: 30rem) {
+    .ship-fields {
+      grid-template-columns: 1fr 1fr;
+    }
 
-  .check input {
-    width: 1.1rem;
-    height: 1.1rem;
-    accent-color: var(--accent);
+    .ship-fields .field:nth-child(2) {
+      grid-column: 1 / -1;
+      order: 3;
+    }
   }
 
   .ship .btn {
@@ -600,6 +459,19 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
     align-items: baseline;
     gap: 1rem;
     flex-wrap: wrap;
+  }
+
+  .label-cost {
+    flex-basis: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+
+  .label-cost .input {
+    width: 6.5rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 0;
   }
 
   .shipped a {
@@ -619,14 +491,4 @@ const stripeLink = (id: string) => `https://dashboard.stripe.com/${STRIPE_SECRET
     color: var(--accent);
   }
 
-  button.link {
-    background: none;
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-  }
-
-  button[disabled] {
-    opacity: 0.5;
-  }
 </style>

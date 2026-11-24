@@ -15,7 +15,7 @@ export const prerender = false;
  * rebuilds the site so they show Sold. Once the payment has gone through, it
  * emails the buyer their confirmation and Simone a sale alert. Any error in
  * recording returns 500 so Stripe retries the event; a failed email does not,
- * and can be sent again from the orders page (/studio).
+ * and can be sent again from the orders page (/studio/orders).
  */
 export const POST: APIRoute = async ({ request }) => {
   if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) return new Response('Webhook not configured', { status: 503 });

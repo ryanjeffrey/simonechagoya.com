@@ -1,0 +1,536 @@
+---
+/**
+ * Commissions and other requests, from first message to paid in full.
+ * Inquiries from the website form arrive on their own (netlify/functions/
+ * submission-created.mjs); ones from email, Instagram or in person are added
+ * here. Payments recorded on a request count as commission sales.
+ */
+import Studio from '../../layouts/Studio.astro';
+import { chicagoDate, cents, dayLabel, parseDate, parseMoney, usd } from '../../lib/finance';
+import {
+  OPEN_STATUSES,
+  REQUEST_SOURCES,
+  REQUEST_STATUSES,
+  REQUEST_TYPES,
+  balanceDue,
+  deleteRequest,
+  getRequest,
+  listRequests,
+  newId,
+  paid,
+  saveRequest,
+  type Request,
+  type RequestStatus,
+} from '../../lib/ledger';
+import { optional, studioRequest, text } from '../../lib/studio-page';
+import { studioStore } from '../../lib/studio-store';
+
+export const prerender = false;
+
+const METHODS = ['Venmo', 'Zelle', 'PayPal', 'Card', 'Cash', 'Check', 'Other'];
+const MESSAGES: Record<string, string> = {
+  added: 'Request added.',
+  paid: 'Payment recorded. It counts as a commission sale on the dashboard.',
+  unpaid: 'Payment removed.',
+};
+
+const req = await studioRequest(Astro, '/studio/requests');
+if (req.response) return req.response;
+
+const kv = studioStore();
+const isStatus = (s: string): s is RequestStatus => s in REQUEST_STATUSES;
+const date = (form: FormData, name: string) => (/^\d{4}-\d{2}-\d{2}$/.test(text(form, name, 10)) ? text(form, name, 10) : undefined);
+
+if (req.form) {
+  const form = req.form;
+  const id = text(form, 'id', 80);
+  if (!kv) return req.back('no-store', { id });
+  try {
+    if (req.action === 'add') {
+      const created = date(form, 'created');
+      const r: Request = {
+        id: newId('r'),
+        created: created ? new Date(`${created}T12:00:00-06:00`).toISOString() : new Date().toISOString(),
+        source: text(form, 'source', 40) || 'Other',
+        name: text(form, 'name', 120) || 'No name',
+        email: optional(form, 'email', 200),
+        phone: optional(form, 'phone', 40),
+        type: text(form, 'type', 60) || 'Something else',
+        budget: optional(form, 'budget', 60),
+        piece: optional(form, 'piece', 120),
+        message: text(form, 'message', 5000),
+        status: 'new',
+        payments: [],
+        updated: new Date().toISOString(),
+      };
+      await saveRequest(kv, r);
+      return req.back('added', { id: r.id });
+    }
+
+    const r = id ? await getRequest(kv, id) : null;
+    if (!r) return req.back('failed');
+
+    if (req.action === 'update') {
+      const status = text(form, 'status', 20);
+      const quote = text(form, 'quote', 20);
+      const cost = text(form, 'cost', 20);
+      await saveRequest(kv, {
+        ...r,
+        name: text(form, 'name', 120) || r.name,
+        email: optional(form, 'email', 200),
+        phone: optional(form, 'phone', 40),
+        type: text(form, 'type', 60) || r.type,
+        status: isStatus(status) ? status : r.status,
+        quote: quote ? parseMoney(quote) : undefined,
+        cost: cost ? parseMoney(cost) : undefined,
+        due: date(form, 'due'),
+        followUp: date(form, 'followUp'),
+        notes: optional(form, 'notes', 5000),
+      });
+      return req.back('saved', { id });
+    }
+    if (req.action === 'pay') {
+      const amount = parseMoney(form.get('amount'));
+      if (amount <= 0) return req.back('failed', { id }, 'Enter the amount paid.');
+      await saveRequest(kv, {
+        ...r,
+        payments: [
+          ...r.payments,
+          { id: newId('pay'), date: parseDate(form.get('date')), amount, method: optional(form, 'method', 40), note: optional(form, 'note', 300) },
+        ],
+      });
+      return req.back('paid', { id });
+    }
+    if (req.action === 'unpay') {
+      const pid = text(form, 'pid', 80);
+      await saveRequest(kv, { ...r, payments: r.payments.filter((p) => p.id !== pid) });
+      return req.back('unpaid', { id });
+    }
+    if (req.action === 'delete') {
+      await deleteRequest(kv, id);
+      return req.back('deleted');
+    }
+  } catch (err) {
+    console.error(`Studio requests ${req.action} failed`, err);
+    return req.back('failed', { id }, err);
+  }
+  return req.back('failed', { id });
+}
+
+const today = chicagoDate();
+const thisYear = today.slice(0, 4);
+
+let requests: Request[] = [];
+let loadError = '';
+if (req.signedIn && kv) {
+  try {
+    requests = await listRequests(kv);
+  } catch (err) {
+    console.error('Studio requests could not load', err);
+    loadError = 'Requests could not be loaded. Refresh in a minute.';
+  }
+}
+
+const id = Astro.url.searchParams.get('id') ?? '';
+const current = id ? requests.find((r) => r.id === id) ?? null : null;
+
+const FILTERS = {
+  open: { label: 'Open', test: (r: Request) => OPEN_STATUSES.includes(r.status) },
+  new: { label: 'New', test: (r: Request) => r.status === 'new' },
+  done: { label: 'Done', test: (r: Request) => !OPEN_STATUSES.includes(r.status) },
+  all: { label: 'All', test: () => true },
+} as const;
+type Filter = keyof typeof FILTERS;
+const asked = Astro.url.searchParams.get('status') ?? '';
+const filter: Filter = asked in FILTERS ? (asked as Filter) : 'open';
+
+// New ones first, then whatever has the nearest follow-up or due date, then the rest by when they came in.
+const nextDate = (r: Request) => [r.followUp, r.due].filter((d): d is string => Boolean(d)).sort()[0] ?? '9999';
+const shown = requests
+  .filter(FILTERS[filter].test)
+  .sort(
+    (a, b) =>
+      Number(b.status === 'new') - Number(a.status === 'new') ||
+      (filter === 'open' ? nextDate(a).localeCompare(nextDate(b)) : 0) ||
+      b.created.localeCompare(a.created),
+  );
+
+const when = (iso: string) => dayLabel(chicagoDate(iso), thisYear);
+const flags = (r: Request) => {
+  const out: string[] = [];
+  if (!OPEN_STATUSES.includes(r.status)) return out;
+  if (r.followUp && r.followUp <= today) out.push(r.followUp === today ? 'Follow up today' : 'Follow-up overdue');
+  if (r.due) out.push(r.due < today ? `Was due ${dayLabel(r.due, thisYear)}` : `Due ${dayLabel(r.due, thisYear)}`);
+  return out;
+};
+const replyLink = (r: Request) =>
+  r.email ? `mailto:${r.email}?subject=${encodeURIComponent(`Your ${r.type.toLowerCase()} inquiry`)}` : null;
+const safeUrl = (u?: string) => (u && /^https:\/\//.test(u) ? u : null);
+---
+
+<Studio title="Requests" active="requests" signedIn={req.signedIn} messages={MESSAGES}>
+  {!kv && <p class="warn">The studio store is not available here, so requests cannot be saved.</p>}
+  {loadError && <p class="warn">{loadError}</p>}
+
+  {
+    current ? (
+      <article class="detail">
+        <a class="link small back" href="/studio/requests">
+          All requests
+        </a>
+        <h1 class="serif title">{current.name}</h1>
+        <p class="meta small muted">
+          {current.type}, via {current.source}, {when(current.created)}
+          {current.budget && <>, budget {current.budget}</>}
+        </p>
+        <div class="tags">
+          <span class:list={['tag', { 'tag--accent': current.status === 'new' }]}>{REQUEST_STATUSES[current.status]}</span>
+          {flags(current).map((f) => (
+            <span class="tag tag--done">{f}</span>
+          ))}
+        </div>
+
+        <div class="contact">
+          {current.email && <a href={replyLink(current)!}>{current.email}</a>}
+          {current.phone && <a href={`tel:${current.phone}`}>{current.phone}</a>}
+        </div>
+
+        {current.piece && (
+          <p class="small">
+            <span class="muted">About:</span> {current.piece}
+          </p>
+        )}
+        {current.message && <blockquote class="message">{current.message}</blockquote>}
+        {safeUrl(current.attachment) && (
+          <p class="small">
+            <a href={safeUrl(current.attachment)!} rel="noreferrer">
+              Reference image
+            </a>{' '}
+            <span class="muted">(also kept in Netlify Forms)</span>
+          </p>
+        )}
+
+        <dl class="money">
+          <div>
+            <dt>Quote</dt>
+            <dd class="num">{current.quote ? usd(current.quote) : 'Not set'}</dd>
+          </div>
+          <div>
+            <dt>Paid</dt>
+            <dd class="num">{usd(paid(current))}</dd>
+          </div>
+          <div>
+            <dt>Still owed</dt>
+            <dd class="num">{usd(balanceDue(current))}</dd>
+          </div>
+          <div>
+            <dt>Profit so far</dt>
+            <dd class="num">
+              {usd(cents(paid(current) - (current.cost ?? 0) * (current.quote ? Math.min(1, paid(current) / current.quote) : paid(current) > 0 ? 1 : 0)))}
+            </dd>
+          </div>
+        </dl>
+
+        <section class="block">
+          <h2 class="section-title">Payments</h2>
+          {current.payments.length > 0 && (
+            <ul class="rows">
+              {current.payments.map((p) => (
+                <li class="row">
+                  <div>
+                    <p class="row-title num">{usd(p.amount)}</p>
+                    <p class="row-meta">
+                      {dayLabel(p.date, thisYear)}
+                      {p.method && <>, {p.method}</>}
+                      {p.note && <>, {p.note}</>}
+                    </p>
+                  </div>
+                  <form method="post" action="/studio/requests" data-confirm="Remove this payment?">
+                    <input type="hidden" name="action" value="unpay" />
+                    <input type="hidden" name="id" value={current.id} />
+                    <input type="hidden" name="pid" value={p.id} />
+                    <button class="link small danger" type="submit">Remove</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form method="post" action="/studio/requests" class="form pay">
+            <input type="hidden" name="action" value="pay" />
+            <input type="hidden" name="id" value={current.id} />
+            <div class="form-grid">
+              <div class="field">
+                <label for="p-amount">Amount received</label>
+                <input class="input" id="p-amount" name="amount" inputmode="decimal" required placeholder="$0.00" />
+              </div>
+              <div class="field">
+                <label for="p-date">Date</label>
+                <input class="input" id="p-date" name="date" type="date" value={today} />
+              </div>
+              <div class="field">
+                <label for="p-method">How</label>
+                <select class="select" id="p-method" name="method">
+                  {METHODS.map((m) => (
+                    <option>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div class="field">
+                <label for="p-note">Note</label>
+                <input class="input" id="p-note" name="note" placeholder="Deposit, final payment..." />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit">Record payment</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="block">
+          <h2 class="section-title">Details</h2>
+          <form method="post" action="/studio/requests" class="form">
+            <input type="hidden" name="action" value="update" />
+            <input type="hidden" name="id" value={current.id} />
+            <div class="form-grid">
+              <div class="field">
+                <label for="r-status">Status</label>
+                <select class="select" id="r-status" name="status">
+                  {Object.entries(REQUEST_STATUSES).map(([k, label]) => (
+                    <option value={k} selected={current.status === k}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div class="field">
+                <label for="r-type">Type</label>
+                <select class="select" id="r-type" name="type">
+                  {[...new Set([...REQUEST_TYPES, current.type])].map((t) => (
+                    <option selected={current.type === t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div class="field">
+                <label for="r-quote">Quote <span class="hint">The agreed price</span></label>
+                <input class="input" id="r-quote" name="quote" inputmode="decimal" placeholder="$0.00" value={current.quote ? current.quote.toFixed(2) : ''} />
+              </div>
+              <div class="field">
+                <label for="r-cost">Cost to make <span class="hint">Materials, framing, shipping</span></label>
+                <input class="input" id="r-cost" name="cost" inputmode="decimal" placeholder="$0.00" value={current.cost ? current.cost.toFixed(2) : ''} />
+              </div>
+              <div class="field">
+                <label for="r-due">Due</label>
+                <input class="input" id="r-due" name="due" type="date" value={current.due ?? ''} />
+              </div>
+              <div class="field">
+                <label for="r-follow">Follow up on</label>
+                <input class="input" id="r-follow" name="followUp" type="date" value={current.followUp ?? ''} />
+              </div>
+              <div class="field">
+                <label for="r-name">Name</label>
+                <input class="input" id="r-name" name="name" required value={current.name} />
+              </div>
+              <div class="field">
+                <label for="r-email">Email</label>
+                <input class="input" id="r-email" name="email" type="email" value={current.email ?? ''} />
+              </div>
+              <div class="field">
+                <label for="r-phone">Phone</label>
+                <input class="input" id="r-phone" name="phone" type="tel" value={current.phone ?? ''} />
+              </div>
+              <div class="field span">
+                <label for="r-notes">Notes</label>
+                <textarea class="textarea" id="r-notes" name="notes" placeholder="Stones agreed, sizes, what was said...">{current.notes ?? ''}</textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit">Save</button>
+            </div>
+          </form>
+        </section>
+
+        <form method="post" action="/studio/requests" class="block" data-confirm="Delete this request and its payments?">
+          <input type="hidden" name="action" value="delete" />
+          <input type="hidden" name="id" value={current.id} />
+          <button class="link small danger" type="submit">Delete this request</button>
+        </form>
+      </article>
+    ) : (
+      <>
+        <h1 class="serif title">Requests</h1>
+        {id && <p class="warn">That request was not found. It may have been deleted.</p>}
+
+        <details class="adder">
+          <summary class="btn btn--accent">Add a request</summary>
+          <form method="post" action="/studio/requests" class="form">
+            <input type="hidden" name="action" value="add" />
+            <p class="small muted">For requests that came by email, Instagram or in person. The website form adds its own.</p>
+            <div class="form-grid">
+              <div class="field">
+                <label for="n-name">Name</label>
+                <input class="input" id="n-name" name="name" required />
+              </div>
+              <div class="field">
+                <label for="n-source">Came from</label>
+                <select class="select" id="n-source" name="source">
+                  {REQUEST_SOURCES.filter((s) => s !== 'Website form').map((s) => (
+                    <option>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div class="field">
+                <label for="n-email">Email</label>
+                <input class="input" id="n-email" name="email" type="email" />
+              </div>
+              <div class="field">
+                <label for="n-phone">Phone or handle</label>
+                <input class="input" id="n-phone" name="phone" />
+              </div>
+              <div class="field">
+                <label for="n-type">Type</label>
+                <select class="select" id="n-type" name="type">
+                  {REQUEST_TYPES.map((t) => (
+                    <option>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div class="field">
+                <label for="n-created">Came in on</label>
+                <input class="input" id="n-created" name="created" type="date" value={today} />
+              </div>
+              <div class="field span">
+                <label for="n-piece">Piece <span class="hint">If it is about one</span></label>
+                <input class="input" id="n-piece" name="piece" />
+              </div>
+              <div class="field span">
+                <label for="n-message">What they asked for</label>
+                <textarea class="textarea" id="n-message" name="message"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit">Add request</button>
+            </div>
+          </form>
+        </details>
+
+        <nav class="chips block" aria-label="Show">
+          {(Object.keys(FILTERS) as Filter[]).map((f) => (
+            <a href={f === 'open' ? '/studio/requests' : `/studio/requests?status=${f}`} aria-current={f === filter ? 'page' : undefined}>
+              {FILTERS[f].label}
+              <span class="count">{requests.filter(FILTERS[f].test).length}</span>
+            </a>
+          ))}
+        </nav>
+
+        {shown.length ? (
+          <ul class="rows">
+            {shown.map((r) => (
+              <li class="row">
+                <div>
+                  <p class="row-title">
+                    <a href={`/studio/requests?id=${encodeURIComponent(r.id)}`}>{r.name}</a>
+                  </p>
+                  <p class="row-meta">
+                    {r.type}, {when(r.created)}
+                    {flags(r).map((f) => (
+                      <span class="flag">{f}</span>
+                    ))}
+                  </p>
+                </div>
+                <div class="row-side">
+                  <span class:list={['tag', { 'tag--accent': r.status === 'new' }]}>{REQUEST_STATUSES[r.status]}</span>
+                  {r.quote ? <p class="row-meta num">{balanceDue(r) > 0 ? `${usd(balanceDue(r))} owed` : `${usd(r.quote)} paid`}</p> : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">{filter === 'open' ? 'No open requests.' : 'Nothing here.'}</p>
+        )}
+      </>
+    )
+  }
+</Studio>
+
+<style>
+  .back {
+    margin-top: 1.5rem;
+  }
+
+  .detail .title {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    overflow-wrap: anywhere;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+
+  .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .contact a {
+    color: var(--accent);
+  }
+
+  .message {
+    margin: 1rem 0;
+    padding: 1rem 1.25rem;
+    border-left: 2px solid var(--gold);
+    background: var(--paper-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .money {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+    gap: 1rem 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .money dt {
+    font-size: var(--step--2);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .money dd {
+    font-family: var(--serif);
+    font-size: var(--step-2);
+  }
+
+  .pay {
+    margin-top: 1rem;
+  }
+
+  .block {
+    margin-top: 2.5rem;
+  }
+
+  .flag {
+    display: inline-block;
+    margin-left: 0.6rem;
+    color: var(--accent);
+  }
+
+  .row-side {
+    display: grid;
+    justify-items: end;
+    gap: 0.35rem;
+    align-content: start;
+  }
+</style>

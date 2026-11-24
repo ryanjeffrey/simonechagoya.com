@@ -1,5 +1,5 @@
 /**
- * Sign-in for the orders page (/studio). One shared password, STUDIO_PASSWORD,
+ * Sign-in for the studio pages (/studio and below). One shared password, STUDIO_PASSWORD,
  * set in Netlify. The cookie holds an HMAC of a fixed string keyed by the
  * password, so changing the password signs everyone out.
  */

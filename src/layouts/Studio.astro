@@ -1,0 +1,136 @@
+---
+/**
+ * The frame for Simone's private studio pages: sign-in, the page menu, and
+ * the message shown after a form is sent. Never indexed.
+ *
+ * Pages call studioRequest() first, then pass `signedIn` here. Until she is
+ * signed in, the page's own content is not rendered.
+ */
+import '../styles/global.css';
+import '../styles/studio.css';
+import { site } from '../data/site';
+import { studioEnabled } from '../lib/studio-auth';
+
+interface Props {
+  title: string;
+  active: 'overview' | 'orders' | 'requests' | 'sales' | 'expenses' | 'costs';
+  signedIn: boolean;
+  /** Messages this page can show after a redirect, by key. */
+  messages?: Record<string, string>;
+  /** Wider pages (the dashboard) use the full studio width. */
+  wide?: boolean;
+}
+
+const { title, active, signedIn, messages = {}, wide = false } = Astro.props;
+
+const MENU = [
+  { key: 'overview', label: 'Overview', href: '/studio' },
+  { key: 'orders', label: 'Orders', href: '/studio/orders' },
+  { key: 'requests', label: 'Requests', href: '/studio/requests' },
+  { key: 'sales', label: 'Sales', href: '/studio/sales' },
+  { key: 'expenses', label: 'Expenses', href: '/studio/expenses' },
+  { key: 'costs', label: 'Costs', href: '/studio/costs' },
+] as const;
+
+const SHARED: Record<string, string> = {
+  'bad-password': 'That password is not right.',
+  saved: 'Saved.',
+  deleted: 'Deleted.',
+  failed: 'Something went wrong. Try again in a minute.',
+  'no-store': 'The studio store is not available, so nothing was saved.',
+};
+
+const msg = Astro.url.searchParams.get('msg') ?? '';
+const message = messages[msg] ?? SHARED[msg];
+// The error behind a failure, shown only to someone signed in so Simone can tell what to fix.
+const why = signedIn ? Astro.url.searchParams.get('why') : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f4efe7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>{title} | {site.studio}</title>
+  </head>
+  <body>
+    <main class:list={['studio', { 'studio--wide': wide }]}>
+      <header class="top">
+        <a class="mark serif" href="/">{site.name}</a>
+        {
+          signedIn && (
+            <form method="post">
+              <input type="hidden" name="action" value="logout" />
+              <button class="link small" type="submit">Sign out</button>
+            </form>
+          )
+        }
+      </header>
+
+      {
+        signedIn && (
+          <nav class="menu" aria-label="Studio">
+            {MENU.map((m) => (
+              <a href={m.href} aria-current={m.key === active ? 'page' : undefined}>
+                {m.label}
+              </a>
+            ))}
+          </nav>
+        )
+      }
+
+      {
+        message && (
+          <p class="flash" role="status">
+            {message}
+            {why && <span class="why">{why}</span>}
+          </p>
+        )
+      }
+
+      {
+        !studioEnabled() ? (
+          <section class="panel">
+            <h1 class="serif title">Studio</h1>
+            <p class="muted">
+              This page opens once a password is set. In Netlify, add STUDIO_PASSWORD under Site configuration, Environment
+              variables, then redeploy.
+            </p>
+          </section>
+        ) : !signedIn ? (
+          <section class="panel">
+            <h1 class="serif title">{title}</h1>
+            <form method="post" class="login">
+              <input type="hidden" name="action" value="login" />
+              <div class="field">
+                <label for="password">Password</label>
+                <input class="input" id="password" name="password" type="password" autocomplete="current-password" required autofocus />
+              </div>
+              <button class="btn" type="submit">Sign in</button>
+            </form>
+          </section>
+        ) : (
+          <slot />
+        )
+      }
+    </main>
+
+    <script>
+      // One tap is enough: stop double submits while the server works.
+      document.addEventListener('submit', (e) => {
+        const form = e.target as HTMLFormElement;
+        const confirmText = form.dataset.confirm;
+        if (confirmText && !window.confirm(confirmText)) {
+          e.preventDefault();
+          return;
+        }
+        const button = (e as SubmitEvent).submitter ?? form.querySelector('button[type="submit"]');
+        if (button) setTimeout(() => button.setAttribute('disabled', ''), 0);
+      });
+    </script>
+  </body>
+</html>

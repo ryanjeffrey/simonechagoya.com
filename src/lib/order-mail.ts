@@ -8,6 +8,9 @@
  */
 import { site } from '../data/site.ts';
 
+/** Stripe metadata `source` on every Checkout session this site creates. */
+export const SOURCE = 'simonechagoya.com';
+
 export type OrderItem = { name: string; qty: number; amount: number; image?: string };
 
 /** One paid checkout, flattened from its Stripe session. Amounts are in cents. */
@@ -31,7 +34,13 @@ export type Order = {
   paid: boolean;
 };
 
-export type Shipment = { carrier: Carrier; tracking: string; shippedAt: string };
+export type Shipment = {
+  carrier: Carrier;
+  tracking: string;
+  shippedAt: string;
+  /** What the label cost, in dollars. Counts against the order's profit on the studio dashboard. */
+  labelCost?: number;
+};
 
 export type Email = { subject: string; html: string; text: string };
 
