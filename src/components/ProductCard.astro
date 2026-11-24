@@ -38,6 +38,7 @@ const meta =
       <div class="card-badges">
         {data.status === 'sold' && <span class="badge badge--ink">Sold</span>}
         {data.status !== 'sold' && data.oneOfAKind && data.category !== 'originals' && <span class="badge">One of one</span>}
+        {data.status !== 'sold' && data.edition && <span class="badge">Limited edition</span>}
         {data.compareAt && data.compareAt > data.price && <span class="badge badge--accent">Sale</span>}
         {inSale && <span class="badge badge--accent sale-only">{site.sale?.percentOff}% off</span>}
       </div>

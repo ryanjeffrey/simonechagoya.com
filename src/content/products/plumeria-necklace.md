@@ -1,8 +1,8 @@
 ---
 title: "Plumeria Necklace"
 category: necklaces
-# Sold on Etsy. Sold pieces show no price, so this value is never displayed.
-price: 0
+# A best seller, back as a limited edition of 3 (November 2026).
+price: 100
 summary: "The Plumeria Necklace is for the woman who is grounded in love and appreciates the beauty of starting something new."
 intention: "Love · Beauty · New Beginnings"
 images:
@@ -26,20 +26,23 @@ care:
   - "Clean with a soft damp cloth and dry thoroughly before storing or wearing."
   - "Apply perfume, lotions, and hairspray before putting on your jewelry to avoid product contact."
   - "For a secure connection, ensure the clasp is firmly closed."
-stock: 1
+stock: 3
+edition: 3
 oneOfAKind: false
-status: sold
+status: available
 tags: ["mother_of_pearl", "flower_necklace", "gemstone_necklace", "simone_chagoya"]
 order: 210
 ---
 
 The Plumeria Necklace is for the woman who is grounded in love and appreciates the beauty of starting something new.
 
+One of the studio’s best sellers, the Plumeria is back for a limited edition of 3. A perfect gift for a special occasion.
+
 The Plumeria flower symbolizes love, beauty, and new beginnings. Known for its intoxicating fragrance, the Plumeria flower signifies a love that lasts and a devotion that endures. Native to the tropical regions of the Americas, from Mexico and the Caribbean to Central America and Brazil, the plumeria carries the warmth of its origins in every petal.
 
 Each bead is a hand carved mother-of-pearl flower. Mother-of-pearl is an organic gemstone, similar to pearls, formed by living organisms. It is the iridescent, hard inner lining of mollusk shells, luminous, natural, and unlike any other stone. No two beads are alike. Shell natural color varies.
 
-A special necklace handmade by Chicago artist Simone Chagoya. Limited edition of 3.
+Handmade by Chicago artist Simone Chagoya.
 
 Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
 Card includes jewelry intention and care.

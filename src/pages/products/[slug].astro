@@ -211,6 +211,7 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
         <div class="info-badges">
           {data.status === 'sold' && <span class="badge badge--ink">Sold</span>}
           {data.status !== 'sold' && data.oneOfAKind && <span class="badge badge--outline">One of one</span>}
+          {data.status !== 'sold' && data.edition && <span class="badge badge--outline">Limited edition of {data.edition}</span>}
           {data.sample && <span class="badge badge--outline">Sample listing</span>}
         </div>
 
@@ -282,6 +283,12 @@ const details = (data.specs.length ? [...data.specs.map((s) => [s.label, s.value
               </button>
               <p class="buy-error" data-buy-error role="alert" hidden />
               {data.oneOfAKind && <p class="actions-note">This is the only one. Once it sells, it is gone.</p>}
+              {data.edition && (
+                <p class="actions-note">
+                  A limited edition of {data.edition}, {data.stock < data.edition ? `${data.stock} left` : 'each strung by hand'}. Once they
+                  sell, they are gone.
+                </p>
+              )}
             </form>
           )
         }
