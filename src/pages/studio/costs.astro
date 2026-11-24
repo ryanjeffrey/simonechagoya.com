@@ -1,0 +1,261 @@
+---
+/**
+ * What each piece costs to make and package, which turns sales into profit,
+ * and what each piece keeps when it sells here versus on Etsy. Also the
+ * backup: download everything, or load a backup or prepared import file.
+ */
+import { getCollection } from 'astro:content';
+import Studio from '../../layouts/Studio.astro';
+import { CATEGORY_META } from '../../lib/catalog';
+import { cents, etsyFee, parseMoney, stripeFee, usd, type Costs } from '../../lib/finance';
+import { getCosts, importAll, saveCosts, type Backup } from '../../lib/ledger';
+import { studioRequest } from '../../lib/studio-page';
+import { studioStore } from '../../lib/studio-store';
+
+export const prerender = false;
+
+const MESSAGES: Record<string, string> = {
+  imported: 'Backup loaded.',
+  'bad-file': 'That file could not be read as a studio backup.',
+};
+
+const req = await studioRequest(Astro, '/studio/costs');
+if (req.response) return req.response;
+
+const kv = studioStore();
+const products = await getCollection('products');
+
+if (req.form) {
+  const form = req.form;
+  if (!kv) return req.back('no-store');
+  try {
+    if (req.action === 'costs') {
+      const costs = await getCosts(kv);
+      const known = new Set(products.map((p) => p.id));
+      const now = new Date().toISOString();
+      for (const [key, raw] of form.entries()) {
+        if (!key.startsWith('cost:') || typeof raw !== 'string') continue;
+        const slug = key.slice(5);
+        if (!known.has(slug)) continue;
+        const value = raw.trim();
+        if (!value) {
+          delete costs[slug];
+          continue;
+        }
+        const cost = parseMoney(value);
+        if (costs[slug]?.cost !== cost) costs[slug] = { ...costs[slug], cost, updated: now };
+      }
+      await saveCosts(kv, costs);
+      return req.back('saved');
+    }
+    if (req.action === 'import') {
+      const file = form.get('backup');
+      if (!(file instanceof File) || !file.size || file.size > 5_000_000) return req.back('bad-file');
+      let data: Backup;
+      try {
+        data = JSON.parse(await file.text());
+      } catch {
+        return req.back('bad-file');
+      }
+      const n = await importAll(kv, data);
+      return req.back('imported', {}, `${n.costs} piece costs, ${n.sales} sales, ${n.expenses} expenses and ${n.requests} requests.`);
+    }
+  } catch (err) {
+    console.error(`Studio costs ${req.action} failed`, err);
+    return req.back(err instanceof Error && /backup/.test(err.message) ? 'bad-file' : 'failed', {}, err);
+  }
+  return req.back('failed');
+}
+
+let costs: Costs = {};
+if (req.signedIn && kv) costs = await getCosts(kv);
+
+const groups = Object.entries(CATEGORY_META)
+  .map(([cat, meta]) => ({
+    label: meta.label,
+    // Paintings are one of a kind and rarely need a cost, so their long list starts folded.
+    folded: cat === 'originals',
+    items: products
+      .filter((p) => p.data.category === cat && !p.data.sample)
+      .sort((a, b) => Number(a.data.status === 'sold') - Number(b.data.status === 'sold') || a.data.title.localeCompare(b.data.title)),
+  }))
+  .filter((g) => g.items.length);
+const missing = products.filter((p) => !p.data.sample && p.data.category !== 'originals' && !costs[p.id]).length;
+const signed = (v: number) => (v < 0 ? `−${usd(-v)}` : usd(v));
+---
+
+<Studio title="Costs" active="costs" signedIn={req.signedIn} messages={MESSAGES}>
+  <h1 class="serif title">Costs</h1>
+  {!kv && <p class="warn">The studio store is not available here, so costs cannot be saved.</p>}
+  <p class="muted intro">
+    What one piece costs to make and package: stones, findings, and the bag, box, ribbon and mailer. Profit on the dashboard comes from these. A piece
+    sold with no cost here counts as all profit, so it reads high.
+  </p>
+  {missing > 0 && <p class="note">{missing === 1 ? '1 piece has' : `${missing} pieces have`} no cost yet (paintings aside).</p>}
+
+  <form method="post" action="/studio/costs" class="costs">
+    <input type="hidden" name="action" value="costs" />
+    {
+      groups.map((g) => (
+        <details class="group" open={!g.folded || undefined}>
+          <summary class="section-title">
+            {g.label} <span class="small muted">{g.items.length}</span>
+          </summary>
+          <div class="scroll">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Piece</th>
+                  <th class="r">Price</th>
+                  <th class="cost-h">Cost</th>
+                  <th class="r">Keeps here</th>
+                  <th class="r">On Etsy</th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.items.map((p) => {
+                  const record = costs[p.id];
+                  const price = p.data.price;
+                  const here = record && price ? cents(price - record.cost - stripeFee(price)) : null;
+                  const etsy = record && price ? cents(price - record.cost - etsyFee(price)) : null;
+                  return (
+                    <tr>
+                      <td>
+                        <a href={`/products/${p.id}`}>{p.data.title}</a>
+                        {p.data.status === 'sold' && <span class="muted small"> sold</span>}
+                      </td>
+                      <td class="r num">{price ? usd(price, Number.isInteger(price)) : 'n/a'}</td>
+                      <td class="cost">
+                        <label class="visually-hidden" for={`c-${p.id}`}>
+                          Cost of {p.data.title}
+                        </label>
+                        <input
+                          class="input num"
+                          id={`c-${p.id}`}
+                          name={`cost:${p.id}`}
+                          inputmode="decimal"
+                          placeholder="$0.00"
+                          value={record ? record.cost.toFixed(2) : ''}
+                        />
+                      </td>
+                      <td class="r num">{here === null ? '' : signed(here)}</td>
+                      <td class="r num muted">{etsy === null ? '' : signed(etsy)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ))
+    }
+    <p class="small muted fine">
+      Keeps here: price, less cost and Stripe’s 2.9% + 30¢. On Etsy: less Etsy’s fees (about 9.5% + 45¢) instead, before Offsite Ads. Both are before the
+      shipping label, which the studio pays on orders over $75.
+    </p>
+    <div class="save">
+      <button class="btn" type="submit">Save costs</button>
+    </div>
+  </form>
+
+  <section class="block" aria-labelledby="backup-title">
+    <h2 class="section-title" id="backup-title">Export and backup</h2>
+    <p class="small muted">
+      Everything here lives in the site’s private storage. Download a copy now and then, and before any big change.
+    </p>
+    <ul class="downloads small">
+      <li><a href="/studio/export/sales.csv">Sales (CSV)</a></li>
+      <li><a href="/studio/export/expenses.csv">Expenses (CSV)</a></li>
+      <li><a href="/studio/export/requests.csv">Requests (CSV)</a></li>
+      <li><a href="/studio/export/backup.json">Full backup (JSON)</a></li>
+    </ul>
+    <form method="post" action="/studio/costs" class="form import" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="import" />
+      <div class="field">
+        <label for="backup">Load a backup or import file</label>
+        <input class="input file" id="backup" name="backup" type="file" accept="application/json,.json" required />
+      </div>
+      <p class="small muted">Records already here are matched by id and updated, never duplicated. Nothing is deleted.</p>
+      <div class="form-actions">
+        <button class="btn btn--ghost" type="submit">Load file</button>
+      </div>
+    </form>
+  </section>
+</Studio>
+
+<style>
+  .intro {
+    max-width: 38em;
+  }
+
+  .group {
+    margin-top: 2.5rem;
+  }
+
+  .group summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .group summary::after {
+    content: '+';
+    float: right;
+    font-family: var(--sans);
+    font-weight: 300;
+    color: var(--ink-2);
+  }
+
+  .group[open] summary::after {
+    content: '\2212';
+  }
+
+  .cost-h {
+    width: 7rem;
+  }
+
+  .cost .input {
+    width: 6.5rem;
+    min-height: 2.25rem;
+    padding: 0.25rem 0;
+  }
+
+  .table td a {
+    text-decoration: none;
+  }
+
+  .fine {
+    margin-top: 1.5rem;
+    max-width: 40em;
+  }
+
+  .save {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 1.5rem -1rem 0;
+    padding: 0.85rem 1rem max(0.85rem, env(safe-area-inset-bottom));
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+
+  .block {
+    margin-top: 3.5rem;
+  }
+
+  .downloads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .downloads a {
+    color: var(--ink);
+  }
+</style>

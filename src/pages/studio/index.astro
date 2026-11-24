@@ -1,0 +1,674 @@
+---
+/**
+ * Simone's studio overview: what is waiting on her (orders to ship, new
+ * requests, follow-ups, money owed), then profit for a period with where it
+ * came from and where it went. Everything here is private: it reads Stripe and
+ * the studio store, and only after sign-in.
+ */
+import Studio from '../../layouts/Studio.astro';
+import {
+  CHANNELS,
+  PERIOD_KEYS,
+  cents,
+  chicagoDate,
+  monthly,
+  percent,
+  period,
+  summarize,
+  usd,
+  type PeriodKey,
+} from '../../lib/finance';
+import { OPEN_STATUSES, balanceDue } from '../../lib/ledger';
+import { loadLedger, stripeTestMode, type Ledger } from '../../lib/studio-data';
+import { studioRequest } from '../../lib/studio-page';
+import { studioStore } from '../../lib/studio-store';
+
+export const prerender = false;
+
+const req = await studioRequest(Astro, '/studio');
+if (req.response) return req.response;
+
+const kv = studioStore();
+const today = chicagoDate();
+const asked = Astro.url.searchParams.get('p') ?? '';
+const pKey: PeriodKey = (PERIOD_KEYS as string[]).includes(asked) ? (asked as PeriodKey) : 'year';
+const p = period(pKey, today);
+
+let ledger: Ledger | null = null;
+let loadError = '';
+if (req.signedIn && kv) {
+  try {
+    ledger = await loadLedger(kv);
+  } catch (err) {
+    console.error('Studio overview could not load', err);
+    loadError = 'The numbers could not be loaded. Refresh in a minute.';
+  }
+}
+
+const sum = ledger ? summarize(ledger.sales, ledger.expenses, ledger.costs, p) : null;
+const chartYear = pKey === 'all' ? Number(today.slice(0, 4)) : Number(p.from.slice(0, 4));
+const months = ledger ? monthly(ledger.sales, ledger.expenses, ledger.costs, chartYear) : [];
+const thisMonth = today.slice(0, 7);
+
+/* What is waiting on Simone. */
+const addDays = (date: string, days: number) => {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+const open = ledger?.requests.filter((r) => OPEN_STATUSES.includes(r.status)) ?? [];
+const owedRequests = ledger?.requests.filter((r) => ['booked', 'making', 'delivered'].includes(r.status) && balanceDue(r) > 0) ?? [];
+const queue = [
+  { n: ledger?.web.toShip ?? 0, label: 'to ship', one: 'to ship', href: '/studio/orders' },
+  { n: open.filter((r) => r.status === 'new').length, label: 'new requests', one: 'new request', href: '/studio/requests?status=new' },
+  {
+    n: open.filter((r) => r.followUp && r.followUp <= today).length,
+    label: 'follow-ups due',
+    one: 'follow-up due',
+    href: '/studio/requests',
+  },
+  {
+    n: open.filter((r) => r.due && r.due <= addDays(today, 14)).length,
+    label: 'due in two weeks',
+    one: 'due in two weeks',
+    href: '/studio/requests',
+  },
+].filter((q) => q.n > 0);
+const owed = cents(owedRequests.reduce((s, r) => s + balanceDue(r), 0));
+
+/* The chart: net profit by month, bars up from zero or down below it. */
+const nice = (x: number) => {
+  if (x <= 0) return 0;
+  const mag = 10 ** Math.floor(Math.log10(x));
+  return ([1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((m) => m * mag >= x - 1e-9) ?? 10) * mag;
+};
+const top = nice(Math.max(0, ...months.map((m) => m.net)));
+const bottom = -nice(-Math.min(0, ...months.map((m) => m.net)));
+const range = top - bottom || 1;
+const zero = (top / range) * 100;
+const bar = (v: number) => (Math.abs(v) / range) * 100;
+
+const statement = sum
+  ? [
+      { label: 'Sales', value: sum.gross, hint: 'What pieces and work sold for, after discounts' },
+      { label: 'Shipping charged', value: sum.shipping, hint: '' },
+      ...(sum.refunded ? [{ label: 'Refunds', value: -sum.refunded, hint: '' }] : []),
+      { label: 'Fees', value: -sum.fees, hint: 'Stripe on the website, Etsy on Etsy' },
+      { label: 'Shipping labels', value: -sum.labels, hint: '' },
+      { label: 'Piece costs', value: -sum.cogs, hint: 'Stones, findings and packaging for what sold' },
+      { label: 'Running costs', value: -sum.running, hint: 'Ads, software, postage, shows', href: '/studio/expenses' },
+      ...(sum.donations ? [{ label: 'Donations', value: -sum.donations, hint: '', href: '/studio/expenses' }] : []),
+    ]
+  : [];
+const signed = (v: number) => (v < 0 ? `−${usd(-v)}` : usd(v));
+const revenue = sum ? sum.gross + sum.shipping - sum.refunded : 0;
+---
+
+<Studio title="Overview" active="overview" signedIn={req.signedIn} wide>
+  {!kv && <p class="warn">The studio store is not available here, so there is nothing to show.</p>}
+  {loadError && <p class="warn">{loadError}</p>}
+  {ledger?.web.error && <p class="warn">{ledger.web.error}</p>}
+  {stripeTestMode() && <p class="note">Stripe is in test mode, so website orders here are test orders.</p>}
+
+  <section class="queue" aria-label="Waiting on you">
+    {
+      queue.length || owed ? (
+        <>
+          {queue.map((q) => (
+            <a class="queue-item" href={q.href}>
+              <span class="queue-n serif">{q.n}</span>
+              <span class="small">{q.n === 1 ? q.one : q.label}</span>
+            </a>
+          ))}
+          {owed > 0 && (
+            <a class="queue-item" href="/studio/requests">
+              <span class="queue-n serif">{usd(owed, true)}</span>
+              <span class="small">owed on {owedRequests.length === 1 ? '1 commission' : `${owedRequests.length} commissions`}</span>
+            </a>
+          )}
+        </>
+      ) : (
+        <p class="muted small">Nothing is waiting on you.</p>
+      )
+    }
+  </section>
+
+  <nav class="chips" aria-label="Period">
+    {
+      PERIOD_KEYS.map((k) => (
+        <a href={k === 'year' ? '/studio' : `/studio?p=${k}`} aria-current={k === pKey ? 'page' : undefined}>
+          {period(k, today).label}
+        </a>
+      ))
+    }
+  </nav>
+
+  {
+    sum && (
+      <>
+        <section class="hero-row">
+          <div class="hero">
+            <p class="eyebrow">Net profit, {p.label}</p>
+            <p class="hero-n serif num">{signed(sum.net)}</p>
+            <p class="muted">
+              {sum.count
+                ? `Kept ${percent(sum.margin)} of ${usd(revenue)} from ${sum.count === 1 ? '1 sale' : `${sum.count} sales`}.`
+                : 'No sales in this period yet.'}
+            </p>
+          </div>
+
+          <dl class="tiles">
+            <div>
+              <dt>Sales</dt>
+              <dd class="num">{sum.count}</dd>
+            </div>
+            <div>
+              <dt>Average sale</dt>
+              <dd class="num">{sum.count ? usd((sum.gross + sum.shipping) / sum.count, true) : 'n/a'}</dd>
+            </div>
+            <div>
+              <dt>Supplies bought</dt>
+              <dd class="num">{usd(sum.supplies, true)}</dd>
+            </div>
+            <div>
+              <dt>Sales tax collected</dt>
+              <dd class="num">{usd(sum.taxCollected, true)}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <div class="split">
+          <section class="statement" aria-labelledby="statement-title">
+            <h2 class="section-title" id="statement-title">
+              Where it went
+            </h2>
+            <table class="table">
+              <tbody>
+                {statement.map((row) => (
+                  <tr>
+                    <th scope="row">
+                      {row.href ? <a href={row.href}>{row.label}</a> : row.label}
+                      {row.hint && <span class="hint">{row.hint}</span>}
+                    </th>
+                    <td class="r num">{signed(row.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Net profit</th>
+                  <td class="r num">{signed(sum.net)}</td>
+                </tr>
+              </tfoot>
+            </table>
+            <p class="small muted fine">
+              Supplies bought in bulk are not subtracted here: each piece’s cost already counts them when it sells. Sales tax
+              is owed to the state, so it is left out of every number.
+            </p>
+          </section>
+
+          <div class="side">
+            {sum.direct.orders > 0 && (
+              <section class="card">
+                <p class="eyebrow">Selling direct</p>
+                <p class="card-n serif num">{usd(sum.direct.saved)}</p>
+                <p class="small">
+                  kept on {sum.direct.orders === 1 ? '1 website order' : `${sum.direct.orders} website orders`} that Etsy would have
+                  taken. Etsy’s fees would have been {usd(sum.direct.etsyWouldCharge)} before Offsite Ads; Stripe charged{' '}
+                  {usd(sum.direct.stripeCharged)}.
+                </p>
+              </section>
+            )}
+            {sum.etsyFeesPaid > 0 && (
+              <section class="card">
+                <p class="eyebrow">Etsy fees paid</p>
+                <p class="card-n serif num">{usd(sum.etsyFeesPaid)}</p>
+                <p class="small">on Etsy sales in this period.</p>
+              </section>
+            )}
+            {sum.missingCost > 0 && (
+              <p class="warn">
+                {sum.missingCost === 1 ? '1 piece' : `${sum.missingCost} pieces`} sold in this period {sum.missingCost === 1 ? 'has' : 'have'} no cost
+                on record, so profit reads high. <a href="/studio/costs">Add costs</a>.
+              </p>
+            )}
+            {ledger && ledger.web.unlabeled > 0 && (
+              <p class="warn">
+                {ledger.web.unlabeled === 1 ? '1 shipped order has' : `${ledger.web.unlabeled} shipped orders have`} no label cost. <a href="/studio/orders?view=shipped">Add it on Orders</a>.
+              </p>
+            )}
+            {sum.datesEstimated > 0 && (
+              <p class="note">
+                {sum.datesEstimated === 1 ? '1 sale has' : `${sum.datesEstimated} sales have`} a guessed date. <a href="/studio/sales">Fix on Sales</a>.
+              </p>
+            )}
+            {sum.feesEstimated > 0 && (
+              <p class="note">
+                Fees on {sum.feesEstimated === 1 ? '1 website order are' : `${sum.feesEstimated} website orders are`} Stripe’s standard 2.9% + 30¢,
+                not the exact fee.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <section class="block chart-block" aria-labelledby="chart-title">
+          <h2 class="section-title" id="chart-title">
+            Net profit by month, {chartYear}
+          </h2>
+          <div class="chart" role="img" aria-label={`Net profit by month in ${chartYear}. The table below has the numbers.`}>
+            <div class="plot">
+              <span class="grid" style={`top:0`}>
+                <span class="grid-label num">{usd(top, true)}</span>
+              </span>
+              <span class="grid grid--zero" style={`top:${zero}%`}>
+                <span class="grid-label num">$0</span>
+              </span>
+              {bottom < 0 && (
+                <span class="grid" style="top:100%">
+                  <span class="grid-label num">{signed(bottom)}</span>
+                </span>
+              )}
+              {months.map((m, i) => (
+                <div class:list={['col', { 'col--start': i < 3, 'col--end': i > 8 }]} tabindex="0" aria-label={`${m.label}: ${signed(m.net)} net profit, sold for ${usd(m.gross)}`}>
+                  {m.net !== 0 && (
+                    <span
+                      class:list={['bar', { 'bar--neg': m.net < 0 }]}
+                      style={m.net > 0 ? `bottom:${100 - zero}%;height:${bar(m.net)}%` : `top:${zero}%;height:${bar(m.net)}%`}
+                    />
+                  )}
+                  <span class="tip" role="presentation">
+                    <strong>{m.label} {chartYear}</strong>
+                    <span>
+                      Net <span class="num">{signed(m.net)}</span>
+                    </span>
+                    <span>
+                      Sold for <span class="num">{usd(m.gross)}</span>
+                    </span>
+                    <span>{m.count === 1 ? '1 sale' : `${m.count} sales`}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div class="axis">
+              {months.map((m) => (
+                <span class:list={{ now: m.month === thisMonth }}>{m.label.slice(0, 1)}<span class="axis-rest">{m.label.slice(1)}</span></span>
+              ))}
+            </div>
+          </div>
+          <details class="as-table">
+            <summary class="link">Show as a table</summary>
+            <div class="scroll">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th class="r">Sales</th>
+                    <th class="r">Sold for</th>
+                    <th class="r">Net profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {months.map((m) => (
+                    <tr>
+                      <td>{m.label}</td>
+                      <td class="r num">{m.count}</td>
+                      <td class="r num">{usd(m.gross)}</td>
+                      <td class="r num">{signed(m.net)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <div class="split block">
+          <section aria-labelledby="channels-title">
+            <h2 class="section-title" id="channels-title">
+              Where it sold
+            </h2>
+            {sum.byChannel.length ? (
+              <div class="scroll">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Channel</th>
+                      <th class="r">Sales</th>
+                      <th class="r">Sold for</th>
+                      <th class="r">Fees</th>
+                      <th class="r">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sum.byChannel.map((c) => (
+                      <tr>
+                        <td>{CHANNELS[c.channel]}</td>
+                        <td class="r num">{c.count}</td>
+                        <td class="r num">{usd(c.gross)}</td>
+                        <td class="r num">{usd(c.fees)}</td>
+                        <td class="r num">{signed(c.net)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p class="muted small">No sales in this period.</p>
+            )}
+          </section>
+
+          <section aria-labelledby="pieces-title">
+            <h2 class="section-title" id="pieces-title">
+              Best earners
+            </h2>
+            {sum.topPieces.length ? (
+              <div class="scroll">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Piece</th>
+                      <th class="r">Sold</th>
+                      <th class="r">Sold for</th>
+                      <th class="r">Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sum.topPieces.map((piece) => (
+                      <tr>
+                        <td>{piece.slug ? <a href={`/products/${piece.slug}`}>{piece.title}</a> : piece.title}</td>
+                        <td class="r num">{piece.count}</td>
+                        <td class="r num">{usd(piece.gross)}</td>
+                        <td class="r num">{signed(piece.net)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p class="muted small">No sales in this period.</p>
+            )}
+          </section>
+        </div>
+
+        <section class="block downloads" aria-label="Downloads">
+          <p class="small muted">
+            Download for your accountant: <a href="/studio/export/sales.csv">sales</a>, <a href="/studio/export/expenses.csv">expenses</a>,{' '}
+            <a href="/studio/export/requests.csv">requests</a>, or <a href="/studio/export/backup.json">a full backup</a>.
+          </p>
+        </section>
+      </>
+    )
+  }
+</Studio>
+
+<style>
+  .queue {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.75rem;
+    margin: 1.5rem 0 2rem;
+  }
+
+  .queue-item {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.9rem 1rem;
+    background: var(--paper-2);
+    border-left: 2px solid var(--accent);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .queue-item:hover {
+    background: var(--paper-3);
+  }
+
+  .queue-n {
+    font-size: var(--step-3);
+    line-height: 1;
+  }
+
+  .hero-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem 3rem;
+    align-items: end;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .hero-n {
+    font-size: var(--step-5);
+    font-weight: 300;
+    line-height: 1;
+    margin: 0.75rem 0 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+  }
+
+  .tiles dt {
+    font-size: var(--step--2);
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .tiles dd {
+    font-family: var(--serif);
+    font-size: var(--step-2);
+    line-height: 1.2;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 2.5rem 3rem;
+    align-items: start;
+    margin-top: 2.5rem;
+  }
+
+  .statement th {
+    font-size: var(--step-0);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+  }
+
+  .statement .hint {
+    display: block;
+    font-size: var(--step--2);
+    color: var(--ink-2);
+  }
+
+  .statement tfoot th,
+  .statement tfoot td {
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--ink);
+    border-bottom: 0;
+    font-family: var(--serif);
+    font-size: var(--step-1);
+    font-weight: 500;
+  }
+
+  .fine {
+    margin-top: 1rem;
+    max-width: 34em;
+  }
+
+  .side {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .side .warn,
+  .side .note {
+    margin: 0;
+  }
+
+  .card {
+    padding: 1.25rem;
+    border: 1px solid var(--line-strong);
+  }
+
+  .card-n {
+    font-size: var(--step-3);
+    line-height: 1.1;
+    margin: 0.6rem 0 0.4rem;
+  }
+
+  /* The chart ---------------------------------------------------- */
+
+  .chart {
+    padding-left: 3.5rem;
+  }
+
+  .plot {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    height: 14rem;
+  }
+
+  .grid {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px dashed var(--line);
+    pointer-events: none;
+  }
+
+  .grid--zero {
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .grid-label {
+    position: absolute;
+    right: calc(100% + 0.5rem);
+    top: 0;
+    transform: translateY(-50%);
+    font-size: var(--step--2);
+    color: var(--ink-2);
+  }
+
+  .col {
+    position: relative;
+    outline: none;
+  }
+
+  .col:hover,
+  .col:focus-visible {
+    background: rgb(33 28 23 / 0.04);
+  }
+
+  .col:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+
+  .bar {
+    position: absolute;
+    left: 50%;
+    width: min(24px, 62%);
+    transform: translateX(-50%);
+    background: var(--accent);
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+  }
+
+  .bar--neg {
+    border-radius: 0 0 4px 4px;
+  }
+
+  .tip {
+    position: absolute;
+    z-index: 2;
+    bottom: calc(100% + 0.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    gap: 0.1rem;
+    min-width: 9.5rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--step--2);
+    line-height: 1.45;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .col--start .tip {
+    left: 0;
+    transform: none;
+  }
+
+  .col--end .tip {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .col:hover .tip,
+  .col:focus-visible .tip {
+    display: grid;
+  }
+
+  .axis {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    margin-top: 0.5rem;
+    font-size: var(--step--2);
+    color: var(--ink-2);
+    text-align: center;
+  }
+
+  .axis .now {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .as-table {
+    margin-top: 1.25rem;
+  }
+
+  .as-table summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .as-table summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .as-table[open] summary {
+    margin-bottom: 0.75rem;
+  }
+
+  .downloads a {
+    color: var(--ink);
+  }
+
+  @media (max-width: 52rem) {
+    .hero-row,
+    .split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 34rem) {
+    .chart {
+      padding-left: 2.75rem;
+    }
+
+    .axis-rest {
+      display: none;
+    }
+  }
+</style>

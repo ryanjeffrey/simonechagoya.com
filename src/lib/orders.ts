@@ -16,6 +16,7 @@ import { ORDER_EMAIL_FROM, ORDER_NOTIFY_EMAIL, RESEND_API_KEY } from 'astro:env/
 import Stripe from 'stripe';
 import { site } from '../data/site';
 import {
+  SOURCE,
   confirmationEmail,
   orderNumber,
   saleEmail,
@@ -29,7 +30,7 @@ import {
 export type EmailKind = 'confirmation' | 'sale' | 'shipped';
 export type SentLog = Partial<Record<EmailKind, string>>;
 
-export const SOURCE = 'simonechagoya.com';
+export { SOURCE };
 
 /* ---------------------------------------------------------------
    Reading orders from Stripe
@@ -143,7 +144,7 @@ export async function sendOrderEmails(stripe: Stripe, store: Store, sessionId: s
       });
     }
     if (!sent.sale) {
-      await deliver(store, sessionId, 'sale', notifyList(), saleEmail(order, `${site.url}/studio`), order.email ?? undefined).catch((err) => {
+      await deliver(store, sessionId, 'sale', notifyList(), saleEmail(order, `${site.url}/studio/orders`), order.email ?? undefined).catch((err) => {
         console.error(`Sale alert for ${sessionId} failed`, err);
         failed.push('sale alert');
       });

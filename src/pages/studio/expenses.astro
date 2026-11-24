@@ -1,0 +1,263 @@
+---
+/**
+ * Money spent on the studio, by category. Supplies are tracked as spending but
+ * not subtracted from profit (piece costs carry them when a piece sells);
+ * running costs and donations are subtracted when paid.
+ */
+import Studio from '../../layouts/Studio.astro';
+import {
+  EXPENSE_CATEGORIES,
+  cents,
+  chicagoDate,
+  dayLabel,
+  expenseKind,
+  parseDate,
+  parseMoney,
+  usd,
+  yearsOf,
+  type Expense,
+  type ExpenseKind,
+} from '../../lib/finance';
+import { deleteExpense, getExpense, listExpenses, newId, saveExpense } from '../../lib/ledger';
+import { byDateDesc } from '../../lib/studio-data';
+import { optional, studioRequest, text } from '../../lib/studio-page';
+import { studioStore } from '../../lib/studio-store';
+
+export const prerender = false;
+
+const KINDS: Record<ExpenseKind, { label: string; note: string }> = {
+  supplies: { label: 'Supplies', note: 'Not subtracted from profit: piece costs count them when a piece sells.' },
+  running: { label: 'Running costs', note: 'Subtracted from profit when paid.' },
+  donation: { label: 'Donations', note: 'Subtracted from profit when given.' },
+};
+
+const req = await studioRequest(Astro, '/studio/expenses');
+if (req.response) return req.response;
+
+const kv = studioStore();
+
+if (req.form) {
+  const form = req.form;
+  const y = text(form, 'y', 4);
+  if (!kv) return req.back('no-store', { y });
+  try {
+    if (req.action === 'delete') {
+      const id = text(form, 'id', 80);
+      if (id.startsWith('exp_')) await deleteExpense(kv, id);
+      return req.back('deleted', { y });
+    }
+    if (req.action === 'save') {
+      const existing = text(form, 'id', 80) ? await getExpense(kv, text(form, 'id', 80)) : null;
+      const category = text(form, 'category', 60);
+      const expense: Expense = {
+        id: existing?.id ?? newId('exp'),
+        date: parseDate(form.get('date')),
+        category: category in EXPENSE_CATEGORIES ? category : 'Other',
+        vendor: text(form, 'vendor', 120) || 'Unnamed',
+        amount: parseMoney(form.get('amount')),
+        note: optional(form, 'note', 500),
+      };
+      await saveExpense(kv, expense);
+      return req.back('saved', { y: y || expense.date.slice(0, 4) });
+    }
+  } catch (err) {
+    console.error(`Studio expenses ${req.action} failed`, err);
+    return req.back('failed', { y }, err);
+  }
+  return req.back('failed', { y });
+}
+
+const today = chicagoDate();
+const thisYear = today.slice(0, 4);
+
+let expenses: Expense[] = [];
+let loadError = '';
+if (req.signedIn && kv) {
+  try {
+    expenses = (await listExpenses(kv)).sort(byDateDesc);
+  } catch (err) {
+    console.error('Studio expenses could not load', err);
+    loadError = 'Expenses could not be loaded. Refresh in a minute.';
+  }
+}
+
+const years = yearsOf(expenses, thisYear);
+const yAsked = Astro.url.searchParams.get('y') ?? '';
+const year = yAsked === 'all' || years.includes(yAsked) ? yAsked : thisYear;
+const shown = expenses.filter((e) => year === 'all' || e.date.startsWith(year));
+
+const byCategory = new Map<string, number>();
+for (const e of shown) byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + e.amount);
+const kindTotals = (Object.keys(KINDS) as ExpenseKind[]).map((kind) => ({
+  kind,
+  ...KINDS[kind],
+  total: cents(shown.filter((e) => expenseKind(e.category) === kind).reduce((s, e) => s + e.amount, 0)),
+  categories: [...byCategory.entries()].filter(([c]) => expenseKind(c) === kind).sort((a, b) => b[1] - a[1]),
+}));
+
+const editId = Astro.url.searchParams.get('id') ?? '';
+const editing = req.signedIn && editId && kv ? await getExpense(kv, editId) : null;
+const grouped = (Object.keys(KINDS) as ExpenseKind[]).map((kind) => ({
+  kind,
+  label: KINDS[kind].label,
+  categories: Object.entries(EXPENSE_CATEGORIES)
+    .filter(([, k]) => k === kind)
+    .map(([c]) => c),
+}));
+---
+
+<Studio title="Expenses" active="expenses" signedIn={req.signedIn}>
+  <h1 class="serif title">Expenses</h1>
+  {!kv && <p class="warn">The studio store is not available here, so expenses cannot be added.</p>}
+  {loadError && <p class="warn">{loadError}</p>}
+
+  <details class="adder" open={Boolean(editing) || undefined}>
+    <summary class="btn btn--accent">{editing ? 'Edit expense' : 'Add an expense'}</summary>
+    <form method="post" class="form" action="/studio/expenses">
+      <input type="hidden" name="action" value="save" />
+      <input type="hidden" name="y" value={year === thisYear ? '' : year} />
+      {editing && <input type="hidden" name="id" value={editing.id} />}
+      <div class="form-grid">
+        <div class="field">
+          <label for="e-date">Date paid</label>
+          <input class="input" id="e-date" name="date" type="date" required value={editing?.date ?? today} />
+        </div>
+        <div class="field">
+          <label for="e-amount">Amount</label>
+          <input class="input" id="e-amount" name="amount" inputmode="decimal" required placeholder="$0.00" value={editing ? editing.amount.toFixed(2) : ''} />
+        </div>
+        <div class="field span">
+          <label for="e-category">Category</label>
+          <select class="select" id="e-category" name="category">
+            {
+              grouped.map((g) => (
+                <optgroup label={g.label}>
+                  {g.categories.map((c) => (
+                    <option selected={(editing?.category ?? 'Beads and stones') === c}>{c}</option>
+                  ))}
+                </optgroup>
+              ))
+            }
+          </select>
+        </div>
+        <div class="field span">
+          <label for="e-vendor">Paid to</label>
+          <input class="input" id="e-vendor" name="vendor" required value={editing?.vendor ?? ''} placeholder="Bead shop, Etsy Ads, Pirate Ship..." />
+        </div>
+        <div class="field span">
+          <label for="e-note">Note</label>
+          <input class="input" id="e-note" name="note" value={editing?.note ?? ''} maxlength="500" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="submit">{editing ? 'Save changes' : 'Add expense'}</button>
+        {editing && <a class="link small" href="/studio/expenses">Cancel</a>}
+      </div>
+    </form>
+    {
+      editing && (
+        <form method="post" action="/studio/expenses" class="delete" data-confirm="Delete this expense?">
+          <input type="hidden" name="action" value="delete" />
+          <input type="hidden" name="id" value={editing.id} />
+          <button class="link small danger" type="submit">Delete this expense</button>
+        </form>
+      )
+    }
+  </details>
+
+  <nav class="chips block" aria-label="Year">
+    {
+      [...years, 'all'].map((y) => (
+        <a href={y === thisYear ? '/studio/expenses' : `/studio/expenses?y=${y}`} aria-current={y === year ? 'page' : undefined}>
+          {y === 'all' ? 'All time' : y}
+        </a>
+      ))
+    }
+  </nav>
+
+  {
+    shown.length ? (
+      <>
+        <div class="kinds">
+          {kindTotals.map((k) => (
+            <section class="kind">
+              <p class="eyebrow">{k.label}</p>
+              <p class="kind-n serif num">{usd(k.total)}</p>
+              <p class="small muted">{k.note}</p>
+              {k.categories.length > 0 && (
+                <ul class="cats small">
+                  {k.categories.map(([c, total]) => (
+                    <li>
+                      <span>{c}</span>
+                      <span class="num">{usd(cents(total))}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+
+        <ul class="rows block">
+          {shown.map((e) => (
+            <li class="row">
+              <div>
+                <p class="row-title">
+                  <a href={`/studio/expenses?id=${encodeURIComponent(e.id)}${year !== thisYear ? `&y=${year}` : ''}`}>{e.vendor}</a>
+                </p>
+                <p class="row-meta">
+                  {dayLabel(e.date, thisYear)}, {e.category}
+                  {e.note && <>, {e.note}</>}
+                </p>
+              </div>
+              <p class="row-side num">{usd(e.amount)}</p>
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : (
+      <p class="empty">No expenses {year === 'all' ? 'yet' : `in ${year}`}.</p>
+    )
+  }
+</Studio>
+
+<style>
+  .delete {
+    margin-top: 1rem;
+  }
+
+  .block {
+    margin-top: 2.5rem;
+  }
+
+  .kinds {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: 1.5rem;
+  }
+
+  .kind {
+    padding-top: 1rem;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .kind-n {
+    font-size: var(--step-3);
+    line-height: 1.1;
+    margin: 0.5rem 0 0.35rem;
+  }
+
+  .cats {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+  }
+
+  .cats li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+</style>

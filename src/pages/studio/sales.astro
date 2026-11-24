@@ -1,0 +1,326 @@
+---
+/**
+ * Every sale in one list, and a form for the ones the website does not see:
+ * Etsy, markets and shows, Instagram or direct, and anything else. Website
+ * orders come from Stripe and commission payments from Requests, so they are
+ * listed here but changed where they live.
+ */
+import { getCollection } from 'astro:content';
+import Studio from '../../layouts/Studio.astro';
+import { CATEGORY_META } from '../../lib/catalog';
+import {
+  CHANNELS,
+  cents,
+  chicagoDate,
+  dayLabel,
+  etsyFee,
+  parseDate,
+  parseMoney,
+  saleMath,
+  usd,
+  yearsOf,
+  type Channel,
+  type Sale,
+} from '../../lib/finance';
+import { deleteSale, getSale, newId, saveSale } from '../../lib/ledger';
+import { loadLedger, type Ledger } from '../../lib/studio-data';
+import { optional, studioRequest, text } from '../../lib/studio-page';
+import { studioStore } from '../../lib/studio-store';
+
+export const prerender = false;
+
+const MANUAL: Channel[] = ['etsy', 'in-person', 'instagram', 'commission', 'other'];
+
+const req = await studioRequest(Astro, '/studio/sales');
+if (req.response) return req.response;
+
+const kv = studioStore();
+const products = (await getCollection('products')).sort(
+  (a, b) => Object.keys(CATEGORY_META).indexOf(a.data.category) - Object.keys(CATEGORY_META).indexOf(b.data.category) || a.data.title.localeCompare(b.data.title),
+);
+
+if (req.form) {
+  const form = req.form;
+  const y = text(form, 'y', 4);
+  if (!kv) return req.back('no-store', { y });
+  try {
+    if (req.action === 'delete') {
+      const id = text(form, 'id', 80);
+      if (id.startsWith('sale_')) await deleteSale(kv, id);
+      return req.back('deleted', { y });
+    }
+    if (req.action === 'save') {
+      const existing = text(form, 'id', 80) ? await getSale(kv, text(form, 'id', 80)) : null;
+      const channelRaw = text(form, 'channel', 20) as Channel;
+      const channel: Channel = MANUAL.includes(channelRaw) ? channelRaw : 'other';
+      const product = products.find((p) => p.id === text(form, 'slug', 120));
+      const amount = parseMoney(form.get('amount'));
+      const shipping = parseMoney(form.get('shipping'));
+      const feesGiven = text(form, 'fees', 20);
+      const estimate = !feesGiven && channel === 'etsy';
+      const costGiven = text(form, 'cost', 20);
+      const sale: Sale = {
+        id: existing?.id ?? newId('sale'),
+        date: parseDate(form.get('date')),
+        dateEstimated: form.get('dateEstimated') === 'on' || undefined,
+        channel,
+        items: [
+          {
+            title: text(form, 'title', 120) || product?.data.title || 'Sale',
+            slug: product?.id,
+            qty: Math.max(1, Math.min(999, Math.round(Number(form.get('qty')) || 1))),
+            amount,
+            cost: costGiven ? parseMoney(costGiven) : undefined,
+          },
+          // Only the first line is edited here; any others (from an import) are kept as they were.
+          ...(existing?.items.slice(1) ?? []),
+        ],
+        shipping,
+        fees: estimate ? etsyFee(amount + shipping) : parseMoney(feesGiven),
+        feeEstimated: estimate || undefined,
+        labelCost: parseMoney(form.get('labelCost')),
+        tax: parseMoney(form.get('tax')) || undefined,
+        note: optional(form, 'note', 500),
+        ref: 'manual',
+      };
+      await saveSale(kv, sale);
+      return req.back('saved', { y: y || sale.date.slice(0, 4) });
+    }
+  } catch (err) {
+    console.error(`Studio sales ${req.action} failed`, err);
+    return req.back('failed', { y }, err);
+  }
+  return req.back('failed', { y });
+}
+
+const today = chicagoDate();
+const thisYear = today.slice(0, 4);
+
+let ledger: Ledger | null = null;
+let loadError = '';
+if (req.signedIn && kv) {
+  try {
+    ledger = await loadLedger(kv);
+  } catch (err) {
+    console.error('Studio sales could not load', err);
+    loadError = 'Sales could not be loaded. Refresh in a minute.';
+  }
+}
+
+const years = ledger ? yearsOf(ledger.sales, thisYear) : [thisYear];
+const yAsked = Astro.url.searchParams.get('y') ?? '';
+const year = yAsked === 'all' || years.includes(yAsked) ? yAsked : thisYear;
+const shown = (ledger?.sales ?? []).filter((s) => year === 'all' || s.date.startsWith(year));
+const rows = shown.map((s) => ({ sale: s, math: saleMath(s, ledger!.costs) }));
+const totals = rows.reduce(
+  (t, r) => ({ sold: t.sold + r.math.gross + r.math.shipping, net: t.net + r.math.net }),
+  { sold: 0, net: 0 },
+);
+
+const editId = Astro.url.searchParams.get('id') ?? '';
+const editing = req.signedIn && editId && kv ? await getSale(kv, editId) : null;
+const item = editing?.items[0];
+const value = (n: number | undefined) => (n ? n.toFixed(2) : '');
+
+const link = (s: Sale) =>
+  s.channel === 'website'
+    ? '/studio/orders?view=all'
+    : s.ref && s.ref !== 'manual' && s.channel === 'commission' && s.id.includes(':')
+      ? `/studio/requests?id=${encodeURIComponent(s.ref)}`
+      : `/studio/sales?id=${encodeURIComponent(s.id)}${year !== thisYear ? `&y=${year}` : ''}`;
+const signed = (v: number) => (v < 0 ? `−${usd(-v)}` : usd(v));
+---
+
+<Studio title="Sales" active="sales" signedIn={req.signedIn}>
+  <h1 class="serif title">Sales</h1>
+  {!kv && <p class="warn">The studio store is not available here, so sales cannot be added.</p>}
+  {loadError && <p class="warn">{loadError}</p>}
+  {ledger?.web.error && <p class="warn">{ledger.web.error}</p>}
+
+  <details class="adder block-sm" open={Boolean(editing) || undefined}>
+    <summary class="btn btn--accent">{editing ? 'Edit sale' : 'Add a sale'}</summary>
+    <form method="post" class="form" action="/studio/sales">
+      <input type="hidden" name="action" value="save" />
+      <input type="hidden" name="y" value={year === thisYear ? '' : year} />
+      {editing && <input type="hidden" name="id" value={editing.id} />}
+      <p class="small muted">
+        For sales the website does not see: Etsy, markets and shows, Instagram or direct. Website orders and commission payments add
+        themselves.
+      </p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="s-date">Date</label>
+          <input class="input" id="s-date" name="date" type="date" required value={editing?.date ?? today} />
+        </div>
+        <div class="field">
+          <label for="s-channel">Where</label>
+          <select class="select" id="s-channel" name="channel">
+            {
+              MANUAL.map((c) => (
+                <option value={c} selected={(editing?.channel ?? 'in-person') === c}>
+                  {CHANNELS[c]}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        <div class="field span">
+          <label for="s-slug">Piece</label>
+          <select class="select" id="s-slug" name="slug" data-piece>
+            <option value="">Something else (type a name below)</option>
+            {
+              Object.entries(CATEGORY_META).map(([cat, meta]) => {
+                const list = products.filter((p) => p.data.category === cat);
+                return (
+                  list.length > 0 && (
+                    <optgroup label={meta.label}>
+                      {list.map((p) => (
+                        <option value={p.id} data-price={p.data.price} selected={item?.slug === p.id}>
+                          {p.data.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )
+                );
+              })
+            }
+          </select>
+        </div>
+        <div class="field span">
+          <label for="s-title">Name <span class="hint">Optional when a piece is picked</span></label>
+          <input class="input" id="s-title" name="title" value={item && !item.slug ? item.title : ''} placeholder="Market bracelet, set of cards..." />
+        </div>
+        <div class="field">
+          <label for="s-qty">How many</label>
+          <input class="input" id="s-qty" name="qty" type="number" min="1" step="1" value={item?.qty ?? 1} />
+        </div>
+        <div class="field">
+          <label for="s-amount">Paid <span class="hint">After any discount</span></label>
+          <input class="input" id="s-amount" name="amount" inputmode="decimal" required value={value(item?.amount)} placeholder="$0.00" data-amount />
+        </div>
+        <div class="field">
+          <label for="s-shipping">Shipping charged</label>
+          <input class="input" id="s-shipping" name="shipping" inputmode="decimal" value={value(editing?.shipping)} placeholder="$0.00" />
+        </div>
+        <div class="field">
+          <label for="s-label">Label cost</label>
+          <input class="input" id="s-label" name="labelCost" inputmode="decimal" value={value(editing?.labelCost)} placeholder="$0.00" />
+        </div>
+        <div class="field">
+          <label for="s-fees">Fees <span class="hint">Etsy: blank estimates them</span></label>
+          <input
+            class="input"
+            id="s-fees"
+            name="fees"
+            inputmode="decimal"
+            value={editing && !editing.feeEstimated ? value(editing.fees) : ''}
+            placeholder={editing?.feeEstimated ? `About ${usd(editing.fees)}` : '$0.00'}
+          />
+        </div>
+        <div class="field">
+          <label for="s-cost">Piece cost <span class="hint">Blank uses Costs</span></label>
+          <input class="input" id="s-cost" name="cost" inputmode="decimal" value={typeof item?.cost === 'number' ? item.cost.toFixed(2) : ''} placeholder="From Costs" />
+        </div>
+        <div class="field">
+          <label for="s-tax">Sales tax collected</label>
+          <input class="input" id="s-tax" name="tax" inputmode="decimal" value={value(editing?.tax)} placeholder="$0.00" />
+        </div>
+        <div class="field span">
+          <label for="s-note">Note</label>
+          <input class="input" id="s-note" name="note" value={editing?.note ?? ''} maxlength="500" />
+        </div>
+        <label class="check span">
+          <input type="checkbox" name="dateEstimated" checked={editing?.dateEstimated} /> The date is a guess
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="submit">{editing ? 'Save changes' : 'Add sale'}</button>
+        {editing && <a class="link small" href="/studio/sales">Cancel</a>}
+      </div>
+    </form>
+    {
+      editing && (
+        <form method="post" action="/studio/sales" class="delete" data-confirm="Delete this sale?">
+          <input type="hidden" name="action" value="delete" />
+          <input type="hidden" name="id" value={editing.id} />
+          <button class="link small danger" type="submit">Delete this sale</button>
+        </form>
+      )
+    }
+  </details>
+
+  <nav class="chips block" aria-label="Year">
+    {
+      [...years, 'all'].map((y) => (
+        <a href={y === thisYear ? '/studio/sales' : `/studio/sales?y=${y}`} aria-current={y === year ? 'page' : undefined}>
+          {y === 'all' ? 'All time' : y}
+        </a>
+      ))
+    }
+  </nav>
+
+  {
+    rows.length ? (
+      <>
+        <p class="small muted summary">
+          {rows.length === 1 ? '1 sale' : `${rows.length} sales`}, sold for <span class="num">{usd(cents(totals.sold))}</span>, profit before
+          running costs <span class="num">{signed(cents(totals.net))}</span>
+        </p>
+        <ul class="rows">
+          {rows.map(({ sale, math }) => (
+            <li class="row">
+              <div>
+                <p class="row-title">
+                  <a href={link(sale)}>{sale.items.map((i) => (i.qty > 1 ? `${i.title} x${i.qty}` : i.title)).join(', ')}</a>
+                </p>
+                <p class="row-meta">
+                  {dayLabel(sale.date, thisYear)}, {CHANNELS[sale.channel]}
+                  {sale.dateEstimated && <span class="tag">Date guessed</span>}
+                  {math.missingCost > 0 && <span class="tag tag--accent">No cost</span>}
+                </p>
+              </div>
+              <div class="row-side">
+                <p class="num">{usd(math.gross + math.shipping)}</p>
+                <p class="row-meta num">profit {signed(math.net)}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : (
+      <p class="empty">No sales {year === 'all' ? 'yet' : `in ${year}`}.</p>
+    )
+  }
+</Studio>
+
+<script>
+  // Picking a piece fills in its price, unless a price is already typed.
+  const piece = document.querySelector<HTMLSelectElement>('[data-piece]');
+  const amount = document.querySelector<HTMLInputElement>('[data-amount]');
+  piece?.addEventListener('change', () => {
+    const price = piece.selectedOptions[0]?.dataset.price;
+    if (amount && price && !amount.value) amount.value = Number(price).toFixed(2);
+  });
+</script>
+
+<style>
+  .adder {
+    margin-bottom: 1rem;
+  }
+
+  .delete {
+    margin-top: 1rem;
+  }
+
+  .summary {
+    margin-bottom: 0.75rem;
+  }
+
+  .row-meta .tag {
+    margin-left: 0.5rem;
+  }
+
+  .block {
+    margin-top: 2.5rem;
+  }
+</style>

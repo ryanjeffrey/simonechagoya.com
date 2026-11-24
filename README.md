@@ -26,7 +26,7 @@ Node 22.12 or newer.
    5. **Payment methods** are managed in Stripe > Settings > Payment methods. The code never hardcodes a list, so Apple Pay, Google Pay and Link appear where they fit.
    6. **Sales tax.** On Etsy, Etsy collected and paid sales tax as the marketplace. On her own site, Simone is responsible, starting with Illinois orders. In Stripe Tax, set the head office address (the studio), add an Illinois registration, then set `STRIPE_AUTOMATIC_TAX=true`. Without an active registration, Stripe collects no tax and shows no error. Stripe Tax charges a per-transaction fee; confirm the setup with her accountant.
    - Promotion codes are switched on, so discount codes made in the Stripe dashboard work at checkout.
-3. **Order emails and the orders page.** The site sends its own emails: a confirmation to the buyer, a sale alert to Simone, and a shipping email with tracking when Simone marks an order shipped at `/studio`. They go through [Resend](https://resend.com) (free up to 3,000 emails a month).
+3. **Order emails and the orders page.** The site sends its own emails: a confirmation to the buyer, a sale alert to Simone, and a shipping email with tracking when Simone marks an order shipped at `/studio/orders`. They go through [Resend](https://resend.com) (free up to 3,000 emails a month).
    1. Create a Resend account, add the domain `simonechagoya.com` under Domains, and add the DNS records it shows wherever the domain's DNS lives. Wait for it to say Verified.
    2. Create an API key with Sending access.
    3. In Netlify > Site configuration > Environment variables, add `RESEND_API_KEY` (the key), `ORDER_NOTIFY_EMAIL` (where sale alerts go; comma separated for more than one) and `STUDIO_PASSWORD` (the password for `/studio`). Optional: `ORDER_EMAIL_FROM` to change the sender from `Simone Chagoya Studio <orders@simonechagoya.com>`. Then redeploy.
@@ -69,13 +69,34 @@ The description goes here, in plain paragraphs.
 ```
 
 - **After a sale**, the site counts it: the Stripe webhook records the order and rebuilds the site, and every recorded order is subtracted from the product's `stock`. When a piece runs out it shows Sold. Sold pieces stay on the site, which helps show demand. The buyer gets a confirmation and Simone gets a sale alert by email.
-- **Shipping an order:** open `simonechagoya.com/studio` (bookmark it on your phone), find the order under To ship, pick the carrier, paste the tracking number and press Mark shipped. The buyer gets an email with a tracking link. Gift notes and express orders are flagged there. If a receipt did not go out, the order says so and has a Send receipt button.
+- **Shipping an order:** open `simonechagoya.com/studio` (bookmark it on your phone) and tap the to-ship count, or go straight to Orders. Pick the carrier, paste the tracking number, enter what the label cost, and press Mark shipped. The buyer gets an email with a tracking link. Gift notes and express orders are flagged there. If a receipt did not go out, the order says so and has a Send receipt button.
+- **Money and requests:** see "The studio dashboard" below.
 - **`stock` is how many were ever offered on this site,** not how many are left, so never lower it after a sale. To restock, raise it by the number you made: a necklace at `stock: 2` with two sales goes to `stock: 3` for one more. For the same reason, do not re-run the Etsy importer with `--force` once the site is selling.
 - **Relisting a returned piece:** delete its order in Netlify > Blobs > `inventory` (`orders/<checkout session id>`), then trigger a deploy. If a sold piece ever still shows as available after a rebuild, set `status: sold` in its file; checkout refuses it either way.
 - **Photos** go in `src/assets/products/<slug>/`. Shoot them at a 4:5 ratio, at least 2000 px tall, in soft daylight on linen or stone. Run them through `scripts/media` first (below) so every photo shares one white balance and finish. The site resizes and compresses them automatically.
 - **Videos** go in `public/media/products/<slug>/` as short muted MP4 loops with a poster frame, listed under `videos:` in the product file. They play second in the gallery, only while on screen, and never on their own for visitors who turn off motion.
 - **Products without photos** show the first frame of their video, or a plain tile when there is no video either. Nothing is drawn or mocked up. The Google/Pinterest feed leaves out any product without a photo.
 - **Original paintings** use `status: inquire`. They show an Inquire button that opens the commissions form with the painting's name filled in.
+
+### The studio dashboard
+
+`simonechagoya.com/studio` is Simone's private back office, behind `STUDIO_PASSWORD` and never indexed. It answers "what is waiting on me" and "what did I actually make", now that most sales come through the site instead of Etsy.
+
+- **Overview:** orders to ship, new requests, follow-ups and commission balances owed at the top. Then net profit for this month, last month, a year or all time, with the full breakdown (sales, shipping, fees, labels, piece costs, running costs, donations), profit by month, sales by channel, the best-earning pieces, and what selling direct saved over Etsy's fees.
+- **Orders:** ship website orders with tracking (as before) and record each label's cost.
+- **Requests:** every commission and inquiry, from New to Delivered, with quote, cost, due date, follow-up date, notes and payments. Website inquiries arrive on their own; ones from email, Instagram or in person are added by hand. Payments recorded here count as commission sales.
+- **Sales:** every sale in one list. Website orders and commission payments add themselves; Etsy, market and Instagram sales are added by hand.
+- **Expenses:** money spent, by category. Supplies are tracked but not subtracted from profit, because each piece's cost already counts its stones and packaging when it sells. Running costs and donations are subtracted when paid.
+- **Costs:** what each piece costs to make and package, and what it keeps when sold here versus on Etsy. Also downloads (sales, expenses and requests as CSV for the accountant, and a full JSON backup) and loading a backup back in.
+
+How profit is counted: sales plus shipping charged, less fees, shipping labels, the cost of the pieces sold, refunds, running costs and donations. Sales tax collected is owed to the state, so it never counts as income.
+
+Where the data lives: website orders come from Stripe (the exact fee and any refund are read once a day per recent order and cached). Everything else lives in Netlify Blobs, store `studio`, never in this repository: the repository is public, and these are Simone's costs, margins and clients. Download a backup now and then from Costs.
+
+Setup notes:
+
+- **Exact Stripe fees** need the Stripe key to read Payment Intents, Charges and Balance transactions. A restricted key without them still works: fees show as Stripe's standard 2.9% + 30¢ and the dashboard says they are estimates.
+- **Website inquiries into Requests** run through `netlify/functions/submission-created.mjs`, which Netlify calls after each form submission that passes its spam filter. Nothing to set up beyond form detection (step 5 above). The submission also stays in Netlify Forms and its email notification, as before.
 
 ### Photos and video
 
@@ -170,12 +191,16 @@ src/
   lib/inventory.ts      holds and recorded orders for single pieces (Netlify Blobs)
   lib/orders.ts         reads orders from Stripe, sends order emails (Resend), records shipments
   lib/order-mail.ts     the order email templates
+  lib/finance.ts        the studio's money math: fees, periods, profit (pure, tested)
+  lib/ledger.ts         sales, expenses, requests and piece costs in the private studio store
+  lib/website-sales.ts  website orders from Stripe as sales, with exact fees and refunds
   pages/                every route, including:
     api/checkout.ts     re-prices the bag server side, holds single pieces and opens Stripe Checkout
     api/stripe-webhook.ts  records orders, rebuilds the site and sends the order emails after a sale
-    studio.astro        the orders page: mark shipped with tracking, resend receipts (password protected)
+    studio/             Simone's dashboard (password protected): overview, orders, requests, sales, expenses, costs
     bag.json.ts         catalog data the bag reads
     feeds/products.xml.ts  Google Merchant and Pinterest feed
+netlify/functions/submission-created.mjs  copies website inquiries into the studio's Requests
 scripts/import-etsy.mjs  Etsy importer: listings CSV, plus sold listings and videos from the API
 scripts/etsy-api.mjs     Etsy API client and OAuth login
 ```
