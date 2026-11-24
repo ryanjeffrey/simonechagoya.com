@@ -30,6 +30,7 @@ stock: 3
 edition: 3
 oneOfAKind: false
 status: available
+featured: true
 tags: ["mother_of_pearl", "flower_necklace", "gemstone_necklace", "simone_chagoya"]
 order: 210
 ---
