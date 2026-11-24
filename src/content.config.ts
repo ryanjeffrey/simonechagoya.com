@@ -53,6 +53,8 @@ const products = defineCollection({
         .default([]),
       stock: z.number().int().nonnegative().default(1),
       oneOfAKind: z.boolean().default(false),
+      /** A limited edition: how many were made in all. Shows a "Limited edition" badge and note. */
+      edition: z.number().int().positive().optional(),
       /** available: buyable. sold: shown with a sold badge. inquire: originals sold by conversation. */
       status: z.enum(['available', 'sold', 'inquire']).default('available'),
       featured: z.boolean().default(false),
