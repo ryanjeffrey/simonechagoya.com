@@ -30,8 +30,7 @@ care:
   - "For a secure connection, ensure the clasp is firmly closed."
 stock: 1
 oneOfAKind: true
-status: available
-featured: true
+status: sold
 tags: ["jewelry", "gemstones", "gemstone_necklace", "gifts", "gift_for_her", "mother's_day_gifts", "graduation_gift", "gift_for_wife", "gift_for_girlfriend", "designer", "gemstone_jewelry", "simone_chagoya", "brazil"]
 order: 130
 ---
@@ -41,7 +40,7 @@ The colors of blue and orange represent the extreme temperatures of cool water a
 
 A special one-of-a-kind necklace, handmade by Chicago artist Simone Chagoya.
 
-One available.
+One created.
 
 Jewelry arrives elegantly gift wrapped in a box with ribbon and a natural cotton muslin bag.  
 Card includes jewelry intention and care.  
