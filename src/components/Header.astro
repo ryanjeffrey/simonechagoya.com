@@ -112,22 +112,6 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path === href 
     color: var(--ink);
   }
 
-  /* A soft halo of paper behind the name, so it stays crisp whatever scrolls under the bar,
-     even where a browser skips the blur. */
-  .site-header .wordmark {
-    position: relative;
-    isolation: isolate;
-  }
-
-  .site-header .wordmark::before {
-    content: '';
-    position: absolute;
-    inset: -110% -34%;
-    z-index: -1;
-    background: radial-gradient(closest-side, var(--paper) 66%, rgb(244 239 231 / 0.9) 80%, rgb(244 239 231 / 0) 100%);
-    pointer-events: none;
-  }
-
   .wordmark--light {
     color: var(--paper);
   }
